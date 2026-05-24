@@ -31,7 +31,7 @@ jobs:
         uses: leanprover-community/upstreaming-dashboard-action@e3ee7dc54fd376f093ef62973d7b04cf7beabad0
         with:
           website-directory: website
-          project-name: Project
+          project-name: MorleyCategoricityTheorem
           branch-name: ${{ github.event.repository.default_branch }}
           # include-drafts: false             # Include draft PRs in the dashboard?
           # relevant-labels: "label1,label2"  # Group PRs by 'relevant' based on these labels
