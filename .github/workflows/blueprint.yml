@@ -8,7 +8,7 @@ on:
 
 # Cancel previous runs if a new commit is pushed to the same PR or branch
 concurrency:
-  group: ${{ github.ref }}  # Group runs by the ref (branch or PR)
+  group: ${{ github.workflow }}-${{ github.ref }}  # Group runs by workflow and ref
   cancel-in-progress: true  # Cancel any ongoing runs in the same group
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
