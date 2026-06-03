@@ -3,6 +3,8 @@
 ## Lake
 .lake/*
 .cache/*
+## Local agent workspace
+.agents/
 ## Blueprint
 /blueprint/print/print.log
 /blueprint/web/
