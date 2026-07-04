@@ -1,0 +1,12 @@
+Cardinal.Categorical
+FirstOrder.Language.Embedding
+FirstOrder.Language.Equiv
+FirstOrder.Language.PartialEmbedding
+FirstOrder.Language.PartialElementaryEmbedding
+FirstOrder.Language.ElementaryEmbedding
+FirstOrder.Language.Substructure.IsElementary
+FirstOrder.Language.ElementarySubstructure
+FirstOrder.Language.Substructure.isElementary_of_exists
+FirstOrder.Language.Substructure.toElementarySubstructure
+FirstOrder.Language.Theory.isSatisfiable_iff_isFinitelySatisfiable
+FirstOrder.Language.exists_elementarySubstructure_card_eq

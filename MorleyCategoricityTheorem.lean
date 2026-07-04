@@ -1,1 +1,1 @@
-import MorleyCategoricityTheorem.Example
+import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding
