@@ -10,6 +10,7 @@
 /blueprint/web/
 /blueprint/src/web.paux
 /blueprint/src/web.bbl
+/blueprint/src/print.pdf
 /blueprint/print/
 ## TeX
 *.aux

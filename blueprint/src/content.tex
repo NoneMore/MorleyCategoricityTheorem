@@ -95,21 +95,71 @@ contained in an elementary submodel \(N\preceq M\) whose cardinality is
 bounded by \(|X|+|L|+\aleph_0\).
 \end{theorem}
 
-\begin{theorem}[Elementary chains and Loewenheim--Skolem constructions]
-\label{thm:loewenheim-skolem-chains}
+\begin{definition}[Elementary chain]
+\label{def:elementary-chain}
 \uses{def:elementary-maps}
-The union of an increasing elementary chain is an elementary extension
-of each member of the chain.  Consequently, repeated
-Loewenheim--Skolem constructions along elementary chains produce models
-of prescribed infinite cardinalities, subject to the usual language-size
-bound.
+An (increasing) elementary chain is a family
+\((M_i)_{i<\alpha}\) of models of \(T\), indexed by an ordinal
+\(\alpha\), whose underlying sets are increasing by inclusion and such
+that \(M_i\preceq M_j\) whenever \(i\le j<\alpha\), with
+\(M_\lambda=\bigcup_{i<\lambda}M_i\) at each limit ordinal
+\(\lambda<\alpha\).
+\end{definition}
+
+\begin{theorem}[Tarski's elementary chain theorem]
+\label{thm:elementary-chain-union}
+\uses{def:elementary-chain}
+Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  Then the
+union \(M = \bigcup_{i<\alpha} M_i\) carries a natural
+\(L\)-structure, and \(M_i\preceq M\) for every \(i<\alpha\).
 \end{theorem}
 
 \begin{proof}
-\uses{thm:tarski-vaught-test,thm:downward-lowenheim-skolem}
-The Tarski--Vaught test proves elementarity at unions.  The cardinal
-control is obtained by applying downward Loewenheim--Skolem at successor
-stages and taking unions at limit stages.
+\uses{thm:tarski-vaught-test}
+An increasing chain of inclusions ensures that the interpretations of
+the symbols of \(L\) cohere, so \(M\) is an \(L\)-structure.  For
+elementarity, let \(\exists v\,\varphi(v,\bar a)\) be a formula over
+parameters \(\bar a\) from \(M_i\) that holds in \(M\).  A witness
+lies in some \(M_j\) with \(j\ge i\); since \(M_i\preceq M_j\),
+the Tarski--Vaught test yields a witness already in \(M_i\).
+\end{proof}
+
+\begin{lemma}[Cardinality of elementary chain unions]
+\label{lem:elementary-chain-cardinality}
+\uses{def:elementary-chain}
+Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  Then
+\(\bigl|\bigcup_{i<\alpha} M_i\bigr|
+\le |\alpha|\cdot\sup_{i<\alpha}|M_i|\).
+In particular, if \(\kappa\) is an infinite cardinal, each
+\(|M_i|\le\kappa\), and \(|\alpha|\le\kappa\), then the union has
+cardinality at most \(\kappa\).
+\end{lemma}
+
+\begin{proof}
+The union is a surjective image of the disjoint union
+\(\biguplus_{i<\alpha} M_i\).
+\end{proof}
+
+\begin{theorem}[Loewenheim--Skolem constructions along elementary chains]
+\label{thm:loewenheim-skolem-constructions}
+\uses{def:elementary-chain}
+Suppose \(T\) has an infinite model, and let
+\(\kappa\ge|L|+\aleph_0\) be an infinite cardinal.  Then \(T\) has a
+model of cardinality \(\kappa\).  More generally, any inductive
+construction that builds an increasing elementary chain with cardinality
+constraints at successor stages yields, in the limit, a model whose
+cardinality is controlled by the chain length and the stage bounds.
+\end{theorem}
+
+\begin{proof}
+\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:elementary-chain-union,lem:elementary-chain-cardinality}
+Compactness gives a model with at least \(\kappa\) many distinct
+elements, by adding constants \(c_i\) for \(i<\kappa\) and axioms
+\(c_i\neq c_j\) for \(i\neq j\).  Applying downward
+Loewenheim--Skolem to a set of \(\kappa\) distinct elements gives an
+elementary submodel of cardinality exactly \(\kappa\).  For the
+inductive version, take elementary unions at limit stages and apply the
+cardinality lemma to bound the resulting union.
 \end{proof}
 
 \begin{proposition}[Large models with no small infinite definable sets]
@@ -121,7 +171,7 @@ cardinality \(\kappa\) such that every parameter-definable subset of
 \end{proposition}
 
 \begin{proof}
-\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:loewenheim-skolem-chains}
+\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:loewenheim-skolem-constructions}
 Build an elementary chain of length \(\kappa\).  At each successor
 stage, for every formula over the current stage defining an infinite
 set, use compactness to add a new realization outside the old set, and
@@ -389,7 +439,7 @@ uncountably many complete types.
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:loewenheim-skolem-chains}
+\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:loewenheim-skolem-constructions}
 Choose uncountably many complete types over a countable parameter set.
 Add constants asking for realizations of \(\aleph_1\) of them; finite
 satisfiability and compactness give a model realizing them.  Enlarge or
@@ -499,7 +549,7 @@ elementary extension of the pair \((N_0,M_0)\) realizes that type on the
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,thm:loewenheim-skolem-chains}
+\uses{thm:compactness,thm:downward-lowenheim-skolem}
 Relativize the type to the predicate \(U\) and add it to the elementary
 diagram of the pair.  Finite satisfiability follows from
 \(M_0\preceq N_0\).  Compactness and Loewenheim--Skolem give a countable
@@ -516,7 +566,7 @@ extension of the pair \((N_0,M_0)\).
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,thm:loewenheim-skolem-chains}
+\uses{thm:compactness,thm:downward-lowenheim-skolem}
 Add the type to the elementary diagram of the pair.  Finite
 satisfiability is witnessed in elementary extensions, and compactness
 plus Loewenheim--Skolem gives a countable elementary pair extension.
@@ -531,7 +581,7 @@ homogeneous and realize the same complete types over \(\emptyset\).
 \end{lemma}
 
 \begin{proof}
-\uses{lem:realize-type-in-submodel-side,lem:realize-type-in-extension-pair,thm:loewenheim-skolem-chains}
+\uses{lem:realize-type-in-submodel-side,lem:realize-type-in-extension-pair,thm:loewenheim-skolem-constructions}
 Build an elementary chain of pairs.  Repeatedly arrange that types
 realized on the larger side are realized on the smaller side, and
 arrange the one-point extension requirements for homogeneity on both
@@ -546,7 +596,7 @@ If \(T\) is in a countable language and \(T\) has a Vaughtian pair, then
 \end{theorem}
 
 \begin{proof}
-\uses{lem:countable-vaughtian-pair,lem:homogeneous-vaughtian-pair,thm:homogeneous-back-and-forth,thm:loewenheim-skolem-chains}
+\uses{lem:countable-vaughtian-pair,lem:homogeneous-vaughtian-pair,thm:homogeneous-back-and-forth,thm:loewenheim-skolem-constructions}
 Start with a countable homogeneous Vaughtian pair \((N,M)\) whose sides
 realize the same types.  Build an elementary chain
 \((N_\alpha)_{\alpha<\omega_1}\) so that each successor pair is
@@ -616,7 +666,7 @@ a \((\kappa,\aleph_0)\)-model.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:proper-extension-realizes-no-new-countable-types,thm:loewenheim-skolem-chains}
+\uses{lem:proper-extension-realizes-no-new-countable-types,thm:loewenheim-skolem-constructions}
 Start from the \((\aleph_1,\aleph_0)\)-model and repeatedly take proper
 elementary extensions realizing no new countable types over the previous
 stage.  The type saying that a new element belongs to the old countable
