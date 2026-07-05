@@ -1,99 +1,85 @@
-# AGENTS.md
+# Repository Instructions
 
-## Blueprint Mathematical Narrative
+## Scope
 
-The blueprint should remain mathematical. It should read like ordinary
-mathematical notes, not like a Lean proof script.
+These instructions apply to the entire repository. More specific instructions
+under a subdirectory take precedence for files in that subtree. In particular,
+follow `blueprint/src/AGENTS.md` when editing the mathematical blueprint.
 
-The document should stay in ordinary mathematical order:
+## Project
 
-1. foundational definitions and conventions;
-2. basic constructions;
-3. intermediate lemmas and propositions;
-4. main theorems.
+This repository formalizes Morley's categoricity theorem in Lean 4 using
+Mathlib and a Leanblueprint dependency graph.
 
-Mention Lean names only when linking a blueprint item to an existing formal
-declaration.
+- Lean source lives under `MorleyCategoricityTheorem/`.
+- `MorleyCategoricityTheorem.lean` is the root import file.
+- Mathematical blueprint source lives under `blueprint/src/`.
+- `lakefile.toml` and `lean-toolchain` define the project configuration and
+  toolchain.
 
-## Leanblueprint Source Layout
+Treat compiled Lean declarations as the authority for formalization status.
+Treat the blueprint as the authority for the intended mathematical statements
+and dependency structure. If they disagree, do not hide the discrepancy by
+changing only a status marker; either align the requested artifacts or report
+the mismatch.
 
-These conventions follow the `leanblueprint` project description:
-https://github.com/PatrickMassot/leanblueprint.
+## Lean Development
 
-The blueprint source lives under `blueprint/src`.
+- Search the current Mathlib dependency for an existing declaration before
+  adding a local replacement.
+- Keep declarations in the narrowest appropriate namespace and follow the
+  naming and argument conventions of nearby Mathlib model-theory code.
+- The project disables automatic implicit variables. Declare variables and
+  assumptions explicitly so changes remain compatible with
+  `autoImplicit = false` and `relaxedAutoImplicit = false`.
+- Add module and declaration documentation for public definitions and
+  non-obvious results. Explain the mathematical role rather than narrating the
+  tactic script.
+- Do not introduce new `sorry` placeholders unless the task explicitly permits
+  scaffolding. Never describe a declaration as fully proved while it or a local
+  dependency still contains `sorry`.
+- Keep imports minimal and acyclic. When adding, removing, or renaming a module,
+  keep `MorleyCategoricityTheorem.lean` synchronized.
+- Do not edit dependency sources under `.lake/packages/` or build artifacts
+  under `.lake/build/`.
 
-- Write the mathematical blueprint in `blueprint/src/content.tex`, or in files
-  imported from `content.tex` if the blueprint is later split.
-- Keep `blueprint/src/web.tex` and `blueprint/src/print.tex` as output-specific
-  preambles. Do not put mathematical blueprint content there.
-- Put macros shared by both output formats in `blueprint/src/macros/common.tex`.
-  Put macros that must differ between HTML and PDF output in
-  `blueprint/src/macros/web.tex` or `blueprint/src/macros/print.tex`.
-- Use theorem-like environments that are collected by the dependency graph:
-  `definition`, `lemma`, `proposition`, `theorem`, and `corollary`, unless the
-  blueprint preamble is deliberately changed.
-- Every central graph node should have a stable LaTeX label, with predictable
-  prefixes such as `def:`, `lem:`, `prop:`, `thm:`, and `cor:`.
+## Blueprint Synchronization
 
-## Draft Blueprint Editing
+- When a Lean declaration implements a blueprint node, keep its fully qualified
+  name and formalization status accurate in the blueprint.
+- Do not add aspirational declaration names to `\lean{...}`. A referenced name
+  must exist in the current project or Mathlib and pass declaration checking.
+- A mathematical change is not complete merely because Lean compiles: check
+  whether the corresponding blueprint statement or dependency also needs to be
+  updated.
 
-When a user asks to revise a draft blueprint, edit only the corresponding file
-under `blueprint/src/drafts/`. Do not also update `blueprint/src/content.tex`
-or other formal blueprint entrypoints unless the user explicitly asks to
-promote or synchronize the draft into the formal blueprint.
+## Generated Files
 
-## Leanblueprint Special Macros
+- Edit blueprint sources, not generated HTML, PDF, or LaTeX auxiliary output.
+- Do not hand-edit `lake-manifest.json`. Update it only through Lake dependency
+  commands when the task calls for a dependency change.
+- Preserve unrelated working-tree changes. Do not remove or overwrite user
+  work in order to obtain a clean build.
 
-Use the leanblueprint macros to record formalization status and graph
-dependencies. They should appear near the start of the surrounding environment,
-after `\label{...}` and before the mathematical prose.
+## Validation
 
-- `\lean{...}` lists the Lean declaration names corresponding to the surrounding
-  definition or statement. Include namespaces. Use comma-separated names when
-  one blueprint item is formalized by more than one Lean declaration. Do not use
-  `\lean` for merely aspirational names that do not yet exist and type-check;
-  `leanblueprint checkdecls` is expected to find every listed declaration.
-- `\leanok` claims the surrounding environment is fully formalized. On a
-  definition or statement, use it only when the Lean declaration exists and
-  matches the blueprint item. Inside a `proof` environment, use it only when the
-  Lean proof of that item contains no local `sorry`. A theorem whose proof uses
-  other project lemmas that still contain `sorry` is still only "proved modulo
-  lemmas" in status reports.
-- `\uses{label-a,label-b}` lists LaTeX labels used by the surrounding
-  environment. In a definition/theorem/lemma environment, list only the labels
-  needed to state that item. In a `proof` environment, list proof-only
-  dependencies. When revising old blueprint text, prefer moving proof-only
-  dependencies into an explicit `proof` environment instead of adding mixed
-  statement/proof dependencies to the theorem statement.
-- `\notready` marks a surrounding environment as not ready to be formalized,
-  typically because more blueprint work is still needed. Do not combine it with
-  `\leanok`; remove it once the item has a stable formalization target.
-- `\discussion{123}` records the GitHub issue number where the surrounding
-  definition or statement is discussed. Use the bare issue number.
-- `\proves{label}` is used inside a `proof` environment when the proof does not
-  immediately follow the statement it proves. Omit it for the usual case where
-  the proof directly follows its statement.
-- `\mathlibok` marks a node whose corresponding result has already been merged
-  into Mathlib. Use it only for results supplied by the current Mathlib
-  dependency, not for declarations local to this repository.
+Run the checks that match the files changed, from the repository root.
 
-For a formalized item with an immediate proof, the preferred shape is:
+| Files changed | Command |
+|---|---|
+| Only `.lean` files, no new imports | `lake build MorleyCategoricityTheorem` |
+| `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
+| Blueprint source, declaration links, or status markers | `leanblueprint all` |
+| Both Lean and blueprint files | all three commands |
 
-```tex
-\begin{theorem}[Descriptive title]
-\label{thm:stable-label}
-\lean{Namespace.declarationName}
-\leanok
-\uses{def:needed-to-state}
-Mathematical statement.
-\end{theorem}
+If a full validation cannot be run, state exactly which command was omitted and
+why.
 
-\begin{proof}
-\leanok
-\uses{lem:proof-dependency}
-Mathematical proof explanation.
-\end{proof}
-```
+## Definition of Done
 
-For a planned item, omit `\lean` and `\leanok`, and use `\notready` until the
-statement is stable enough to formalize.
+- Relevant Lean targets build successfully.
+- No unintended `sorry` placeholders or unrelated changes were introduced.
+- Root imports reflect the current module set.
+- Blueprint labels, dependencies, Lean links, and status markers are accurate.
+- Generated artifacts were changed only by the appropriate generation command.
+- The final report lists the files changed and the validation performed.
