@@ -23,6 +23,52 @@ and dependency structure. If they disagree, do not hide the discrepancy by
 changing only a status marker; either align the requested artifacts or report
 the mismatch.
 
+## Lean 4 Skill
+
+For Lean proofs, theorem statements, formalization, proof repair, diagnostics,
+Mathlib search, or Lake build work, read and follow the host-agnostic Lean 4
+skill at:
+
+`/home/raibunitsu/working_directory/lean4-skills/plugins/lean4/skills/lean4/SKILL.md`
+
+Use its relevant workflow and referenced materials instead of an ad hoc proof
+process. In particular, search Mathlib before proving, inspect live goals and
+diagnostics when Lean LSP tools are available, build incrementally, and use the
+provided `lean4-skills-*` wrappers for supported helper scripts.
+
+The shell environment provides:
+
+- `LEAN4_PLUGIN_ROOT=/home/raibunitsu/working_directory/lean4-skills/plugins/lean4`
+- `LEAN4_SCRIPTS=/home/raibunitsu/working_directory/lean4-skills/plugins/lean4/lib/scripts`
+- `LEAN4_REFS=/home/raibunitsu/working_directory/lean4-skills/plugins/lean4/skills/lean4/references`
+- `$LEAN4_PLUGIN_ROOT/bin` on `PATH`
+
+User instructions and repository-specific rules in this file take precedence
+if the external skill gives conflicting guidance.
+
+### Lean LSP MCP
+
+Use the configured `lean-lsp` MCP server as the primary interactive interface
+for Lean proof development when its tools are available.
+
+- Inspect the exact proof state with `lean_goal` before changing a proof, and
+  use `lean_diagnostic_messages` for per-file errors and warnings after edits.
+- Search local project declarations and Mathlib before proving from scratch.
+  Start with `lean_local_search`, then use `lean_leanfinder`, `lean_leansearch`,
+  or `lean_loogle` according to whether the query is semantic, natural-language,
+  or type-pattern based.
+- Use `lean_hover_info` to inspect inferred types and declaration signatures,
+  and `lean_hammer_premise` when premise selection is the main obstacle.
+- Use `lean_multi_attempt` to compare small tactic alternatives against the
+  live goal. Apply relevant suggestions from `lean_code_actions` rather than
+  manually reproducing compiler suggestions.
+- Reserve `lean_run_code` for isolated experiments. Prefer live-file tools when
+  the question depends on the actual imports, namespace, variables, or local
+  context.
+- Treat MCP diagnostics as fast development feedback, not as the final gate.
+  Complete the applicable file and project validation commands below before
+  reporting Lean work as finished.
+
 ## Lean Development
 
 - Search the current Mathlib dependency for an existing declaration before
