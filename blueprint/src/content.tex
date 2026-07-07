@@ -97,6 +97,8 @@ bounded by \(|X|+|L|+\aleph_0\).
 
 \begin{definition}[Elementary chain]
 \label{def:elementary-chain}
+\lean{FirstOrder.Language.ElementaryChain}
+\leanok
 \uses{def:elementary-maps}
 An (increasing) elementary chain is a family
 \((M_i)_{i<\alpha}\) of models of \(T\), indexed by an ordinal
@@ -108,10 +110,16 @@ that \(M_i\preceq M_j\) whenever \(i\le j<\alpha\), with
 
 \begin{theorem}[Tarski's elementary chain theorem]
 \label{thm:elementary-chain-union}
+\lean{FirstOrder.Language.ElementaryChain.Limit, FirstOrder.Language.ElementaryChain.toLimitElementary, FirstOrder.Language.ElementaryChain.limit_models}
+\leanok
 \uses{def:elementary-chain}
 Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  Then the
 union \(M = \bigcup_{i<\alpha} M_i\) carries a natural
 \(L\)-structure, and \(M_i\preceq M\) for every \(i<\alpha\).
+\emph{Formalization note.}  The Lean formalization represents the union
+as the direct limit of the elementary chain; the canonical maps into this
+limit are elementary, and the limit is a model of any theory modeled by
+some stage.
 \end{theorem}
 
 \begin{proof}

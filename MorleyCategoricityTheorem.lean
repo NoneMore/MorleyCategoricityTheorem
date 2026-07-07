@@ -1,1 +1,2 @@
+import MorleyCategoricityTheorem.ModelTheory.ElementaryChain
 import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding

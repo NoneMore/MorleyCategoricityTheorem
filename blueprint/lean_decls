@@ -10,3 +10,7 @@ FirstOrder.Language.Substructure.isElementary_of_exists
 FirstOrder.Language.Substructure.toElementarySubstructure
 FirstOrder.Language.Theory.isSatisfiable_iff_isFinitelySatisfiable
 FirstOrder.Language.exists_elementarySubstructure_card_eq
+FirstOrder.Language.ElementaryChain
+FirstOrder.Language.ElementaryChain.Limit
+FirstOrder.Language.ElementaryChain.toLimitElementary
+FirstOrder.Language.ElementaryChain.limit_models
