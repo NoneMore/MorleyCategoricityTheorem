@@ -150,26 +150,29 @@ The union is a surjective image of the disjoint union
 \(\biguplus_{i<\alpha} M_i\).
 \end{proof}
 
-\begin{theorem}[Loewenheim--Skolem constructions along elementary chains]
+\begin{theorem}[Elementary-chain construction principle]
 \label{thm:loewenheim-skolem-constructions}
+\lean{FirstOrder.Language.ElementaryChain.toLimitElementary, FirstOrder.Language.ElementaryChain.limit_models, FirstOrder.Language.ElementaryChain.mk_limit_le_mk_index_mul_iSup_mk, FirstOrder.Language.ElementaryChain.mk_limit_le_of_stage_mk_le}
+\leanok
 \uses{def:elementary-chain}
-Suppose \(T\) has an infinite model, and let
-\(\kappa\ge|L|+\aleph_0\) be an infinite cardinal.  Then \(T\) has a
-model of cardinality \(\kappa\).  More generally, any inductive
-construction that builds an increasing elementary chain with cardinality
-constraints at successor stages yields, in the limit, a model whose
-cardinality is controlled by the chain length and the stage bounds.
+Any inductive construction that builds an increasing elementary chain
+of models of \(T\), with cardinality constraints at successor stages,
+yields at limit stages a model of \(T\) whose cardinality is controlled
+by the chain length and the stage bounds.
+\emph{Formalization note.}  The general existence of models in all
+sufficiently large cardinalities is supplied by Mathlib's
+\texttt{FirstOrder.Language.Theory.exists\_model\_card\_eq}; this node
+records only the elementary-chain limit principle used by later
+constructions.
 \end{theorem}
 
 \begin{proof}
-\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:elementary-chain-union,lem:elementary-chain-cardinality}
-Compactness gives a model with at least \(\kappa\) many distinct
-elements, by adding constants \(c_i\) for \(i<\kappa\) and axioms
-\(c_i\neq c_j\) for \(i\neq j\).  Applying downward
-Loewenheim--Skolem to a set of \(\kappa\) distinct elements gives an
-elementary submodel of cardinality exactly \(\kappa\).  For the
-inductive version, take elementary unions at limit stages and apply the
-cardinality lemma to bound the resulting union.
+\leanok
+\uses{thm:elementary-chain-union,lem:elementary-chain-cardinality}
+At a limit stage, take the elementary union of the preceding chain.
+Tarski's elementary chain theorem makes this union a model of \(T\),
+and the cardinality lemma bounds its size by the cardinality of the
+indexing ordinal times the supremum of the stage cardinalities.
 \end{proof}
 
 \begin{proposition}[Large models with no small infinite definable sets]

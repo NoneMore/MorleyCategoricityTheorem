@@ -16,3 +16,7 @@ FirstOrder.Language.ElementaryChain.toLimitElementary
 FirstOrder.Language.ElementaryChain.limit_models
 FirstOrder.Language.ElementaryChain.mk_limit_le_mk_index_mul_iSup_mk
 FirstOrder.Language.ElementaryChain.mk_limit_le_of_stage_mk_le
+FirstOrder.Language.ElementaryChain.toLimitElementary
+FirstOrder.Language.ElementaryChain.limit_models
+FirstOrder.Language.ElementaryChain.mk_limit_le_mk_index_mul_iSup_mk
+FirstOrder.Language.ElementaryChain.mk_limit_le_of_stage_mk_le
