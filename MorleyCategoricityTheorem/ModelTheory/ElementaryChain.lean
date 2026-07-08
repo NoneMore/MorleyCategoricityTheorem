@@ -71,6 +71,32 @@ theorem exists_toLimit (C : ElementaryChain L ι) (z : C.Limit) :
     ∃ (i : ι) (x : C.carrier i), C.toLimit i x = z := by
   simpa [toLimit] using DirectLimit.exists_of z
 
+omit [Nonempty ι] in
+/-- The direct limit has cardinality at most the cardinality of the disjoint union of the
+stages. -/
+theorem mk_limit_le_mk_sigma (C : ElementaryChain L ι) :
+    Cardinal.mk C.Limit ≤ Cardinal.mk (Σ i, C.carrier i) :=
+  Cardinal.mk_quotient_le
+
+omit [Nonempty ι] in
+/-- The cardinality of an elementary-chain direct limit is bounded by the size of the index type
+times the supremum of the stage cardinalities. -/
+theorem mk_limit_le_mk_index_mul_iSup_mk (C : ElementaryChain L ι) :
+    Cardinal.mk C.Limit ≤ Cardinal.mk ι * ⨆ i, Cardinal.mk (C.carrier i) := by
+  apply (mk_limit_le_mk_sigma C).trans
+  rw [Cardinal.mk_sigma]
+  exact Cardinal.sum_le_mk_mul_iSup _
+
+/-- If the index type and all stages have cardinality at most an infinite cardinal `κ`, then so
+does the direct limit. -/
+theorem mk_limit_le_of_stage_mk_le (C : ElementaryChain L ι) {κ : Cardinal}
+    (hκ : Cardinal.aleph0 ≤ κ) (hι : Cardinal.mk ι ≤ κ)
+    (hC : ∀ i, Cardinal.mk (C.carrier i) ≤ κ) :
+    Cardinal.mk C.Limit ≤ κ := by
+  apply (mk_limit_le_mk_index_mul_iSup_mk C).trans
+  apply (mul_le_mul' hι (ciSup_le hC)).trans
+  rw [Cardinal.mul_eq_self hκ]
+
 /-- Realization of bounded formulas is preserved and reflected by a canonical map into the
 direct limit.
 -/
