@@ -77,6 +77,66 @@ an elementary substructure.  The converse is immediate from the
 definition of elementarity.
 \end{theorem}
 
+\begin{definition}[Counting formulas for definable sets]
+\label{def:counting-formulas}
+\lean{FirstOrder.Language.Formula.iExsAtLeast, FirstOrder.Language.Formula.iExsAtMost, FirstOrder.Language.Formula.iExsExactly, FirstOrder.Language.Formula.existsExactlyLeft, FirstOrder.Language.Formula.realize_iExsAtLeast, FirstOrder.Language.Formula.realize_iExsAtMost, FirstOrder.Language.Formula.realize_iExsExactly, FirstOrder.Language.Formula.realize_existsExactlyLeft}
+\leanok
+Let \(\varphi(\bar x,\bar y)\) be a formula, where \(\bar x\) is a
+finite tuple of object variables, and let \(n\in\mathbb N\).  There are
+formulas in the parameter variables \(\bar y\), denoted
+\[
+  (\exists^{\geq n}\bar x)\,\varphi,\qquad
+  (\exists^{\leq n}\bar x)\,\varphi,\qquad
+  (\exists^{=n}\bar x)\,\varphi,
+\]
+asserting respectively that the set defined by
+\(\varphi(\bar x,\bar y)\) has at least \(n\), at most \(n\), or
+exactly \(n\) elements.
+Thus, for every \(L\)-structure \(M\) and parameter tuple \(\bar b\),
+\[
+\begin{aligned}
+M\models(\exists^{\geq n}\bar x)\,\varphi(\bar x,\bar b)
+  &\Longleftrightarrow
+  \bigl|\{\bar a:M\models\varphi(\bar a,\bar b)\}\bigr|\geq n,\\
+M\models(\exists^{\leq n}\bar x)\,\varphi(\bar x,\bar b)
+  &\Longleftrightarrow
+  \bigl|\{\bar a:M\models\varphi(\bar a,\bar b)\}\bigr|\leq n,\\
+M\models(\exists^{=n}\bar x)\,\varphi(\bar x,\bar b)
+  &\Longleftrightarrow
+  \bigl|\{\bar a:M\models\varphi(\bar a,\bar b)\}\bigr|=n.
+\end{aligned}
+\]
+The first formula existentially quantifies \(n\) pairwise distinct
+realizations.  The second is the negation of the existence of
+\(n+1\) pairwise distinct realizations, and the third is the
+conjunction of the first two.
+\end{definition}
+
+\begin{lemma}[Definable-set cardinalities under elementary embeddings]
+\label{lem:elementary-embedding-definable-set-cardinality}
+\lean{FirstOrder.Language.ElementaryEmbedding.realizations_embedding, FirstOrder.Language.ElementaryEmbedding.mk_realizations_le, FirstOrder.Language.ElementaryEmbedding.encard_realizations_eq_coe_iff, FirstOrder.Language.ElementaryEmbedding.infinite_realizations_iff}
+\leanok
+\uses{def:elementary-maps}
+Let \(e:M\to N\) be an elementary embedding, and let
+\[
+  X_M=\{\bar a\in M^n:M\models\varphi(\bar a,\bar b)\},\qquad
+  X_N=\{\bar c\in N^n:N\models\varphi(\bar c,e\bar b)\}.
+\]
+Then coordinatewise application of \(e\) embeds \(X_M\) into \(X_N\),
+so \(|X_M|\leq |X_N|\).  Moreover, \(X_M\) is finite if and only if
+\(X_N\) is finite, and in that case \(|X_M|=|X_N|\).
+\end{lemma}
+
+\begin{proof}
+\leanok
+\uses{def:counting-formulas}
+Elementarity preserves every counting formula with the transported
+parameters.  Hence the two definable sets have the same exact finite
+cardinality whenever either is finite.  The coordinatewise map induced
+by \(e\) gives the cardinal inequality without any finiteness
+assumption.
+\end{proof}
+
 \begin{theorem}[Compactness]
 \label{thm:compactness}
 \lean{FirstOrder.Language.Theory.isSatisfiable_iff_isFinitelySatisfiable}
@@ -175,8 +235,30 @@ and the cardinality lemma bounds its size by the cardinality of the
 indexing ordinal times the supremum of the stage cardinalities.
 \end{proof}
 
+\begin{lemma}[One-step enlargement of parameter-definable sets]
+\label{lem:one-step-full-definable-sets}
+\lean{FirstOrder.Language.Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations}
+\uses{def:elementary-maps}
+Let \(M\models T\) have infinite cardinality \(\kappa\), with
+\(|L|\leq\kappa\).  There are a model \(N\models T\) of cardinality
+\(\kappa\) and an elementary embedding \(e:M\to N\) such that every
+infinite unary set definable with parameters from \(M\) has
+\(\kappa\) realizations in \(N\) after its parameters are transported
+along \(e\).
+\end{lemma}
+
+\begin{proof}
+\uses{thm:compactness,thm:downward-lowenheim-skolem}
+Add the elementary diagram of \(M\).  For every formula over \(M\)
+defining an infinite set, add \(\kappa\) distinct constants satisfying
+that formula.  Every finite fragment is realized because the original
+set is infinite.  Compactness gives an elementary extension, and
+Loewenheim--Skolem gives one of cardinality \(\kappa\).
+\end{proof}
+
 \begin{proposition}[Large models with no small infinite definable sets]
 \label{prop:large-model-no-small-infinite-definable-sets}
+\lean{FirstOrder.Language.Theory.exists_large_model_no_small_infinite_definable_sets}
 Let \(T\) be a theory in a countable language with infinite models, and
 let \(\kappa\geq\aleph_1\).  Then \(T\) has a model \(M\) of
 cardinality \(\kappa\) such that every parameter-definable subset of
@@ -184,13 +266,15 @@ cardinality \(\kappa\) such that every parameter-definable subset of
 \end{proposition}
 
 \begin{proof}
-\uses{thm:compactness,thm:downward-lowenheim-skolem,thm:loewenheim-skolem-constructions}
-Build an elementary chain of length \(\kappa\).  At each successor
-stage, for every formula over the current stage defining an infinite
-set, use compactness to add a new realization outside the old set, and
-then use Loewenheim--Skolem to keep the next stage small.  In the union,
-each infinite definable set receives new points cofinally often, hence
-has size \(\kappa\).
+\uses{lem:one-step-full-definable-sets,lem:elementary-embedding-definable-set-cardinality,thm:loewenheim-skolem-constructions}
+Start with a model of cardinality \(\kappa\) and iterate the one-step
+enlargement along a countable elementary chain.  In the limit, the
+finite tuple of parameters defining a unary set comes from some stage.
+If the set is infinite in the limit, elementarity and the counting
+formulas show that it was already infinite at that stage.  At the next
+stage it therefore has \(\kappa\) realizations, which remain distinct in
+the limit.  The elementary-chain cardinality bound keeps the limit at
+cardinality \(\kappa\).
 \end{proof}
 
 \begin{theorem}[Skolem expansion]
@@ -871,11 +955,13 @@ Suppose \(T\) has no Vaughtian pairs, \(M\models T\), and
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,def:pair-language}
-If no uniform bound existed, use parameters whose fibers are arbitrarily
-large finite sets.  In the pair language, compactness produces a proper
-elementary pair in which the limiting fiber is infinite but has no new
-points outside the smaller model.  This is a Vaughtian pair.
+\uses{thm:compactness,def:pair-language,def:counting-formulas}
+If no uniform bound existed, choose parameters defining arbitrarily
+large finite sets.  Counting formulas express these lower bounds in
+first-order logic.  In the pair language, compactness then produces a
+proper elementary pair in which the limiting definable set is infinite
+but has no new points outside the smaller model.  This is a Vaughtian
+pair.
 \end{proof}
 
 \begin{theorem}[Minimal formulas are strongly minimal without Vaughtian pairs]

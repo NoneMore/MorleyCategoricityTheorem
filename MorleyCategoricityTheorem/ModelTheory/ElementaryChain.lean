@@ -38,9 +38,62 @@ structure ElementaryChain (L : Language.{u, v}) (ι : Type w) [Preorder ι] wher
 
 attribute [instance] ElementaryChain.struc
 
+namespace ElementaryEmbedding
+
+variable {L : Language.{u, v}} {M : ℕ → Type w'} [∀ n, L.Structure (M n)]
+
+/-- Compose a sequence of elementary embeddings along an interval of natural numbers. -/
+noncomputable def natLERec (f : ∀ n, M n ↪ₑ[L] M (n + 1))
+    (m n : ℕ) (h : m ≤ n) : M m ↪ₑ[L] M n :=
+  Nat.leRecOn h (@fun k g ↦ (f k).comp g) (refl L _)
+
+/-- Iterated composition over a reflexive natural-number interval is the identity. -/
+@[simp]
+theorem natLERec_self (f : ∀ n, M n ↪ₑ[L] M (n + 1)) (n : ℕ) (x : M n) :
+    natLERec f n n le_rfl x = x := by
+  simp [natLERec, Nat.leRecOn]
+
+/-- Iterated composition over one successor step is the supplied elementary embedding. -/
+@[simp]
+theorem natLERec_succ (f : ∀ n, M n ↪ₑ[L] M (n + 1)) (n : ℕ) (x : M n) :
+    natLERec f n (n + 1) (Nat.le_succ n) x = f n x := by
+  simp [natLERec, Nat.leRecOn]
+
+/-- Iterated elementary embeddings compose coherently across adjacent intervals. -/
+theorem natLERec_trans {f : ∀ n, M n ↪ₑ[L] M (n + 1)}
+    {i j k : ℕ} (hij : i ≤ j) (hjk : j ≤ k) (x : M i) :
+    natLERec f j k hjk (natLERec f i j hij x) = natLERec f i k (hij.trans hjk) x := by
+  induction k, hjk using Nat.le_induction with
+  | base =>
+    simp only [natLERec_self]
+  | succ k hjk ih =>
+    simp [natLERec, Nat.leRecOn_succ hjk, Nat.leRecOn_succ (hij.trans hjk)]
+    convert ih
+
+end ElementaryEmbedding
+
 namespace ElementaryChain
 
 variable {L : Language.{u, v}} {ι : Type w} [Preorder ι]
+
+/-- Construct a countable elementary chain by composing elementary embeddings between
+successive stages. -/
+noncomputable def ofNatSucc (M : ℕ → Type w') [∀ n, L.Structure (M n)]
+    (f : ∀ n, M n ↪ₑ[L] M (n + 1)) : ElementaryChain L ℕ where
+  carrier := M
+  map := ElementaryEmbedding.natLERec f
+  map_self := ElementaryEmbedding.natLERec_self f
+  map_map := fun _ _ _ hij hjk x => ElementaryEmbedding.natLERec_trans hij hjk x
+
+/-- The transition map of `ofNatSucc` between successive stages is the supplied elementary
+embedding. -/
+@[simp]
+theorem ofNatSucc_map_succ (M : ℕ → Type w') [∀ n, L.Structure (M n)]
+    (f : ∀ n, M n ↪ₑ[L] M (n + 1)) (n : ℕ) :
+    (ofNatSucc M f).map n (n + 1) (Nat.le_succ n) = f n := by
+  ext x
+  simp [ofNatSucc]
+  exact ElementaryEmbedding.natLERec_succ f n x
 
 /-- The underlying first-order embeddings form a directed system. -/
 instance toEmbeddingDirectedSystem (C : ElementaryChain L ι) :
@@ -134,8 +187,8 @@ noncomputable def toLimitElementary (C : ElementaryChain L ι) (i : ι) :
     simp [Formula.Realize]
     convert C.realize_toLimit φ i v default
 
-/-- A finite tuple from the direct limit can be lifted to a common stage of the chain. -/
-private lemma exists_finite_common_stage (C : ElementaryChain L ι) {n : ℕ}
+/-- A finite tuple indexed by `Fin n` from the direct limit can be lifted to a common stage. -/
+private lemma exists_fin_common_stage (C : ElementaryChain L ι) {n : ℕ}
     (x : Fin n → C.Limit) : ∃ (i : ι) (z : Fin n → C.carrier i), C.toLimit i ∘ z = x := by
   induction n with
   | zero =>
@@ -151,6 +204,15 @@ private lemma exists_finite_common_stage (C : ElementaryChain L ι) {n : ℕ}
     · simpa using hy
     · simpa [Function.comp_apply] using congrFun hz₁ k
 
+/-- A finite family of elements of the direct limit can be lifted to a common stage of the chain. -/
+theorem exists_finite_common_stage (C : ElementaryChain L ι) {α : Type*} [Finite α]
+    (x : α → C.Limit) : ∃ (i : ι) (z : α → C.carrier i), C.toLimit i ∘ z = x := by
+  obtain ⟨n, ⟨e⟩⟩ := Finite.exists_equiv_fin α
+  obtain ⟨i, z, hz⟩ := exists_fin_common_stage C (x ∘ e.symm)
+  refine ⟨i, z ∘ e, ?_⟩
+  ext a
+  simpa [Function.comp_def, e.symm_apply_apply] using congrFun hz (e a)
+
 /-- A compatible cocone of elementary embeddings induces an elementary embedding from the direct
 limit.  This is the elementary version of `Language.DirectLimit.lift`. -/
 noncomputable def liftElementary (C : ElementaryChain L ι) {P : Type*} [L.Structure P]
@@ -164,7 +226,7 @@ noncomputable def liftElementary (C : ElementaryChain L ι) {P : Type*} [L.Struc
   { toFun := F
     map_formula' := by
       intro n φ x
-      obtain ⟨i, z, hz⟩ := exists_finite_common_stage C x
+      obtain ⟨i, z, hz⟩ := exists_fin_common_stage C x
       have hF_lift : ∀ a : C.carrier i, F (C.toLimit i a) = g i a := by
         intro a
         simp [F, toLimit]
