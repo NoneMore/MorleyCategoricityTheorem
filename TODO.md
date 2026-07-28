@@ -1,252 +1,374 @@
-# TODO
+# TODO: Refactor the One-Step Full Unary Realization Construction
 
-## Finite Cardinality of Formula Fibers under Elementary Embeddings
+## Goal
 
-### Intended abstraction
+Refactor the proof of
+`Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations` in
+`MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean` so that its structure matches the
+model-theoretic argument:
 
-Treat exact finite realization count as a formula constructor, not merely as a meta-level
-predicate. The general object is the fiber of a formula
+1. collect the unary formulas over the base model with infinite realization sets;
+2. regard each formula as a singleton partial type and form indexed, pairwise-distinct copies;
+3. prove the resulting formula set consistent by finite realizability and compactness;
+4. use downward Löwenheim--Skolem to obtain a model of cardinality `κ`;
+5. decode the realizing tuple into cardinality bounds for the original parameter-definable sets.
 
-```lean
-φ : L.Formula (β ⊕ α)
-```
+The current proof implements all five steps correctly, but exposes the set-theoretic encoding of
+the auxiliary theory throughout a single long theorem. The refactor should introduce a reusable
+partial-type construction rather than merely move the existing local `have` blocks into
+parameter-heavy private lemmas.
 
-over a fixed parameter tuple `v : β → M`. Its realizations are the `α`-tuples
+## Dependencies and abstraction boundary
 
-```lean
-{x : α → M | φ.Realize (Sum.elim v x)}.
-```
+Coordinate this work with two independent interfaces:
 
-Require `[Finite α]`, since the construction must quantify an entire `α`-tuple. Do not require
-`[Finite β]`: the `β`-variables remain free. Put the free variables on the left and the variables
-to be quantified on the right so that the API agrees with Mathlib's `Formula.iExs` and
-`Formula.iExsUnique` conventions.
+- `PLAN.md` introduces `Formula.realizationSet` as the canonical semantic representation of a
+  formula fiber.
+- [mathlib4 PR #36719](https://github.com/leanprover-community/mathlib4/pull/36719), or its eventual
+  successor, introduces `Theory.withFormulaSet`, `Theory.IsConsistentWith`, `Theory.PartialType`,
+  `partialType_iff_finitelyRealizable`, and
+  `partialType_completeTheory_iff_finitelyRealizable`.
 
-Implement three constructors in `FirstOrder.Language.Formula`:
+Do not build a parallel compactness API specialized to unary formulas. The primary syntactic
+object should be a set of formulas in a common variable type. Its associated theory should be
+obtained with `Theory.withFormulaSet`; the existing local sentence sets `T₂` and `T₃` should
+disappear behind that interface.
 
-```lean
-noncomputable def iExsAtLeast (α : Type*) [Finite α]
-    (n : ℕ) (φ : L.Formula (β ⊕ α)) : L.Formula β
+The partial-type API is not present in the repository's current Mathlib dependency. Work that only
+depends on `Formula.realizationSet`, parameter binding, or cardinal estimates can proceed
+independently. Do not copy the full unmerged partial-type development into this repository merely
+to unblock this refactor. If a temporary local bridge is unavoidable, keep it small and give it a
+statement that can later be replaced directly by the upstream API.
 
-noncomputable def iExsAtMost (α : Type*) [Finite α]
-    (n : ℕ) (φ : L.Formula (β ⊕ α)) : L.Formula β
+## Named family of infinite unary formulas
 
-noncomputable def iExsExactly (α : Type*) [Finite α]
-    (n : ℕ) (φ : L.Formula (β ⊕ α)) : L.Formula β
-```
-
-The first constructor is primitive. Define the other two by
-
-```lean
-φ.iExsAtMost α n  := (φ.iExsAtLeast α (n + 1)).not
-φ.iExsExactly α n := φ.iExsAtLeast α n ⊓ φ.iExsAtMost α n
-```
-
-This is simpler than directly asserting that `n` witnesses exhaust the realization set. It also
-separates the reusable lower- and upper-bound formulas needed in later arguments.
-
-### Construction of `iExsAtLeast`
-
-Use the finite variable block
+Introduce a named type for unary formulas with a complete tuple of parameters indexed by the base
+model. Keep the explicit-parameter representation canonical and apply `bindParameters` only when
+constructing a partial type over the elementary diagram:
 
 ```lean
-Fin n × α
+abbrev InfiniteUnaryFormula
+    (L : Language) (M : Type*) [L.Structure M] :=
+  {φ : L.Formula (M ⊕ Fin 1) //
+    Set.Infinite (φ.realizationSet id)}
 ```
 
-to encode `n` candidate `α`-tuples. An assignment `w : Fin n × α → M` represents the tuple
-`fun a ↦ w (i, a)` at index `i : Fin n`.
+The equivalence `BoundedFormula.constantsVarsEquiv` identifies this type of formula with a
+constants-language formula in `L[[M]].Formula (Fin 1)`. Using the explicit representation here
+avoids introducing a second constants-language notion of realization set.
 
-For each `i`, relabel `φ` so that its `α`-variables refer to the `i`th candidate:
+Do not make the subtype estimate the foundational cardinal theorem. First add or upstream a bound
+for the complete formula space:
 
 ```lean
-private def realizeAt (φ : L.Formula (β ⊕ α)) (i : Fin n) :
-    L.Formula (β ⊕ (Fin n × α)) :=
-  φ.relabel (Sum.map id (fun a ↦ (i, a)))
+theorem Formula.card_le :
+    #(L.Formula α) ≤
+      max ℵ₀ (Cardinal.lift #α + Cardinal.lift L.card)
 ```
 
-Express inequality of the candidates at `i` and `j` by saying that not every coordinate is equal:
+The current proof already derives this from `BoundedFormula.card_le` by embedding `Formula α` into
+`Σ n, BoundedFormula α n`. The subtype bound should then be a short corollary:
 
 ```lean
-private noncomputable def tupleNe (i j : Fin n) :
-    L.Formula (β ⊕ (Fin n × α)) :=
-  (Formula.iInf fun a : α ↦
-    (Term.var (Sum.inr (i, a))).equal
-      (Term.var (Sum.inr (j, a)))).not
+lemma mk_infiniteUnaryFormula_le
+    (hM : #M = κ) (hκ : ℵ₀ ≤ κ)
+    (hL : Cardinal.lift L.card ≤ Cardinal.lift κ) :
+    #(InfiniteUnaryFormula L M) ≤ Cardinal.lift κ
 ```
 
-Index the distinctness conjunction by unequal pairs, for example
+Adjust universe lifts in the actual declarations without weakening them.
+
+## Parameter binding and semantic transport
+
+Package the repeated conversion between formulas with explicit parameters and formulas in a
+language expanded by constants. Define the conversion for arbitrary tuple type `α`, not only
+`Fin 1`:
 
 ```lean
-private abbrev NePair (n : ℕ) :=
-  {ij : Fin n × Fin n // ij.1 ≠ ij.2}
+def Formula.bindParameters
+    (ψ : L.Formula (β ⊕ α)) (b : β → M) :
+    L[[M]].Formula α :=
+  BoundedFormula.constantsVarsEquiv.symm
+    (ψ.relabel (Sum.map b id))
 ```
 
-and form a body asserting that every candidate realizes `φ` and all candidates are distinct:
+Provide semantic lemmas expressing:
 
 ```lean
-let witnessesRealize := Formula.iInf fun i : Fin n ↦ realizeAt φ i
-let witnessesDistinct := Formula.iInf fun ij : NePair n ↦ tupleNe ij.1.1 ij.1.2
-let body := witnessesRealize ⊓ witnessesDistinct
+(ψ.bindParameters b).Realize x ↔
+  ψ.Realize (Sum.elim b x)
 ```
 
-Finally quantify the complete witness block:
+and the corresponding statement after transporting the parameters along a map or elementary
+embedding. These lemmas should replace the manual `constantsVarsEquiv`, `relabel`, and `Sum.elim`
+simplifications at both ends of the one-step theorem.
+
+`bindParameters` is a syntax adapter, not a competing semantic representation. State its main
+specification as an equality or equivalence involving `ψ.realizationSet b`, for example:
 
 ```lean
-body.iExs (Fin n × α)
+theorem Formula.realizationSet_bindParameters :
+    {x | (ψ.bindParameters b).Realize x} = ψ.realizationSet b
 ```
 
-The displayed code is an implementation blueprint. Adjust explicit type annotations and namespace
-qualification as required during elaboration, while preserving this variable layout.
-
-The use of `tupleNe` correctly handles an empty `α`: there is only one empty tuple, because the
-conjunction of coordinate equalities is vacuously true and its negation is false.
-
-### Semantic specifications
-
-Prove semantics in two layers. First normalize the formula into an injective enumeration of
-solutions:
+Once partial types are available, add the corresponding semantic object:
 
 ```lean
-theorem realize_iExsAtLeast_iff_exists_injective
-    [Finite α] [L.Structure M] (φ : L.Formula (β ⊕ α)) (v : β → M) :
-    (φ.iExsAtLeast α n).Realize v ↔
-      ∃ f : Fin n → (α → M),
-        (∀ i, φ.Realize (Sum.elim v (f i))) ∧ Function.Injective f
+def Theory.PartialType.realizationSet
+    (p : T.PartialType α) (M : Type*) [L.Structure M] :
+    Set (α → M) :=
+  {v | p.RealizedBy v}
 ```
 
-The proof should unfold only the local constructors and simplify with:
+This should be characterized as the intersection of the realization sets of formulas in `p`.
+Downstream minimality arguments should use named realization sets and should not unfold
+`constantsVarsEquiv`, `Formula.equivSentence`, or temporary constants structures.
 
-- `Formula.realize_iExs`;
-- `Formula.realize_iInf`;
-- `Formula.realize_inf` and `Formula.realize_not`;
-- `Formula.realize_relabel`;
-- `Formula.realize_equal` and `Term.realize_var`;
-- `Function.injective_iff_pairwise_ne` or an equivalent pairwise formulation.
+## Compatibility with inequality constraints
 
-Then isolate the set-cardinality reasoning in a pure helper relating an injection from `Fin n` to a
-set with its extended cardinality. Use it to expose the public semantic API:
+For a variable type `C`, a formula set `S : Set (L.Formula C)`, and a relation
+`R : C → C → Prop`, define the disequality formula
 
 ```lean
-@[simp]
-theorem realize_iExsAtLeast [L.Structure M]
-    [Finite α] (φ : L.Formula (β ⊕ α)) (v : β → M) :
-    (φ.iExsAtLeast α n).Realize v ↔
-      (n : ℕ∞) ≤ {x : α → M | φ.Realize (Sum.elim v x)}.encard
-
-@[simp]
-theorem realize_iExsAtMost [L.Structure M]
-    [Finite α] (φ : L.Formula (β ⊕ α)) (v : β → M) :
-    (φ.iExsAtMost α n).Realize v ↔
-      {x : α → M | φ.Realize (Sum.elim v x)}.encard ≤ n
-
-@[simp]
-theorem realize_iExsExactly [L.Structure M]
-    [Finite α] (φ : L.Formula (β ⊕ α)) (v : β → M) :
-    (φ.iExsExactly α n).Realize v ↔
-      {x : α → M | φ.Realize (Sum.elim v x)}.encard = n
+def Formula.neVar (c d : C) : L.Formula C :=
+  ((Term.var c).equal (Term.var d)).not
 ```
 
-`Set.encard` is appropriate here because the right-hand sides compare with a natural number. In
-particular, an infinite realization set has `encard = ⊤`, so it satisfies every `iExsAtLeast` but
-no `iExsExactly`.
-
-Record the following semantic boundary cases after the main theorem, either as lemmas or as
-documented consequences:
-
-- `iExsExactly α 0` means that `φ` has no `α`-tuple realization;
-- `iExsExactly α 1` is semantically equivalent to `iExsUnique α`;
-- `iExsAtMost α n` rules out `n + 1` pairwise distinct realizations;
-- the definitions work when `α` or `Fin n` is empty.
-
-### Wrapper for variables ordered as `α ⊕ β`
-
-When a caller naturally supplies the solution variables first, provide a small wrapper using
-`Sum.swap` rather than duplicating the construction:
+and the formula set expressing the requested inequalities:
 
 ```lean
-noncomputable def existsExactlyLeft [Finite α]
-    (φ : L.Formula (α ⊕ β)) (n : ℕ) : L.Formula β :=
-  (φ.relabel Sum.swap).iExsExactly α n
+def Formula.apartFormulaSet (R : C → C → Prop) :
+    Set (L.Formula C) :=
+  {ψ | ∃ c d, R c d ∧ ψ = Formula.neVar c d}
 ```
 
-Its semantic corollary should have the caller-facing orientation
+The statement that `S` is compatible with these inequalities is simply
 
 ```lean
-(φ.existsExactlyLeft n).Realize v ↔
-  {x : α → M | φ.Realize (Sum.elim x v)}.encard = n.
+T.IsConsistentWith (S ∪ Formula.apartFormulaSet R)
 ```
 
-The core API should nevertheless remain `β ⊕ α`, matching Mathlib's indexed quantifiers.
-
-### Preservation by elementary embeddings
-
-Once `realize_iExsExactly` is available, finite realization counts are first-order properties.
-Apply `ElementaryEmbedding.map_formula` to `φ.iExsExactly α n`, then rewrite both sides with its
-semantic theorem. The explicit-parameter result should be:
+By `partialType_iff_finitelyRealizable`, the exact criterion is:
 
 ```lean
-theorem ElementaryEmbedding.encard_realizations_eq_coe_iff
-    [Finite α] (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ α)) (b : β → M) (n : ℕ) :
-    {x : α → N | φ.Realize (Sum.elim (e ∘ b) x)}.encard = n ↔
-      {x : α → M | φ.Realize (Sum.elim b x)}.encard = n
+∀ s ⊆fin S, ∀ r ⊆fin R,
+  ∃ M : T.ModelType, ∃ v : C → M,
+    (∀ φ ∈ s, φ.Realize v) ∧
+    (∀ (c, d) ∈ r, v c ≠ v d)
 ```
 
-For formulas whose parameters are encoded as constants, do not add a parallel family of
-constants-language lemmas. Convert `φ : L[[A]].Formula α` with
-`BoundedFormula.constantsVarsEquiv` and apply the explicit-parameter result with parameter type
-`A` and parameter map `(↑) : A → M`. At the definability boundary,
-`Set.definable_iff_exists_formula_sum` packages exactly this conversion.
-
-Finally derive the interface required by the elementary-chain proof:
+This general relation need not be made public unless another caller needs it. It records the
+correct abstraction boundary: compatibility with distinctness is finite joint realizability, not
+merely infinitude of each formula considered separately. For the current proof,
 
 ```lean
-Set.Infinite targetRealizations ↔ Set.Infinite sourceRealizations
+R (a, i) (b, j) ↔ a = b ∧ i ≠ j
 ```
 
-For the forward implication, argue contrapositively: a finite source set has some exact natural
-cardinality, which is preserved in the target. For the reverse implication, use the realization
-subtype embedding from the Cardinal monotonicity section below. This rules out a realization set
-that is finite at one stage but infinite in the elementary-chain limit.
+so distinctness is required only within a formula fiber.
 
-### Generalization boundary
+## Pairwise-distinct copies of a partial type
 
-The `β ⊕ α` constructor already handles arbitrary finite tuple arity and arbitrary parameter
-tuples, so it is more general than the unary application needed in `DefinableSet.lean`. A further
-indexed variant may replace `Fin n` by an arbitrary finite type `ι` to express at least
-`ENat.card ι` realizations. Keep the natural-number API primary, since `atMost` and `exactly` use
-the successor `n + 1`.
-
-Do not attempt to drop `[Finite α]`. Quantifying a complete assignment `α → M` for infinite `α`
-is not expressible by a single ordinary first-order formula.
-
-## Cardinal Monotonicity under Elementary Extensions
-
-Mathlib currently has no dedicated lemma stating that the cardinality of a parameter-definable set
-cannot decrease under an elementary embedding. Add a local lemma asserting that if
-`e : M ↪ₑ[L] N`, then the realization subtype of a formula in `M` embeds into the corresponding
-realization subtype in `N`, with every parameter transported along `e`.
-
-The result must compare `Cardinal.mk`, not `Set.encard`:
+The reusable construction should work for a partial type in an arbitrary finite tuple type:
 
 ```lean
-#({x : α → M | φ.Realize (Sum.elim b x)}) ≤
-  #({x : α → N | φ.Realize (Sum.elim (e ∘ b) x)})
+def Theory.PartialType.distinctCopiesFormulaSet
+    [Finite α] (p : T.PartialType α) (I : Type*) :
+    Set (L.Formula (I × α))
 ```
 
-This distinction is essential: `Set.encard` has value `⊤` for every infinite set, so an
-`encard` inequality cannot transfer a lower bound by an arbitrary infinite cardinal `κ`. The
-final theorem needs the displayed `Cardinal.mk` inequality to transport `κ` realizations from a
-successor stage into the elementary-chain limit.
+For every `i : I` and `φ ∈ p`, include `φ` relabeled into the `i`th variable block. For `i ≠ j`,
+include the formula saying that the `i`th and `j`th `α`-tuples differ in at least one coordinate.
+The tuple-disequality formula should reuse the construction underlying
+`Formula.iExsAtLeast`. Requiring `[Finite α]` is essential because tuple inequality is a finite
+first-order disjunction.
 
-The intended proof should combine the following existing APIs:
+For a family
 
-- `ElementaryEmbedding.map_formula`, which preserves and reflects formula realization;
-- a bundled embedding between the two realization subtypes, whose underlying function sends
-  `⟨x, hx⟩` to `⟨e ∘ x, ...⟩`; use `e.map_formula` to prove realization and `e.injective`
-  pointwise to prove injectivity;
-- `Cardinal.mk_le_of_injective`, applied to that subtype embedding.
+```lean
+p : A → T.PartialType α
+```
 
-State the explicit-parameter version for `φ : L.Formula (β ⊕ α)` without a finiteness assumption
-on `α`; pointwise transport of a free tuple does not require first-order quantification over all of
-`α`. Keep `Set.encard` only for the finite exact-`n` specification in the preceding section; do not
-use it for infinite-cardinal monotonicity.
+provide a family variant with variables `A × I × α`, imposing inequalities only between copies
+with the same `a`.
+
+Use a neutral name such as
+
+```lean
+def Theory.PartialType.HasArbitrarilyManyRealizations
+    [Finite α] (p : T.PartialType α) : Prop := ...
+```
+
+until an algebraic-type API fixes the intended terminology. Its finite-fragment formulation should
+say that every finite subset of `p` has `n` pairwise-distinct joint realizations for every `n`.
+Express this with `Formula.iInf` and `Formula.iExsAtLeast` where convenient.
+
+For an arbitrary, possibly incomplete theory, a family of such partial types requires a joint
+finite-realizability condition in one model of `T`; separate consistency of each fiber is not
+enough. For a complete theory, independent fibers factor, and it is enough to check that each
+partial type has arbitrarily many realizations. In the current application the theory is the
+complete theory of the base model in the constants language, and that base model witnesses all
+finite requirements simultaneously.
+
+The main compactness theorem for this layer should have the shape:
+
+```lean
+theorem isConsistentWith_distinctCopiesFormulaSet_iff :
+    T.IsConsistentWith (p.distinctCopiesFormulaSet I) ↔
+      every finite fragment of p has enough pairwise-distinct joint realizations
+```
+
+When `I` is infinite, "enough" is equivalent to arbitrary finite multiplicity. No cardinality
+assumption on `I` is needed for the forward construction beyond the sizes of its finite subsets.
+
+## Models of distinct copies and cardinal lower bounds
+
+A model of the theory associated to `p.distinctCopiesFormulaSet I` canonically supplies a map from
+`I` into the realization set of `p` in the reduct to `L`. Package the semantic elimination in two
+stages. The following signatures suppress the explicit reduct operation:
+
+```lean
+def PartialType.distinctCopiesEmbedding
+    (p : T.PartialType α)
+    (N : (T.withFormulaSet (p.distinctCopiesFormulaSet I)).ModelType) :
+    I ↪ p.realizationSet (reduct of N to L)
+
+theorem PartialType.mk_le_mk_realizationSet_distinctCopies :
+    #I ≤ #(p.realizationSet N)
+```
+
+For a family `p : A → T.PartialType α`, provide the corresponding embedding for each `a : A`.
+These declarations should replace the manual construction of `f : I → rsN`, the extraction of
+injectivity from `distinctConstantsTheory`, and the direct use of `Cardinal.le_def` in the current
+proof.
+
+## General small-family extension theorem
+
+The central reusable model-theoretic theorem should accept an arbitrary small family of formulas,
+rather than immediately taking all infinite unary formulas. A schematic unary version is:
+
+```lean
+theorem exists_elementaryExtension_card_eq_realizing_family
+    (M : ModelType T)
+    (φ : A → L.Formula (M ⊕ Fin 1))
+    (hM : #M = κ)
+    (hA : #A ≤ Cardinal.lift κ)
+    (hφ : ∀ a, Set.Infinite ((φ a).realizationSet id))
+    (hκ : ℵ₀ ≤ κ)
+    (hL : Cardinal.lift L.card ≤ Cardinal.lift κ) :
+    ∃ (N : ModelType T) (e : M ↪ₑ[L] N),
+      #N = κ ∧
+      ∀ a, #((φ a).realizationSet e) = κ
+```
+
+Prefer a version for arbitrary finite tuple type `α` if it does not substantially complicate the
+language-map interface. Internally, apply `bindParameters` to obtain formulas in
+`L[[M]].Formula α` before forming singleton partial types over `L.elementaryDiagram M`. The theorem
+should assume `#A ≤ κ`; it should not know that `A` is a subtype of the complete formula space.
+
+The existing
+`exists_elementaryExtension_card_eq_with_full_unary_realizations` should become the corollary
+obtained by taking
+
+```lean
+A := InfiniteUnaryFormula L M
+```
+
+and applying `mk_infiniteUnaryFormula_le`.
+
+## Expanded-language cardinal estimates
+
+Mathlib already provides the exact equality
+
+```lean
+Language.card_withConstants :
+  L[[C]].card = Cardinal.lift L.card + Cardinal.lift #C
+```
+
+Extract the standard infinite-cardinal consequence:
+
+```lean
+theorem Language.card_withConstants_le
+    (hκ : ℵ₀ ≤ κ)
+    (hL : Cardinal.lift L.card ≤ Cardinal.lift κ)
+    (hC : Cardinal.lift #C ≤ Cardinal.lift κ) :
+    Cardinal.lift L[[C]].card ≤ Cardinal.lift κ
+```
+
+Together with `Formula.card_le`, this should reduce the current `hFcard` and `hL'card` blocks to
+short applications. Keep all universe lifts explicit in the final declarations.
+
+## Main theorem after refactoring
+
+Keep the existing public statement and blueprint link unchanged. Its proof should read at the
+level of the blueprint:
+
+1. bind explicit parameters into constants-language formulas through `Formula.bindParameters`;
+2. define `F := InfiniteUnaryFormula L M` and derive `#F ≤ κ` from `Formula.card_le`;
+3. apply the small-family extension theorem with `I := κ.out`;
+4. recover `M ↪ₑ[L] N` from the elementary diagram;
+5. obtain `κ ≤ #realizationSet` from the distinct-copies embedding;
+6. combine it with `#realizationSet ≤ #N = κ`;
+7. use the realization-set parameter-binding theorem to return to the original explicit-parameter
+   formula.
+
+The elementary-diagram and downward Löwenheim--Skolem orchestration may remain inside the
+small-family theorem. Do not extract another layer until a second caller demonstrates a useful
+more general interface.
+
+## Non-goals
+
+- Do not change the statement or blueprint link of
+  `exists_elementaryExtension_card_eq_with_full_unary_realizations`.
+- Do not make `indexedUnaryRealizationTheory` the primary public abstraction. If retained at all,
+  it should be a thin abbreviation for `T.withFormulaSet` applied to a formula-set construction.
+- Do not expose `T₁`, `T₂`, `T₃`, `Γ`, `Sigma_eq_iUnion`, or raw
+  `distinctConstantsTheory` manipulations to callers.
+- Do not duplicate the partial-type and finite-realizability API from mathlib4 PR #36719.
+- Do not create helpers whose signatures reproduce the full local `let` context.
+- Do not replace `Cardinal.mk` with `Set.encard`; the theorem needs an arbitrary infinite
+  cardinal lower bound.
+- Do not call a partial type "nonalgebraic" until the project fixes the intended relation with
+  complete and algebraic types.
+- Do not introduce new `sorry` placeholders.
+
+## Implementation order
+
+1. Implement `Formula.realizationSet` and the semantic adapters from `PLAN.md`.
+2. Implement `Formula.bindParameters` and state its specifications through realization sets.
+3. Add `Formula.card_le` and `Language.card_withConstants_le`; derive
+   `mk_infiniteUnaryFormula_le`.
+4. After the upstream partial-type API is available, add `PartialType.realizationSet`.
+5. Define `PartialType.distinctCopiesFormulaSet` and its family variant, reusing `iExsAtLeast`
+   tuple inequality.
+6. Prove the finite-realizability characterization and the realization-set embedding supplied by a
+   model of distinct copies.
+7. Prove `exists_elementaryExtension_card_eq_realizing_family`.
+8. Rewrite `exists_elementaryExtension_card_eq_with_full_unary_realizations` as its all-formulas
+   corollary.
+9. Remove the local `T₂`, `T₃`, `Γ`, and `Sigma_eq_iUnion` machinery only after the replacement
+   proof compiles.
+
+## Validation
+
+After each extraction, inspect the affected declarations with Lean LSP diagnostics. Since the
+refactor changes Lean declarations without adding imports, the final gate is:
+
+```bash
+lake build MorleyCategoricityTheorem
+```
+
+If modules or imports are added or reorganized, also run:
+
+```bash
+lake exe mk_all --check
+```
+
+If the blueprint statement, dependencies, declaration link, or status is changed, run:
+
+```bash
+leanblueprint all
+```
+
+Confirm that the refactored scope contains no new `sorry`, and that the blueprint continues to
+describe the compiled declaration accurately.

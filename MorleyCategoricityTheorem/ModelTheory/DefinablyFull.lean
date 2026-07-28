@@ -132,9 +132,8 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
     let sφ : Finset F := s.image Prod.fst
     let sφi (φ : F) : Finset I := ({v : F × I | v ∈ s ∧ v.1 = φ}.image Prod.snd).toFinset
     have hsφ : ∀ v ∈ s, v.1 ∈ sφ := by
-      simp [sφ]
-      intro φ i h
-      exists i
+      intro v hv
+      exact Finset.mem_image.mpr ⟨v, hv, rfl⟩
     have hsφi : ∀ v ∈ s, v.2 ∈ sφi v.1 := by simp [sφi]
     let rs : F → Set M := fun φ => {x | (φ.1).Realize fun _ ↦ x}
     have hrs : ∀ φ ∈ sφ, (rs φ).Infinite := fun φ _ => φ.2
@@ -150,11 +149,8 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
         (hi : (φ,i) ∈ s) (hj : (φ,j) ∈ s)
         (hval : valOn ⟨(φ,i),hi⟩ = valOn ⟨(φ,j),hj⟩) : i = j := by
       simp [valOn] at hval
-      apply Subtype.ext at hval
-      apply (hrs φ (hsφ (φ, i) hi)).natEmbedding.injective  at hval
-      apply Fin.ext at hval
-      apply (sφi φ).equivFin.injective at hval
-      simpa using hval
+      exact Subtype.ext_iff.mp ((sφi φ).equivFin.injective
+        (Fin.ext ((hrs φ (hsφ (φ, i) hi)).natEmbedding.injective (Subtype.ext hval))))
     letI : Inhabited M := Classical.inhabited_of_nonempty inferInstance
     let val : F × I → M := Function.extend ((↑) : s → F × I) valOn default
     have hval (v : s) : val v = valOn v := by simp [val]
@@ -168,8 +164,7 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
       simp only [subst, Sentence.Realize, Formula.Realize, BoundedFormula.realize_subst, Term.realize_constants, hcon, LHom.onFormula]
       simp only [Formula.Realize] at hrealize
       rw [LHom.realize_onBoundedFormula fL]
-      convert hrealize
-      simpa using hval ⟨v,hv⟩
+      simpa only [← hval] using hrealize
     have hT₃ : M ⊨ T₃ s := by
       simp [T₃, distinctConstantsTheory]
       intro ψ φ i j hi hj hij rfl
@@ -204,68 +199,46 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
       simp [T₂, ← image_iUnion]
       suffices h : ⋃ (s : Finset (F × I)), s = (univ : Set (F × I)) by
         simp only [image_univ,h]
-      apply Set.eq_univ_of_forall
-      intro x; exists {x}; simp
+      exact Set.eq_univ_of_forall fun x ↦ Set.mem_iUnion.mpr ⟨{x}, by simp⟩
     have hT₃ : T₃ Set.univ = ⋃ (s : Finset (F × I)), T₃ s := by
       simp [T₃]
-      apply subset_antisymm
-      · apply iUnion_subset
-        intro φ
-        rw [distinctConstantsTheory_eq_iUnion]
-        apply iUnion_subset
-        intro s
-        refine subset_iUnion₂_of_subset (s.map (Function.Embedding.subtype fun p : F × I => p.1 = φ)) φ ?_
-        have : ↑(s.map (Function.Embedding.subtype fun p : F × I => p.1 = φ)) ∩ {p : F × I | p.1 = φ} =
-          ↑(s.map (Function.Embedding.subtype fun p : F × I => p.1 = φ)) := by
-          refine inter_eq_left.mpr ?_
-          simp
-          intro x hx
-          refine mem_setOf.mpr x.2
-        rw [this]
+      refine subset_antisymm ?_ (iUnion_subset fun s ↦
+        iUnion_mono fun φ ↦ distinctConstantsTheory_mono inter_subset_right)
+      refine iUnion_subset fun φ ↦ ?_
+      rw [distinctConstantsTheory_eq_iUnion]
+      refine iUnion_subset fun s ↦ ?_
+      refine subset_iUnion₂_of_subset
+        (s.map (Function.Embedding.subtype fun p : F × I => p.1 = φ)) φ ?_
+      rw [inter_eq_left.mpr (by
         simp
-      · exact iUnion_subset fun s ↦
-          iUnion_mono fun φ ↦ distinctConstantsTheory_mono inter_subset_right
+        exact fun x _ ↦ x.2)]
+      simp
     simp [hT₂,hT₃]
-  have hSigma : Sigma.IsSatisfiable := by
-    rw [Sigma_eq_iUnion]
-    exact (isSatisfiable_directed_union_iff hΓ').mpr hΓ
-  obtain ⟨P⟩ := hSigma
-  haveI hPT₁ : P ⊨ T₁ :=
-    Theory.Model.mono (P.is_model) (fun _ hψ => (Or.inl (Or.inl hψ)))
+  obtain ⟨P⟩ := Sigma_eq_iUnion ▸ (isSatisfiable_directed_union_iff hΓ').mpr hΓ
   letI : L[[M]].Structure P := fL.reduct P
   letI : L.Structure P := (L.lhomWithConstants M).reduct P
-  haveI hPdiag : P ⊨ L.elementaryDiagram M := by
-    change P ⊨ fL.onTheory (L.elementaryDiagram M) at hPT₁
-    exact (LHom.onTheory_model fL _).mp hPT₁
-  let eP : M ↪ₑ[L] P :=
-    ElementaryEmbedding.ofModelsElementaryDiagram L M P
+  haveI hPdiag : P ⊨ L.elementaryDiagram M := (LHom.onTheory_model fL _).mp <|
+    Theory.Model.mono P.is_model fun _ hψ ↦ Or.inl (Or.inl hψ)
+  let eP : M ↪ₑ[L] P := ElementaryEmbedding.ofModelsElementaryDiagram L M P
   have hPcard :
-      Cardinal.lift.{max u v w} κ ≤ Cardinal.lift.{w} #P := by
-    rw [← hM]
-    refine lift_mk_le'.mpr ⟨eP,eP.injective⟩
+      Cardinal.lift.{max u v w} κ ≤ Cardinal.lift.{w} #P :=
+    hM ▸ lift_mk_le'.mpr ⟨eP, eP.injective⟩
   obtain ⟨N,⟨e'⟩,hNcard⟩ := L'.exists_elementaryEmbedding_card_eq_of_le
     P κ hκ hL'card hPcard
   letI : L[[M]].Structure N := fL.reduct N
   letI : L.Structure N := (L.lhomWithConstants M).reduct N
   haveI hNSigma : N ⊨ Sigma := (e'.theory_model_iff Sigma).mpr (P.is_model)
-  haveI hNT₁ : N ⊨ T₁ := Theory.Model.mono (hNSigma) (fun _ hψ => (Or.inl (Or.inl hψ)))
   haveI hNT₂ : N ⊨ T₂ univ := Theory.Model.mono (hNSigma) (fun _ hψ => (Or.inl (Or.inr hψ)))
   haveI hNT₃ : N ⊨ T₃ univ := Theory.Model.mono (hNSigma) (fun _ hψ => (Or.inr hψ))
-  haveI hNdiag : N ⊨ L.elementaryDiagram M := by
-    change N ⊨ fL.onTheory (L.elementaryDiagram M) at hNT₁
-    exact (LHom.onTheory_model fL _).mp hNT₁
-  let eN : M ↪ₑ[L] N :=
-    ElementaryEmbedding.ofModelsElementaryDiagram L M N
-  haveI hNT : N ⊨ T :=
-    (eN.theory_model_iff T).mp (ModelType.is_model M)
+  haveI hNdiag : N ⊨ L.elementaryDiagram M := (LHom.onTheory_model fL _).mp <|
+    Theory.Model.mono hNSigma fun _ hψ ↦ Or.inl (Or.inl hψ)
+  let eN : M ↪ₑ[L] N := ElementaryEmbedding.ofModelsElementaryDiagram L M N
+  haveI hNT : N ⊨ T := (eN.theory_model_iff T).mp (ModelType.is_model M)
   haveI hNne : Nonempty N := by
     simpa [← Cardinal.mk_ne_zero_iff, hNcard, ← Cardinal.one_le_iff_ne_zero] using one_le_aleph0.trans hκ
-  haveI : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N:= by
-    apply LHom.lhomWithConstantsMap_isExpansionOn_of_eq
-    intro x
-    simp [eN, Language.con]
-  exists (ModelType.of T N), eN
-  refine ⟨by simpa,?_⟩
+  haveI : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N :=
+    LHom.lhomWithConstantsMap_isExpansionOn_of_eq _ fun x ↦ by simp [eN, Language.con]
+  refine ⟨ModelType.of T N, eN, by simpa, ?_⟩
   intro β ψ b hψb
   let φ : L[[M]].Formula (Fin 1) :=
     BoundedFormula.constantsVarsEquiv.symm (ψ.relabel (Sum.map b id))
@@ -275,57 +248,49 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
     convert hψb with v
     simp [φ, Formula.Realize, ← BoundedFormula.realize_constantsVarsEquiv, Formula.relabel]
     congr!
-    funext w
-    cases w <;> rfl
+    ext (_ | _) <;> rfl
   have hφN :
       #({x : N | ((L.lhomWithConstantsMap ⇑eN).onFormula φ).Realize fun _ ↦ x}) = κ := by
-    apply le_antisymm
-    · calc
-        #{x // ((L.lhomWithConstantsMap ⇑eN).onFormula φ).Realize fun _ ↦ x} ≤ #N :=
-          mk_subtype_le _
-        _ = _ := hNcard
-    · let rsN : Set N :=
-        {x | ((L.lhomWithConstantsMap ⇑eN).onFormula φ).Realize fun _ ↦ x}
-      let φ' : F := ⟨φ, hφI⟩
-      rw [← mk_out κ, le_def]
-      change Nonempty (I ↪ rsN)
-      have hφI' : ∀ (i : I), (L[[M]].con (φ', i) : N) ∈ rsN := by
-        intro i
-        simp [rsN]
-        simp [T₂] at hNT₂
-        specialize hNT₂ (subst φ' i) φ' i rfl
-        simp only [subst, Sentence.Realize, Formula.Realize, BoundedFormula.realize_subst,
-          Term.realize_constants, LHom.onFormula] at hNT₂ ⊢
-        simpa [LHom.realize_onBoundedFormula] using hNT₂
-      let f : I → rsN := fun i =>
-        ⟨(L[[M]].con (φ', i) : N), mem_setOf.mpr (hφI' i)⟩
-      have hf : f.Injective := by
-        intro i j hij
-        simp only [T₃] at hNT₃
-        have hNT₃' :
-            N ⊨ L[[↑M]].distinctConstantsTheory
-              (Set.univ ∩ {p : F × I | p.1 = φ'}) :=
-          Theory.Model.mono hNT₃
-            (subset_iUnion_of_subset ⟨φ, hφI⟩ fun ⦃a⦄ a_1 ↦ a_1)
-        simp [model_distinctConstantsTheory] at hNT₃'
-        specialize @hNT₃' (φ', i) (by simp) (φ', j) (by simp)
-        simp [f] at hNT₃' hij
-        exact (hNT₃' ∘ fun a ↦ hij) L
-      exists Function.Embedding.mk f hf
+    refine le_antisymm ((mk_subtype_le
+      {x : N | ((L.lhomWithConstantsMap ⇑eN).onFormula φ).Realize fun _ ↦ x}).trans_eq
+        hNcard) ?_
+    let rsN : Set N :=
+      {x | ((L.lhomWithConstantsMap ⇑eN).onFormula φ).Realize fun _ ↦ x}
+    let φ' : F := ⟨φ, hφI⟩
+    rw [← mk_out κ, le_def]
+    change Nonempty (I ↪ rsN)
+    have hφI' : ∀ (i : I), (L[[M]].con (φ', i) : N) ∈ rsN := by
+      intro i
+      simp [rsN]
+      simp [T₂] at hNT₂
+      simpa only [subst, Sentence.Realize, Formula.Realize, BoundedFormula.realize_subst,
+        Term.realize_constants, LHom.onFormula, LHom.realize_onBoundedFormula] using
+        hNT₂ (subst φ' i) φ' i rfl
+    let f : I → rsN := fun i =>
+      ⟨(L[[M]].con (φ', i) : N), mem_setOf.mpr (hφI' i)⟩
+    refine ⟨Function.Embedding.mk f ?_⟩
+    intro i j hij
+    simp only [T₃] at hNT₃
+    have hNT₃' :
+        N ⊨ L[[↑M]].distinctConstantsTheory
+          (Set.univ ∩ {p : F × I | p.1 = φ'}) :=
+      Theory.Model.mono hNT₃
+        (subset_iUnion_of_subset ⟨φ, hφI⟩ fun ⦃a⦄ a_1 ↦ a_1)
+    simp [model_distinctConstantsTheory] at hNT₃'
+    specialize @hNT₃' (φ', i) (by simp) (φ', j) (by simp)
+    simp [f] at hNT₃' hij
+    exact hNT₃' hij
   rw [← ((L.lhomWithConstantsMap ⇑eN).onFormula φ).finOneRealizationsEquiv.cardinal_eq]
     at hφN
   change #({x : Fin 1 → N | ψ.Realize (Sum.elim (eN ∘ b) x)}) = κ
   convert hφN with v
   letI := constantsOn.structure eN
-  haveI : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N := by
-    apply LHom.lhomWithConstantsMap_isExpansionOn_of_eq
-    intro a
-    rfl
+  haveI : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N :=
+    LHom.lhomWithConstantsMap_isExpansionOn_of_eq _ fun _ ↦ rfl
   simp [(L.lhomWithConstantsMap ⇑eN).realize_onFormula, φ]
   simp [Formula.Realize, Formula.relabel, ← BoundedFormula.realize_constantsVarsEquiv]
   congr!
-  funext w
-  cases w <;> rfl
+  ext (_ | _) <;> rfl
 
 theorem exists_model_of_card_definably_full
     {κ : Cardinal.{w}}
