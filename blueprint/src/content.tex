@@ -194,15 +194,14 @@ the Tarski--Vaught test yields a witness already in \(M_i\).
 
 \begin{lemma}[Cardinality of elementary chain unions]
 \label{lem:elementary-chain-cardinality}
-\lean{FirstOrder.Language.ElementaryChain.mk_limit_le_mk_index_mul_iSup_mk, FirstOrder.Language.ElementaryChain.mk_limit_le_of_stage_mk_le}
+\lean{FirstOrder.Language.ElementaryChain.mk_limit_le_of_lift_mk_le, FirstOrder.Language.ElementaryChain.mk_limit_eq_of_forall_lift_mk_eq}
 \leanok
 \uses{def:elementary-chain}
-Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  Then
-\(\bigl|\bigcup_{i<\alpha} M_i\bigr|
-\le |\alpha|\cdot\sup_{i<\alpha}|M_i|\).
-In particular, if \(\kappa\) is an infinite cardinal, each
-\(|M_i|\le\kappa\), and \(|\alpha|\le\kappa\), then the union has
-cardinality at most \(\kappa\).
+Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  If
+\(\kappa\) is an infinite cardinal, each \(|M_i|\le\kappa\), and
+\(|\alpha|\le\kappa\), then the union has cardinality at most
+\(\kappa\).  If instead every \(|M_i|=\kappa\), then the union has
+cardinality exactly \(\kappa\).
 \end{lemma}
 
 \begin{proof}
@@ -212,7 +211,7 @@ The union is a surjective image of the disjoint union
 
 \begin{theorem}[Elementary-chain construction principle]
 \label{thm:loewenheim-skolem-constructions}
-\lean{FirstOrder.Language.ElementaryChain.toLimitElementary, FirstOrder.Language.ElementaryChain.limit_models, FirstOrder.Language.ElementaryChain.mk_limit_le_mk_index_mul_iSup_mk, FirstOrder.Language.ElementaryChain.mk_limit_le_of_stage_mk_le}
+\lean{FirstOrder.Language.ElementaryChain.toLimitElementary, FirstOrder.Language.ElementaryChain.limit_models, FirstOrder.Language.ElementaryChain.mk_limit_le_of_lift_mk_le, FirstOrder.Language.ElementaryChain.mk_limit_eq_of_forall_lift_mk_eq}
 \leanok
 \uses{def:elementary-chain}
 Any inductive construction that builds an increasing elementary chain
@@ -238,6 +237,7 @@ indexing ordinal times the supremum of the stage cardinalities.
 \begin{lemma}[One-step enlargement of parameter-definable sets]
 \label{lem:one-step-full-definable-sets}
 \lean{FirstOrder.Language.Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations}
+\leanok
 \uses{def:elementary-maps}
 Let \(M\models T\) have infinite cardinality \(\kappa\), with
 \(|L|\leq\kappa\).  There are a model \(N\models T\) of cardinality
@@ -248,6 +248,7 @@ along \(e\).
 \end{lemma}
 
 \begin{proof}
+\leanok
 \uses{thm:compactness,thm:downward-lowenheim-skolem}
 Add the elementary diagram of \(M\).  For every formula over \(M\)
 defining an infinite set, add \(\kappa\) distinct constants satisfying
@@ -258,7 +259,8 @@ Loewenheim--Skolem gives one of cardinality \(\kappa\).
 
 \begin{proposition}[Large models with no small infinite definable sets]
 \label{prop:large-model-no-small-infinite-definable-sets}
-\lean{FirstOrder.Language.Theory.exists_large_model_no_small_infinite_definable_sets}
+\lean{FirstOrder.Language.Theory.exists_model_of_card_definably_full}
+\leanok
 Let \(T\) be a theory in a countable language with infinite models, and
 let \(\kappa\geq\aleph_1\).  Then \(T\) has a model \(M\) of
 cardinality \(\kappa\) such that every parameter-definable subset of
@@ -266,6 +268,7 @@ cardinality \(\kappa\) such that every parameter-definable subset of
 \end{proposition}
 
 \begin{proof}
+\leanok
 \uses{lem:one-step-full-definable-sets,lem:elementary-embedding-definable-set-cardinality,thm:loewenheim-skolem-constructions}
 Start with a model of cardinality \(\kappa\) and iterate the one-step
 enlargement along a countable elementary chain.  In the limit, the

@@ -46,7 +46,7 @@ Use `Set.encard` only for statements comparing a realization set with a natural 
 because `Set.encard` identifies all infinite cardinalities with `⊤`.
 -/
 
-universe u v w w'
+universe u v w w' x x'
 
 open scoped Cardinal FirstOrder
 
@@ -56,7 +56,7 @@ namespace Language
 
 namespace ElementaryEmbedding
 
-variable {L : Language.{u, v}} {M N : Type w} {α β : Type w'}
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'} {α : Type x} {β : Type x'}
 variable [L.Structure M] [L.Structure N]
 
 section ExplicitParameters
@@ -78,9 +78,9 @@ def realizations_embedding (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ α))
 This uses `Cardinal.mk`, rather than `Set.encard`, so that it retains information about arbitrary
 infinite cardinalities. -/
 theorem mk_realizations_le (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ α)) (b : β → M) :
-    #({x : α → M | φ.Realize (Sum.elim b x)}) ≤
-      #({x : α → N | φ.Realize (Sum.elim (e ∘ b) x)}) :=
-  Function.Embedding.cardinal_le <| realizations_embedding e φ b
+    Cardinal.lift.{max w' x} (#({x : α → M | φ.Realize (Sum.elim b x)})) ≤
+      Cardinal.lift.{max w x} (#({x : α → N | φ.Realize (Sum.elim (e ∘ b) x)})) :=
+  Cardinal.lift_mk_le_lift_mk_of_injective (realizations_embedding e φ b).injective
 
 /-- An elementary embedding preserves and reflects exact finite cardinality of a formula fiber. -/
 theorem encard_realizations_eq_coe_iff [Finite α] (e : M ↪ₑ[L] N)

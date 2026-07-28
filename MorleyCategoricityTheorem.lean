@@ -1,6 +1,7 @@
 import MorleyCategoricityTheorem.ModelTheory.DefinableSet
 import MorleyCategoricityTheorem.ModelTheory.ElementaryChain
 import MorleyCategoricityTheorem.ModelTheory.ElementaryMaps
+import MorleyCategoricityTheorem.ModelTheory.LanguageMap
 import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 import MorleyCategoricityTheorem.ModelTheory.Syntax

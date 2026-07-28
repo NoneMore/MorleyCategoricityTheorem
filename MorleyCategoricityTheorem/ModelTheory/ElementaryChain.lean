@@ -1,3 +1,4 @@
+import Mathlib.ModelTheory.Bundled
 import Mathlib.ModelTheory.DirectLimit
 import Mathlib.ModelTheory.ElementaryMaps
 
@@ -13,9 +14,91 @@ elementary.  The relevant statements are included below with proof placeholders.
 
 universe u v w w'
 
+open Cardinal Function
+
+/- These are copied from `Mathlib.SetTheory.Cardinal.DirectLimit` in the newer Mathlib checkout.
+They stay private until this project updates to a Mathlib version containing that module. -/
+
+private def directLimitEquivOfForallLE {ι : Type w} [Preorder ι] {F : ι → Type w'}
+    {T : ∀ ⦃i j : ι⦄, i ≤ j → Sort u} (f : ∀ i j (h : i ≤ j), T h)
+    [∀ ⦃i j⦄ (h : i ≤ j), FunLike (T h) (F i) (F j)]
+    [DirectedSystem F (f · · ·)] [IsDirectedOrder ι] (m : ι) (hm : ∀ i, i ≤ m) :
+    _root_.DirectLimit F (f · · ·) ≃ F m where
+  toFun := _root_.DirectLimit.lift f (fun i x ↦ f i m (hm i) x) (by simp [DirectedSystem.map_map'])
+  invFun := fun x ↦ ⟦⟨m, x⟩⟧
+  left_inv := by
+    intro z
+    induction z using _root_.DirectLimit.induction with
+    | _ i x => simp only [_root_.DirectLimit.lift_def, _root_.DirectLimit.mk_apply]
+  right_inv := fun _ ↦ by simp only [_root_.DirectLimit.lift_def, DirectedSystem.map_self']
+
+private theorem directLimitMkLeSum {ι : Type w} [Preorder ι] {F : ι → Type w'}
+    {T : ∀ ⦃i j : ι⦄, i ≤ j → Sort u} (f : ∀ i j (h : i ≤ j), T h)
+    [∀ ⦃i j⦄ (h : i ≤ j), FunLike (T h) (F i) (F j)]
+    [DirectedSystem F (f · · ·)] [IsDirectedOrder ι] :
+    #(_root_.DirectLimit F (f · · ·)) ≤ Cardinal.sum fun i ↦ #(F i) :=
+  mk_quotient_le.trans_eq (mk_sigma F)
+
+private theorem directLimitMkLeOfAleph0Le {ι : Type w} [Preorder ι] {F : ι → Type w'}
+    {T : ∀ ⦃i j : ι⦄, i ≤ j → Sort u} (f : ∀ i j (h : i ≤ j), T h)
+    [∀ ⦃i j⦄ (h : i ≤ j), FunLike (T h) (F i) (F j)]
+    [DirectedSystem F (f · · ·)] [IsDirectedOrder ι] (c : Cardinal.{max w w'})
+    (hc : ℵ₀ ≤ c) (hι : Cardinal.lift.{w'} #ι ≤ c)
+    (hF : ∀ i, Cardinal.lift.{w} #(F i) ≤ c) :
+    #(_root_.DirectLimit F (f · · ·)) ≤ c :=
+  (directLimitMkLeSum f).trans <| (sum_le_lift_mk_mul_iSup_lift _).trans <|
+    Cardinal.mul_le_of_le hc hι (ciSup_le' hF)
+
+private theorem directLimitISupLiftMkLeMk {ι : Type w} [Preorder ι] {F : ι → Type w'}
+    {T : ∀ ⦃i j : ι⦄, i ≤ j → Sort u} (f : ∀ i j (h : i ≤ j), T h)
+    [∀ ⦃i j⦄ (h : i ≤ j), FunLike (T h) (F i) (F j)]
+    [DirectedSystem F (f · · ·)] [IsDirectedOrder ι]
+    (h : ∀ i, Injective fun x ↦ (⟦⟨i, x⟩⟧ : _root_.DirectLimit F (f · · ·))) :
+    (⨆ i, Cardinal.lift.{w} #(F i)) ≤ #(_root_.DirectLimit F (f · · ·)) := by
+  refine ciSup_le' fun i ↦ ?_
+  have := lift_mk_le_lift_mk_of_injective (h i)
+  simp [_root_.DirectLimit]
+  rwa [Cardinal.lift_umax, Cardinal.lift_id'.{w', w}] at this
+
+private theorem directLimitMkEqISupLiftMk {ι : Type w} [Preorder ι] {F : ι → Type w'}
+    {T : ∀ ⦃i j : ι⦄, i ≤ j → Sort u} (f : ∀ i j (h : i ≤ j), T h)
+    [∀ ⦃i j⦄ (h : i ≤ j), FunLike (T h) (F i) (F j)]
+    [DirectedSystem F (f · · ·)] [IsDirectedOrder ι]
+    (hι : Cardinal.lift.{w'} #ι ≤ ⨆ i, Cardinal.lift.{w} #(F i))
+    (h : ∀ i, Injective fun x ↦ (⟦⟨i, x⟩⟧ : _root_.DirectLimit F (f · · ·))) :
+    #(_root_.DirectLimit F (f · · ·)) = ⨆ i, Cardinal.lift.{w} #(F i) := by
+  refine le_antisymm ?_ (directLimitISupLiftMkLeMk f h)
+  by_cases! hc : ℵ₀ ≤ ⨆ i, lift.{w, w'} #(F i)
+  · exact directLimitMkLeOfAleph0Le f _ hc hι fun i ↦
+      le_ciSup Cardinal.bddAbove_of_small i
+  · haveI : Finite ι := mk_lt_aleph0_iff.mp (lift_lt_aleph0.mp (hι.trans_lt hc))
+    cases isEmpty_or_nonempty ι with
+    | inl hle =>
+      simp
+    | inr hlne =>
+      obtain ⟨m, hm⟩ := Finite.exists_le (id : ι → ι)
+      have he := (directLimitEquivOfForallLE f m hm).lift_cardinal_eq
+      rw [Cardinal.lift_id'.{w', w}, Cardinal.lift_umax.{w', w}] at he
+      rw [he]
+      exact le_ciSup Cardinal.bddAbove_of_small m
+
+private theorem directLimitMkEqOfForallLiftMkEq {ι : Type w} [Preorder ι]
+    {F : ι → Type w'} {T : ∀ ⦃i j : ι⦄, i ≤ j → Sort u}
+    (f : ∀ i j (h : i ≤ j), T h)
+    [∀ ⦃i j⦄ (h : i ≤ j), FunLike (T h) (F i) (F j)]
+    [DirectedSystem F (f · · ·)] [IsDirectedOrder ι] [Nonempty ι]
+    (c : Cardinal.{max w w'}) (hι : Cardinal.lift.{w'} #ι ≤ c)
+    (hF : ∀ i, Cardinal.lift.{w} #(F i) = c)
+    (h : ∀ i, Injective fun x ↦ (⟦⟨i, x⟩⟧ : _root_.DirectLimit F (f · · ·))) :
+    #(_root_.DirectLimit F (f · · ·)) = c := by
+  simpa only [hF, ciSup_const] using
+    directLimitMkEqISupLiftMk f (by simpa only [hF, ciSup_const]) h
+
 namespace FirstOrder
 
 namespace Language
+
+open scoped Cardinal
 
 /-- A directed system of `L`-structures whose transition maps are elementary embeddings.
 
@@ -124,31 +207,31 @@ theorem exists_toLimit (C : ElementaryChain L ι) (z : C.Limit) :
     ∃ (i : ι) (x : C.carrier i), C.toLimit i x = z := by
   simpa [toLimit] using DirectLimit.exists_of z
 
-omit [Nonempty ι] in
-/-- The direct limit has cardinality at most the cardinality of the disjoint union of the
-stages. -/
-theorem mk_limit_le_mk_sigma (C : ElementaryChain L ι) :
-    Cardinal.mk C.Limit ≤ Cardinal.mk (Σ i, C.carrier i) :=
-  Cardinal.mk_quotient_le
+private def limitEquiv (C : ElementaryChain L ι) :
+    C.Limit ≃
+      _root_.DirectLimit C.carrier (fun i j h ↦ (C.map i j h).toEmbedding) :=
+  Quotient.congrRight fun _ _ ↦ Iff.rfl
 
 omit [Nonempty ι] in
-/-- The cardinality of an elementary-chain direct limit is bounded by the size of the index type
-times the supremum of the stage cardinalities. -/
-theorem mk_limit_le_mk_index_mul_iSup_mk (C : ElementaryChain L ι) :
-    Cardinal.mk C.Limit ≤ Cardinal.mk ι * ⨆ i, Cardinal.mk (C.carrier i) := by
-  apply (mk_limit_le_mk_sigma C).trans
-  rw [Cardinal.mk_sigma]
-  exact Cardinal.sum_le_mk_mul_iSup _
+/-- An infinite cardinal bounding the index type and every stage also bounds the limit. -/
+theorem mk_limit_le_of_lift_mk_le (C : ElementaryChain L ι) {κ : Cardinal.{max w w'}}
+    (hκ : ℵ₀ ≤ κ) (hι : Cardinal.lift.{w'} #ι ≤ κ)
+    (hC : ∀ i, Cardinal.lift.{w} #(C.carrier i) ≤ κ) :
+    #(C.Limit) ≤ κ := by
+  rw [(limitEquiv C).cardinal_eq]
+  exact directLimitMkLeOfAleph0Le
+    (fun i j h ↦ (C.map i j h).toEmbedding) κ hκ hι hC
 
-/-- If the index type and all stages have cardinality at most an infinite cardinal `κ`, then so
-does the direct limit. -/
-theorem mk_limit_le_of_stage_mk_le (C : ElementaryChain L ι) {κ : Cardinal}
-    (hκ : Cardinal.aleph0 ≤ κ) (hι : Cardinal.mk ι ≤ κ)
-    (hC : ∀ i, Cardinal.mk (C.carrier i) ≤ κ) :
-    Cardinal.mk C.Limit ≤ κ := by
-  apply (mk_limit_le_mk_index_mul_iSup_mk C).trans
-  apply (mul_le_mul' hι (ciSup_le hC)).trans
-  rw [Cardinal.mul_eq_self hκ]
+/-- If every stage has cardinality `κ` and the index type has cardinality at most `κ`, then the
+limit also has cardinality `κ`. -/
+theorem mk_limit_eq_of_forall_lift_mk_eq (C : ElementaryChain L ι)
+    (κ : Cardinal.{max w w'}) (hι : Cardinal.lift.{w'} #ι ≤ κ)
+    (hC : ∀ i, Cardinal.lift.{w} #(C.carrier i) = κ) :
+    #(C.Limit) = κ := by
+  rw [(limitEquiv C).cardinal_eq]
+  apply directLimitMkEqOfForallLiftMkEq
+    (fun i j h ↦ (C.map i j h).toEmbedding) κ hι hC
+  exact _root_.DirectLimit.mk_injective _ fun i j h ↦ (C.map i j h).injective
 
 /-- Realization of bounded formulas is preserved and reflected by a canonical map into the
 direct limit.
