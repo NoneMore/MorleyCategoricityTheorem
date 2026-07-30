@@ -237,7 +237,7 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
   haveI hNne : Nonempty N := by
     simpa [← Cardinal.mk_ne_zero_iff, hNcard, ← Cardinal.one_le_iff_ne_zero] using one_le_aleph0.trans hκ
   haveI : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N :=
-    LHom.lhomWithConstantsMap_isExpansionOn_of_eq _ fun x ↦ by simp [eN, Language.con]
+    LHom.lhomWithConstantsMap_isExpansionOn_of_eq _ fun _ ↦ rfl
   refine ⟨ModelType.of T N, eN, by simpa, ?_⟩
   intro β ψ b hψb
   let φ : L[[M]].Formula (Fin 1) :=
@@ -350,8 +350,8 @@ theorem exists_model_of_card_definably_full
     convert_to {x : Fin 1 → M' | x 0 ∈ X}.Infinite using 1
     · rw [hφ]
       ext x
-      change ψ.Realize (Sum.elim (C.toLimit i ∘ v) x) ↔ _
-      simpa only [ψ, hiv] using
+      change ψ.Realize (Sum.elim (C.toLimit i ∘ v) x) ↔ φ.Realize x
+      simpa only [ψ, hiv] using!
         BoundedFormula.realize_constantsVarsEquiv (φ := φ) (v := x)
     · refine hXI.preimage (f := fun x : Fin 1 → M' ↦ x 0) ?_
       simp only [Fin.isValue, range_eval, subset_univ]
@@ -364,14 +364,15 @@ theorem exists_model_of_card_definably_full
     #↑M' = κ := hM'κ
     _ = _ := nextFull.symm
     _ ≤ #↑{x : Fin 1 → M' | ψ.Realize (Sum.elim b x)} := by
-      simpa [lift_id, b] using (C.toLimitElementary (i + 1)).mk_realizations_le ψ (f i ∘ v)
+      simpa [lift_id, b] using!
+        (C.toLimitElementary (i + 1)).mk_realizations_le ψ (f i ∘ v)
     _ = #{x : Fin 1 → M' | x 0 ∈ X} := by
       rw [hφ]
       congr! with x
       simp [ψ, Formula.Realize, ← BoundedFormula.realize_constantsVarsEquiv, b]
       congr! with a
       change C.toLimit (i + 1) (f i (v a)) = (a : M')
-      simpa [← congrFun hiv a, C] using C.toLimit_map (Nat.le_succ i) (v a)
+      simpa [← congrFun hiv a, C] using! C.toLimit_map (Nat.le_succ i) (v a)
     _ = _ :=
       Cardinal.mk_congr ((Equiv.funUnique (Fin 1) M').subtypeEquiv (by intro x; rfl))
 

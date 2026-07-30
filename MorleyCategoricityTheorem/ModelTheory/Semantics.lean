@@ -146,7 +146,8 @@ section BoundaryCases
 /-- Exact cardinality zero means there is no realizing `β`-tuple. -/
 theorem realize_iExsExactly_zero [Finite β] (φ : L.Formula (α ⊕ β)) (v : α → M) :
     (φ.iExsExactly β 0).Realize v ↔ ¬∃ x : β → M, φ.Realize (Sum.elim v x) := by
-  simpa using eq_empty_iff_forall_notMem
+  simp only [realize_iExsExactly, Nat.cast_zero, Set.encard_eq_zero, not_exists]
+  exact Set.eq_empty_iff_forall_notMem
 
 /-- Exact cardinality one is semantically equivalent to unique existence. -/
 theorem realize_iExsExactly_one_iff_iExsUnique [Finite β]

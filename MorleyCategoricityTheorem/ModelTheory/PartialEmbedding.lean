@@ -107,7 +107,8 @@ theorem toPartialEmbedding_apply (f : A ↪ₚₑ[L] B) (a : A) :
 
 /-- A partial elementary embedding is injective, because it is a partial embedding. -/
 theorem injective (f : A ↪ₚₑ[L] B) : Function.Injective f := by
-  simpa only [toPartialEmbedding_apply] using f.toPartialEmbedding.injective
+  intro a b hab
+  exact f.toPartialEmbedding.injective (by simpa only [toPartialEmbedding_apply] using hab)
 
 /-- The equivalence between the source and target subsets induced by a partial elementary
 embedding. -/

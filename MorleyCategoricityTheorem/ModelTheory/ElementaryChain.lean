@@ -151,7 +151,7 @@ theorem natLERec_trans {f : ∀ n, M n ↪ₑ[L] M (n + 1)}
     simp only [natLERec_self]
   | succ k hjk ih =>
     simp [natLERec, Nat.leRecOn_succ hjk, Nat.leRecOn_succ (hij.trans hjk)]
-    convert ih
+    exact ih
 
 end ElementaryEmbedding
 
