@@ -292,6 +292,8 @@ of \(T\) admits an expansion to a model of \(T^*\), and
 
 \begin{definition}[Types over parameters]
 \label{def:types-over-parameters}
+\lean{FirstOrder.Language.CompleteTypeOver}
+\leanok
 \uses{def:elementary-maps}
 For \(A\subseteq M\models T\), an \(n\)-type over \(A\) is a set of
 \(L_A\)-formulas in \(n\) free variables consistent with
@@ -305,6 +307,8 @@ For an \(L_A\)-formula \(\varphi(\bar v)\), write
 
 \begin{definition}[Realization, omission, and isolation]
 \label{def:isolated-and-omitted-types}
+\lean{FirstOrder.Language.Theory.CompleteType.RealizedBy, FirstOrder.Language.Theory.CompleteType.IsRealizedIn, FirstOrder.Language.Theory.CompleteType.IsOmittedIn, FirstOrder.Language.Theory.CompleteType.IsIsolated}
+\leanok
 \uses{def:types-over-parameters}
 A tuple realizes a type if it satisfies every formula in that type.  A
 model omits a type if no tuple in the model realizes it.  A complete
@@ -314,6 +318,8 @@ type \(p\in S_n^M(A)\) is isolated if there is a formula
 
 \begin{definition}[Omega-stability]
 \label{def:omega-stability}
+\lean{FirstOrder.Language.Theory.IsOmegaStable}
+\leanok
 \uses{def:types-over-parameters}
 The theory \(T\) is \(\omega\)-stable if, for every model \(M\models T\),
 every countable parameter set \(A\subseteq M\), and every \(n\geq 1\),
@@ -322,6 +328,8 @@ the space \(S_n^M(A)\) is countable.
 
 \begin{lemma}[Splitting a non-isolated basic open set]
 \label{lem:isolated-splitting}
+\lean{FirstOrder.Language.Theory.CompleteType.exists_isolated_splitting}
+\leanok
 \uses{def:isolated-and-omitted-types}
 Suppose \([\varphi]\subseteq S_n^M(A)\) is nonempty and contains no
 isolated type.  Then there is a formula \(\psi\) such that both
@@ -330,18 +338,22 @@ contain no isolated type.
 \end{lemma}
 
 \begin{proof}
+\leanok
 If no such split existed, membership in \([\varphi]\) would determine a
 unique complete type, making that type isolated by \(\varphi\).
 \end{proof}
 
 \begin{lemma}[Projection of an isolated type]
 \label{lem:isolated-projection}
+\lean{FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_left}
+\leanok
 \uses{def:isolated-and-omitted-types}
 If \((\bar a,\bar b)\) realizes an isolated type over \(A\), then
 \(\bar a\) realizes an isolated type over \(A\).
 \end{lemma}
 
 \begin{proof}
+\leanok
 An isolating formula \(\theta(\bar v,\bar w)\) for
 \(\operatorname{tp}(\bar a,\bar b/A)\) projects to
 \(\exists\bar w\,\theta(\bar v,\bar w)\), which isolates the type of
