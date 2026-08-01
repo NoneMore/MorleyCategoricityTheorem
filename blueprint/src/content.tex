@@ -362,11 +362,12 @@ An isolating formula \(\theta(\bar v,\bar w)\) for
 
 \begin{lemma}[Transitivity of isolation]
 \label{lem:isolated-transitivity}
+\lean{FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_trans}
 \uses{def:isolated-and-omitted-types}
 Let \(M\models T\) and \(A\subseteq B\subseteq M\).  If every finite
-tuple from \(B\) realizes an isolated type over \(A\), and \(\bar a\)
-realizes an isolated type over \(B\), then \(\bar a\) realizes an
-isolated type over \(A\).
+tuple from \(B\) realizes an isolated type over \(A\), and an
+arbitrarily indexed tuple \(\bar a\) realizes an isolated type over
+\(B\), then \(\bar a\) realizes an isolated type over \(A\).
 \end{lemma}
 
 \begin{proof}

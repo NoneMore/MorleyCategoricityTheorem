@@ -76,6 +76,16 @@ def RealizedBy {N : Type w'} [L.Structure N] [Nonempty N] [N ⊨ T]
     (p : T.CompleteType α) (v : α → N) : Prop :=
   T.typeOf v = p
 
+/-- The type of `b` over the complete type of `a`, represented by naming `a`. -/
+def typeOfOverType {N : Type w'} [L.Structure N] [Nonempty N] [N ⊨ T]
+    {β : Type x} (a : α → N) (b : β → N) :
+    (T.typeOf a).toTheory.CompleteType β := by
+  letI : (constantsOn α).Structure N := constantsOn.structure a
+  haveI : N ⊨ (T.typeOf a).toTheory := by
+    dsimp [Theory.typeOf]
+    infer_instance
+  exact (T.typeOf a).toTheory.typeOf b
+
 /-- A complete type is realized in a model when some tuple in the model realizes it. -/
 def IsRealizedIn (p : T.CompleteType α) (N : Type w') [L.Structure N] [Nonempty N] [N ⊨ T] :
     Prop :=
@@ -86,10 +96,15 @@ def IsOmittedIn (p : T.CompleteType α) (N : Type w') [L.Structure N] [Nonempty 
     Prop :=
   ¬p.IsRealizedIn N
 
-/-- A complete type is isolated when a formula in it belongs to no other complete type. -/
-def IsIsolated (p : T.CompleteType α) : Prop :=
-  ∃ φ : L.Formula α, Formula.equivSentence φ ∈ p ∧
+/-- A formula isolates a complete type when it belongs to the type and to no other complete
+type. -/
+def IsolatedBy (p : T.CompleteType α) (φ : L.Formula α) : Prop :=
+  Formula.equivSentence φ ∈ p ∧
     ∀ q : T.CompleteType α, Formula.equivSentence φ ∈ q → q = p
+
+/-- A complete type is isolated when some formula isolates it. -/
+def IsIsolated (p : T.CompleteType α) : Prop :=
+  ∃ φ : L.Formula α, p.IsolatedBy φ
 
 /-- Realization is membership in the set of types realized in a model. -/
 theorem isRealizedIn_iff_mem_realizedTypes {N : Type w'} [L.Structure N] [Nonempty N] [N ⊨ T]
@@ -104,7 +119,7 @@ theorem isOmittedIn_iff_not_mem_realizedTypes {N : Type w'} [L.Structure N] [Non
 /-- A type is isolated exactly when one of its basic clopen neighborhoods is its singleton. -/
 theorem isIsolated_iff_typesWith_eq_singleton (p : T.CompleteType α) :
     p.IsIsolated ↔ ∃ φ : L.Formula α, T.typesWith (Formula.equivSentence φ) = {p} := by
-  simp [IsIsolated, typesWith, Set.eq_singleton_iff_unique_mem]
+  simp [IsIsolated, IsolatedBy, typesWith, Set.eq_singleton_iff_unique_mem]
   rfl
 
 /-- Formula isolation agrees with topological isolation in the Stone space of complete types. -/
@@ -155,7 +170,7 @@ theorem exists_isolated_splitting (φ : L[[α]].Sentence)
     refine ⟨ψ, hψ, hnψ, ?_⟩
     simp only [typesWith_inf, Set.mem_inter_iff]
     exact ⟨fun p hp ↦ hni p hp.1, fun p hp ↦ hni p hp.1⟩
-  simp only [IsIsolated] at hni
+  simp only [IsIsolated, IsolatedBy] at hni
   push Not at hni
   obtain ⟨p, hpφ⟩ := hne
   obtain ⟨q, hqφ, hpq⟩ := hni p hpφ (Formula.equivSentence.symm φ) (by simpa using hpφ)
@@ -174,6 +189,16 @@ theorem isIsolated_typeOf_left {β : Type w'} {M : Type x}
     [L.Structure M] [Nonempty M] [M ⊨ T] (a : α → M) (b : β → M)
     (h : (T.typeOf (Sum.elim a b)).IsIsolated) : (T.typeOf a).IsIsolated := by
   classical
+  -- TODO: Package the first two stages of this proof as a syntax constructor
+  -- `Formula.existsRight : L.Formula (α ⊕ β) → L.Formula α` and a semantic theorem
+  -- `Formula.realize_existsRight_iff` characterizing its realization by
+  -- `∃ b : β → M, φ.Realize (Sum.elim a b)`. The implementation can mirror `existsLeft` and
+  -- `realize_existsLeft` in `ModelTheory/ScratchTrans.lean`: quantify only the finitely many
+  -- right variables occurring freely, then extend their assignment using `[Nonempty M]`.
+  -- With these results in the Syntax and Semantics modules, `ψ` below becomes `φ.existsRight`;
+  -- both its membership in `T.typeOf a` and extraction of `v'` from `hψN` become direct, removing
+  -- the explicit `exClosure`/`constantsVarsEquiv`, `Function.extend`, and
+  -- `realize_restrictFreeVar` plumbing.
   rw [isIsolated_iff_typesWith_eq_singleton] at h ⊢
   obtain ⟨φ,hφ⟩ := h
   simp_rw [singleton_eq_typesWith_iff] at hφ
@@ -182,14 +207,12 @@ theorem isIsolated_typeOf_left {β : Type w'} {M : Type x}
   exists ψ
   simp_rw [singleton_eq_typesWith_iff]
   refine ⟨?_,?_⟩
-  · refine formula_mem_typeOf.mpr ?_
-    simp [ψ]
+  · simp [ψ]
     rw [Formula.realize_equivSentence_symm, @Formula.realize_exClosure]
     letI : (constantsOn α).Structure M := constantsOn.structure a
     refine ⟨fun i ↦ b i, ?_⟩
     apply (BoundedFormula.realize_restrictFreeVar b (by intro i; rfl)).mpr
-    rw [← BoundedFormula.realize_constantsVarsEquiv]
-    rw [_root_.Equiv.apply_symm_apply]
+    rw [← BoundedFormula.realize_constantsVarsEquiv, _root_.Equiv.apply_symm_apply]
     change φ.Realize (Sum.elim a b)
     exact formula_mem_typeOf.mp hφ
   · intro ϕ hϕ
@@ -226,6 +249,27 @@ theorem isIsolated_typeOf_left {β : Type w'} {M : Type x}
       intro i; simp [v']
     simp only [Formula.realize_equivSentence, Formula.realize_relabel, χ] at hχN
     rwa [← Formula.realize_equivSentence_symm_con N ϕ]
+
+/-- A realized joint type is isolated exactly when its marginal type and its conditional type over
+the marginal are both isolated. -/
+theorem joint_isolated_iff_of_realizedBy {β : Type w'} {M : Type x}
+    [L.Structure M] [Nonempty M] [M ⊨ T]
+    (p : T.CompleteType (α ⊕ β)) (a : α → M) (b : β → M)
+    (hp : p.RealizedBy (Sum.elim a b)) :
+    p.IsIsolated ↔
+      (T.typeOf a).IsIsolated ∧ (typeOfOverType (T := T) a b).IsIsolated := by
+  sorry
+
+/-- Isolation is transitive from a larger parameter set to a smaller one when finite tuples from
+the larger set have isolated types over the smaller set. -/
+theorem isIsolated_typeOf_trans
+    {L : Language.{u, v}} {M : Type w} [L.Structure M] [Nonempty M]
+    {A B : Set M} (hAB : A ⊆ B) {α : Type w'} (a : α → M)
+    (hB : ∀ (n : ℕ) (b : Fin n → B),
+      ((L[[A]].completeTheory M).typeOf (fun i ↦ (b i : M))).IsIsolated)
+    (ha : ((L[[B]].completeTheory M).typeOf a).IsIsolated) :
+    ((L[[A]].completeTheory M).typeOf a).IsIsolated := by
+  sorry
 
 end CompleteType
 
