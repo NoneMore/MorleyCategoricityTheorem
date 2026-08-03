@@ -32,6 +32,12 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   `Set.encard = n`.
 - `FirstOrder.Language.Formula.realize_existsExactlyLeft`: semantic theorem for the caller-facing
   variable order `Sum.elim x v`.
+- `FirstOrder.Language.Formula.realize_existsRight`: characterize `existsRight` by existence of an
+  assignment to the right variables.
+- `FirstOrder.Language.Formula.realize_existsLeft`: the symmetric statement for `existsLeft`.
+- `FirstOrder.Language.Formula.exists_fin_params` (and the `BoundedFormula` analogue): every formula
+  over a parameter set is, up to realization, a substitution instance of a constant-free formula in
+  finitely many extra variables.
 
 ## Proof outline
 
@@ -141,6 +147,38 @@ theorem realize_existsExactlyLeft [Finite β] (φ : L.Formula (β ⊕ α)) (v : 
       {x : β → M | φ.Realize (Sum.elim x v)}.encard = n := by
   simp [existsExactlyLeft]
 
+/-- `existsRight` realizes exactly when some assignment to the right variables realizes `φ`.
+
+The `[Nonempty M]` hypothesis is needed to extend a witness on the free right variables of `φ` to a
+total assignment on `β`. -/
+@[simp]
+theorem realize_existsRight [DecidableEq α] [DecidableEq β] [Nonempty M]
+    (φ : L.Formula (α ⊕ β)) (v : α → M) :
+    (φ.existsRight).Realize v ↔ ∃ x : β → M, φ.Realize (Sum.elim v x) := by
+  simp only [existsRight, Formula.realize_iExs, Formula.realize_relabel]
+  constructor
+  · rintro ⟨x, hx⟩
+    let y : β → M := fun b =>
+      if h : b ∈ φ.freeVarFinset.toRight then x ⟨b, h⟩ else Classical.choice ‹Nonempty M›
+    exact ⟨y, (BoundedFormula.realize_restrictFreeVar (Sum.elim v y) (by grind)).mp hx⟩
+  · rintro ⟨y, hy⟩
+    exact ⟨fun b ↦ y b,
+      (BoundedFormula.realize_restrictFreeVar (Sum.elim v y) (by grind)).mpr hy⟩
+
+/-- `existsLeft` realizes exactly when some assignment to the left variables realizes `φ`.
+
+This is the left-handed counterpart of `realize_existsRight`; the `[Nonempty M]` hypothesis is
+needed to extend the witness to a total assignment on `α`. -/
+@[simp]
+theorem realize_existsLeft [DecidableEq α] [DecidableEq β] [Nonempty M]
+    (φ : L.Formula (α ⊕ β)) (v : β → M) :
+    (φ.existsLeft).Realize v ↔ ∃ x : α → M, φ.Realize (Sum.elim x v) := by
+  rw [existsLeft, realize_existsRight]
+  simp only [Formula.realize_relabel]
+  refine exists_congr fun x ↦ iff_of_eq <| congrArg φ.Realize ?_
+  funext z
+  cases z <;> rfl
+
 section BoundaryCases
 
 /-- Exact cardinality zero means there is no realizing `β`-tuple. -/
@@ -179,6 +217,49 @@ theorem realize_iExsAtMost_iff_not_exists_injection [Finite β]
     not_congr (realize_iExsAtLeast_iff_exists_injective φ v (n + 1))
 
 end BoundaryCases
+
+end Formula
+
+namespace BoundedFormula
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
+
+/-- Every bounded formula over a parameter set is, up to realization, a substitution instance of a
+constant-free bounded formula in finitely many extra variables. -/
+lemma exists_fin_params {α : Type*} {B : Set M} {k : ℕ} (φ : (L[[B]]).BoundedFormula α k) :
+    ∃ n : ℕ, ∃ b : Fin n → B, ∃ φ' : L.BoundedFormula (α ⊕ Fin n) k,
+      ∀ v : α → M, ∀ xs : Fin k → M,
+        φ.Realize v xs ↔ φ'.Realize (Sum.elim v (fun i => (b i : M))) xs := by
+  classical
+  let φ₀ : L.BoundedFormula (B ⊕ α) k := BoundedFormula.constantsVarsEquiv φ
+  let S : Finset B := φ₀.freeVarFinset.toLeft
+  let n : ℕ := S.card
+  let e : S ≃ Fin n := Finset.equivFin S
+  let b : Fin n → B := fun i => (e.symm i : B)
+  let f : φ₀.freeVarFinset → (α ⊕ Fin n) := fun z =>
+    match h : z.1 with
+    | Sum.inl x => Sum.inr (e ⟨x, (Finset.mem_toLeft).mpr (h ▸ z.2)⟩)
+    | Sum.inr w => Sum.inl w
+  refine ⟨n, b, BoundedFormula.restrictFreeVar φ₀ f, fun v xs => ?_⟩
+  simp_rw [φ₀]
+  rw [BoundedFormula.realize_restrictFreeVar (Sum.elim (fun x : B => (L.con x : M)) v) (by
+    rintro ⟨z, hz⟩
+    cases z <;> simp [f, b]), BoundedFormula.realize_constantsVarsEquiv]
+
+end BoundedFormula
+
+namespace Formula
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
+
+/-- Every formula over a parameter set is, up to realization, a substitution instance of a
+constant-free formula in finitely many extra variables. -/
+lemma exists_fin_params {α : Type*} {B : Set M} (φ : (L[[B]]).Formula α) :
+    ∃ n : ℕ, ∃ b : Fin n → B, ∃ φ' : L.Formula (α ⊕ Fin n),
+      ∀ v : α → M, φ.Realize v ↔ φ'.Realize (Sum.elim v (fun i => (b i : M))) := by
+  classical
+  rcases BoundedFormula.exists_fin_params φ with ⟨n, b, φ', h⟩
+  exact ⟨n, b, φ', fun v => h v default⟩
 
 end Formula
 

@@ -99,6 +99,28 @@ Implemented by relabeling with `Sum.swap` and then applying `iExsExactly`. -/
 noncomputable def existsExactlyLeft [Finite β] (φ : L.Formula (β ⊕ α)) (n : ℕ) : L.Formula α :=
   (φ.relabel Sum.swap).iExsExactly β n
 
+variable [DecidableEq α] [DecidableEq β] in
+/-- Existentially quantifies the free variables of `φ : L.Formula (α ⊕ β)` that live in the right
+component `β`, leaving the free variables in `α` free.
+
+Following `exClosure`, the formula is first restricted to its finite set of free variables; the
+right part is then extracted with `Finset.toRight`, relabeled into the right component of
+`α ⊕ φ.freeVarFinset.toRight`, and quantified away with `iExs`. -/
+noncomputable def existsRight (φ : L.Formula (α ⊕ β)) : L.Formula α :=
+  let g : φ.freeVarFinset → α ⊕ φ.freeVarFinset.toRight := fun x =>
+    match x with
+    | ⟨Sum.inl a, _⟩ => Sum.inl a
+    | ⟨Sum.inr b, hb⟩ => Sum.inr ⟨b, Finset.mem_toRight.2 hb⟩
+  iExs φ.freeVarFinset.toRight (Formula.relabel g (φ.restrictFreeVar id))
+
+variable [DecidableEq α] [DecidableEq β] in
+/-- Existentially quantifies the free variables of `φ : L.Formula (α ⊕ β)` that live in the left
+component `α`, leaving the free variables in `β` free.
+
+Implemented by swapping the two components and applying `existsRight`. -/
+noncomputable def existsLeft (φ : L.Formula (α ⊕ β)) : L.Formula β :=
+  (φ.relabel Sum.swap).existsRight
+
 end Formula
 
 end Language

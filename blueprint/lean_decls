@@ -39,6 +39,8 @@ FirstOrder.Language.Theory.CompleteType.RealizedBy
 FirstOrder.Language.Theory.CompleteType.IsRealizedIn
 FirstOrder.Language.Theory.CompleteType.IsOmittedIn
 FirstOrder.Language.Theory.CompleteType.IsIsolated
+FirstOrder.Language.Theory.CompleteType.IsolatedBy
 FirstOrder.Language.Theory.IsOmegaStable
 FirstOrder.Language.Theory.CompleteType.exists_isolated_splitting
 FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_left
+FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_trans

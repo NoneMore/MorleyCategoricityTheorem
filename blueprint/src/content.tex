@@ -307,7 +307,7 @@ For an \(L_A\)-formula \(\varphi(\bar v)\), write
 
 \begin{definition}[Realization, omission, and isolation]
 \label{def:isolated-and-omitted-types}
-\lean{FirstOrder.Language.Theory.CompleteType.RealizedBy, FirstOrder.Language.Theory.CompleteType.IsRealizedIn, FirstOrder.Language.Theory.CompleteType.IsOmittedIn, FirstOrder.Language.Theory.CompleteType.IsIsolated}
+\lean{FirstOrder.Language.Theory.CompleteType.RealizedBy, FirstOrder.Language.Theory.CompleteType.IsRealizedIn, FirstOrder.Language.Theory.CompleteType.IsOmittedIn, FirstOrder.Language.Theory.CompleteType.IsIsolated, FirstOrder.Language.Theory.CompleteType.IsolatedBy}
 \leanok
 \uses{def:types-over-parameters}
 A tuple realizes a type if it satisfies every formula in that type.  A
@@ -362,6 +362,8 @@ An isolating formula \(\theta(\bar v,\bar w)\) for
 
 \begin{lemma}[Transitivity of isolation]
 \label{lem:isolated-transitivity}
+\lean{FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_trans}
+\leanok
 \uses{def:isolated-and-omitted-types}
 Let \(M\models T\) and \(A\subseteq B\subseteq M\).  If every finite
 tuple from \(B\) realizes an isolated type over \(A\), and \(\bar a\)
@@ -370,6 +372,7 @@ isolated type over \(A\).
 \end{lemma}
 
 \begin{proof}
+\leanok
 \uses{lem:isolated-projection}
 Combine an isolating formula for \(\bar a\) over \(B\) with an isolating
 formula over \(A\) for the finite tuple of parameters from \(B\) that

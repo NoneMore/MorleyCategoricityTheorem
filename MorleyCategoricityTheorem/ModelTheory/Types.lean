@@ -1,13 +1,30 @@
 import Mathlib.ModelTheory.Topology.Types
+import MorleyCategoricityTheorem.ModelTheory.Semantics
+import MorleyCategoricityTheorem.ModelTheory.Satisfiability
 
 /-!
 # Complete types
 
-This file defines realization, omission, and isolation for complete types, together with complete
-types over a parameter set in a structure.
+This file defines realization and omission for complete types, together with complete types over a
+parameter set in a structure.  Isolation of complete types is developed in
+`ModelTheory.IsolatedTypes`.
+
+## TODO
+
+- Generalize `typeOf_eq_of_realize_imp` to formula-level extensionality lemmas for arbitrary
+  complete types, including one-sided containment and biconditional forms, so callers need not
+  pass through `Formula.equivSentence.symm`.
+- Develop contravariant reindexing of complete types along variable maps for arbitrary theories,
+  including formula membership, compatibility with `typeOf`, functoriality, variance under
+  injective or surjective maps, and isolation or topological behavior; avoid assuming a canonical
+  covariant extension along injections.
+- Generalize `typeOf_eq_of_typeOf_eq_of_subset` from realized types to a contravariant parameter
+  restriction map on arbitrary complete types; prove compatibility with formula membership,
+  `typeOf`, and composition, relate it to continuous or open maps of Stone spaces, and reformulate
+  isolation transport through it where useful.
 -/
 
-universe u v w w' x
+universe u v w w' x y
 
 namespace FirstOrder
 
@@ -66,6 +83,15 @@ theorem iff_mem_iff (p : T.CompleteType α) (φ ψ : L[[α]].Sentence) :
   rw [← Formula.imp]
   simp only [inf_mem_iff, imp_mem_iff, iff_def]
 
+/-- A complete type is determined by containment in another complete type: maximality makes the
+inclusion order antisymmetric on complete types. -/
+theorem eq_of_le {p q : T.CompleteType α} (h : (p : L[[α]].Theory) ⊆ q) : p = q := by
+  exact le_antisymm h (by
+    intro φs hφs
+    by_contra hφp
+    exact CompleteType.false_of_mem_of_not_mem q.isMaximal.1 hφs
+      (h ((CompleteType.not_mem_iff p φs).mpr hφp)))
+
 /-- A basic open set splits into its intersections with a sentence and its negation. -/
 theorem typesWith_eq_union_inf_not (φ ψ : L[[α]].Sentence) :
     T.typesWith φ = T.typesWith (φ ⊓ ψ) ∪ T.typesWith (φ ⊓ ∼ψ) := by
@@ -86,11 +112,6 @@ def IsOmittedIn (p : T.CompleteType α) (N : Type w') [L.Structure N] [Nonempty 
     Prop :=
   ¬p.IsRealizedIn N
 
-/-- A complete type is isolated when a formula in it belongs to no other complete type. -/
-def IsIsolated (p : T.CompleteType α) : Prop :=
-  ∃ φ : L.Formula α, Formula.equivSentence φ ∈ p ∧
-    ∀ q : T.CompleteType α, Formula.equivSentence φ ∈ q → q = p
-
 /-- Realization is membership in the set of types realized in a model. -/
 theorem isRealizedIn_iff_mem_realizedTypes {N : Type w'} [L.Structure N] [Nonempty N] [N ⊨ T]
     (p : T.CompleteType α) : p.IsRealizedIn N ↔ p ∈ T.realizedTypes N α := by
@@ -101,131 +122,91 @@ theorem isOmittedIn_iff_not_mem_realizedTypes {N : Type w'} [L.Structure N] [Non
     [N ⊨ T] (p : T.CompleteType α) : p.IsOmittedIn N ↔ p ∉ T.realizedTypes N α := by
   simp [IsOmittedIn, IsRealizedIn, RealizedBy]
 
-/-- A type is isolated exactly when one of its basic clopen neighborhoods is its singleton. -/
-theorem isIsolated_iff_typesWith_eq_singleton (p : T.CompleteType α) :
-    p.IsIsolated ↔ ∃ φ : L.Formula α, T.typesWith (Formula.equivSentence φ) = {p} := by
-  simp [IsIsolated, typesWith, Set.eq_singleton_iff_unique_mem]
-  rfl
+/-- Tuples with the same type realize exactly the same formulas, possibly in different
+models. -/
+theorem realize_iff_of_typeOf_eq {M : Type w'} {N : Type x} [L.Structure M] [Nonempty M]
+    [M ⊨ T] [L.Structure N] [Nonempty N] [N ⊨ T] (v : α → M) (w : α → N)
+    (h : T.typeOf v = T.typeOf w) (φ : L.Formula α) :
+    φ.Realize v ↔ φ.Realize w := by
+  rw [← formula_mem_typeOf (T := T) (v := v) (φ := φ), h,
+    formula_mem_typeOf (T := T) (v := w) (φ := φ)]
 
-/-- Formula isolation agrees with topological isolation in the Stone space of complete types. -/
-theorem isIsolated_iff_isOpen_singleton (p : T.CompleteType α) :
-    p.IsIsolated ↔ IsOpen ({p} : Set (T.CompleteType α)) := by
-  rw [isIsolated_iff_typesWith_eq_singleton]
-  constructor
-  · rintro ⟨φ, hφ⟩
-    simpa only [hφ] using CompleteType.isOpen_typesWith (T := T) (Formula.equivSentence φ)
-  · intro h
-    obtain ⟨_, ⟨φ, rfl⟩, hpφ, hφp⟩ :=
-      (CompleteType.isTopologicalBasis_range_typesWith).exists_subset_of_mem_open
-        (Set.mem_singleton p) h
-    refine ⟨Formula.equivSentence.symm φ, ?_⟩
-    simpa using Set.Subset.antisymm hφp (Set.singleton_subset_iff.mpr hpφ)
+/-- If every formula realized by one tuple is realized by another, then the tuples have the same
+complete type.  One-sided preservation suffices because complete types are maximal. -/
+theorem typeOf_eq_of_realize_imp {M : Type w'} {N : Type x}
+    [L.Structure M] [Nonempty M] [M ⊨ T] [L.Structure N] [Nonempty N] [N ⊨ T]
+    (v : α → M) (w : α → N) (h : ∀ φ : L.Formula α, φ.Realize v → φ.Realize w) :
+    T.typeOf v = T.typeOf w := by
+  apply eq_of_le
+  intro σs hσs
+  let σ : L.Formula α := Formula.equivSentence.symm σs
+  have hσv : σ.Realize v := by
+    rw [← formula_mem_typeOf (T := T)]
+    simpa [σ] using hσs
+  simpa [σ] using (formula_mem_typeOf (T := T)).2 (h σ hσv)
 
-/-- A basic open set is a singleton exactly when its defining sentence semantically entails every
-sentence in that type over the ambient theory. -/
-theorem singleton_eq_typesWith_iff (p : T.CompleteType α) (φ : L[[α]].Sentence) :
-    T.typesWith φ = {p}  ↔
-      φ ∈ p ∧ ∀ ψ ∈ p, (L.lhomWithConstants α).onTheory T ⊨ᵇ φ.imp ψ := by
-  rw [Set.eq_singleton_iff_unique_mem, mem_typesWith_iff]
-  refine and_congr_right fun _ ↦ ?_
-  constructor
-  · intro hp ψ hψ
-    rw [← setOf_mem_eq_univ_iff, Set.eq_univ_iff_forall]
-    intro q
-    simpa only [Set.mem_setOf_eq, imp_mem_iff] using fun hφq ↦ hp q hφq ▸ hψ
-  · intro hφp q hφq
-    rw [mem_typesWith_iff] at hφq
-    have hpq : p ≤ q := fun ψ hψ ↦ mem_of_mem_of_models_imp q hφq (hφp ψ hψ)
-    apply le_antisymm ?_ hpq
-    intro ψ hψq
-    by_contra hψp
-    exact false_of_mem_of_not_mem q.isMaximal.1 hψq (hpq ((not_mem_iff p ψ).2 hψp))
+/-- Equality of tuple types over a larger parameter set descends along inclusions of parameter
+sets. -/
+theorem typeOf_eq_of_typeOf_eq_of_subset {M : Type w'} [L.Structure M] [Nonempty M]
+    {A B : Set M} (hAB : A ⊆ B) (v w : α → M)
+    (h : (L[[B]].completeTheory M).typeOf v = (L[[B]].completeTheory M).typeOf w) :
+    (L[[A]].completeTheory M).typeOf v = (L[[A]].completeTheory M).typeOf w := by
+  apply typeOf_eq_of_realize_imp
+  intro φ hφv
+  let φB : (L[[B]]).Formula α :=
+    (L.lhomWithConstantsMap (Set.inclusion hAB)).onFormula φ
+  have hφB_realize (a : α → M) : φB.Realize a ↔ φ.Realize a := by
+    exact LHom.realize_onFormula
+      (φ := L.lhomWithConstantsMap (Set.inclusion hAB)) (ψ := φ) (v := a)
+  exact (hφB_realize w).1
+    ((realize_iff_of_typeOf_eq v w h φB).1 ((hφB_realize v).2 hφv))
 
-/-- A nonempty basic open set without isolated types splits into two such basic open sets. -/
-theorem exists_isolated_splitting (φ : L[[α]].Sentence)
-    (hne : (T.typesWith φ).Nonempty)
-    (hni : ∀ p ∈ T.typesWith φ, ¬p.IsIsolated) :
-    ∃ ψ : L[[α]].Sentence,
-      (T.typesWith (φ ⊓ ψ)).Nonempty ∧
-        (T.typesWith (φ ⊓ ∼ψ)).Nonempty ∧
-          (∀ p ∈ T.typesWith (φ ⊓ ψ), ¬p.IsIsolated) ∧
-            ∀ p ∈ T.typesWith (φ ⊓ ∼ψ), ¬p.IsIsolated := by
-  suffices ∃ ψ, (T.typesWith (φ ⊓ ψ)).Nonempty ∧ (T.typesWith (φ ⊓ ∼ψ)).Nonempty by
-    obtain ⟨ψ, hψ, hnψ⟩ := this
-    refine ⟨ψ, hψ, hnψ, ?_⟩
-    simp only [typesWith_inf, Set.mem_inter_iff]
-    exact ⟨fun p hp ↦ hni p hp.1, fun p hp ↦ hni p hp.1⟩
-  simp only [IsIsolated] at hni
-  push Not at hni
-  obtain ⟨p, hpφ⟩ := hne
-  obtain ⟨q, hqφ, hpq⟩ := hni p hpφ (Formula.equivSentence.symm φ) (by simpa using hpφ)
-  simp only [_root_.Equiv.apply_symm_apply] at hqφ
-  simp only [ne_eq, SetLike.ext_iff, not_forall, not_iff] at hpq
-  obtain ⟨ψ, hψ⟩ := hpq
-  simp only [Set.nonempty_def, mem_typesWith_iff, inf_mem_iff, not_mem_iff]
-  rcases p.mem_or_not_mem ψ with hψp | hψp
-  · exact ⟨ψ, ⟨p, hpφ, hψp⟩, q, hqφ, hψ.mpr hψp⟩
-  · have hψnp := (not_mem_iff p ψ).mp hψp
-    exact ⟨ψ, ⟨q, hqφ, Classical.not_not.mp (mt hψ.mp hψnp)⟩, p, hpφ, hψnp⟩
-
-/-- The type of the left tuple of a pair of tuples is isolated whenever their joint type is
-isolated. -/
-theorem isIsolated_typeOf_left {β : Type w'} {M : Type x}
-    [L.Structure M] [Nonempty M] [M ⊨ T] (a : α → M) (b : β → M)
-    (h : (T.typeOf (Sum.elim a b)).IsIsolated) : (T.typeOf a).IsIsolated := by
+/-- Equality of tuple types is preserved by precomposition with a variable map: if two
+`β`-tuples have the same type, then the corresponding `α`-tuples obtained by relabelling along
+`f : α → β` have the same type as well. -/
+theorem typeOf_comp_eq_of_typeOf_eq {M : Type w'} {N : Type x}
+    [L.Structure M] [Nonempty M] [M ⊨ T] [L.Structure N] [Nonempty N] [N ⊨ T]
+    {β : Type y} (f : α → β) (v : β → M) (w : β → N)
+    (h : T.typeOf v = T.typeOf w) : T.typeOf (v ∘ f) = T.typeOf (w ∘ f) := by
   classical
-  rw [isIsolated_iff_typesWith_eq_singleton] at h ⊢
-  obtain ⟨φ,hφ⟩ := h
-  simp_rw [singleton_eq_typesWith_iff] at hφ
-  obtain ⟨hφ, hφ'⟩ := hφ
-  let ψ : L.Formula α := Formula.equivSentence.symm <| Formula.exClosure (BoundedFormula.constantsVarsEquiv.symm φ)
-  exists ψ
-  simp_rw [singleton_eq_typesWith_iff]
-  refine ⟨?_,?_⟩
-  · refine formula_mem_typeOf.mpr ?_
-    simp [ψ]
-    rw [Formula.realize_equivSentence_symm, @Formula.realize_exClosure]
-    letI : (constantsOn α).Structure M := constantsOn.structure a
-    refine ⟨fun i ↦ b i, ?_⟩
-    apply (BoundedFormula.realize_restrictFreeVar b (by intro i; rfl)).mpr
-    rw [← BoundedFormula.realize_constantsVarsEquiv]
-    rw [_root_.Equiv.apply_symm_apply]
-    change φ.Realize (Sum.elim a b)
-    exact formula_mem_typeOf.mp hφ
-  · intro ϕ hϕ
-    let χ : L.Formula (α ⊕ β) := (Formula.equivSentence.symm ϕ).relabel (Sum.inl)
-    specialize hφ' (Formula.equivSentence χ) ?_
-    · simp [χ]
-      exact (Formula.realize_equivSentence_symm M ϕ a).mpr hϕ
-    rw [models_sentence_iff]
-    intro N
-    haveI : (L.lhomWithConstants α).IsExpansionOn ↑N :=
-      LHom.isExpansionOn_reduct (L.lhomWithConstants α) ↑N
-    simp only [Sentence.realize_imp]
-    intro hψN
-    simp only [_root_.Equiv.apply_symm_apply, Formula.realize_exClosure, ψ] at hψN
-    obtain ⟨v,hv⟩ := hψN
-    let v' : β → N :=
-      Function.extend Subtype.val v (fun _ ↦ Classical.choice N.nonempty')
-    -- Expanding the existing `L[[α]]`-structure again by `β` gives `L[[α]][[β]]`, which is
-    -- canonically equivalent to the one-step expansion `L[[α ⊕ β]]`. Since these languages are
-    -- not definitionally equal, we explicitly build the latter: its `α`-constants retain their
-    -- current interpretations in `N`, while its `β`-constants are interpreted by `v'`.
-    letI : (constantsOn (α ⊕ β)).Structure N :=
-      constantsOn.structure <| Sum.elim (fun i ↦ (L.con i : N)) v'
-    haveI : N ⊨ (L.lhomWithConstants (α ⊕ β)).onTheory T := by
-      simpa [LHom.onTheory_model] using N.is_model
-    have hχN : N ⊨ Formula.equivSentence χ := by
-      apply hφ'.realize_sentence
-      change N ⊨ Formula.equivSentence φ
-      simp
-      change φ.Realize <| Sum.elim (fun i ↦ (L.con i : N)) v'
-      rw [← _root_.Equiv.apply_symm_apply BoundedFormula.constantsVarsEquiv φ]
-      refine BoundedFormula.realize_constantsVarsEquiv.mpr
-          ((BoundedFormula.realize_restrictFreeVar v' ?_).mp hv)
-      intro i; simp [v']
-    simp only [Formula.realize_equivSentence, Formula.realize_relabel, χ] at hχN
-    rwa [← Formula.realize_equivSentence_symm_con N ϕ]
+  have h' (ψ : L.Formula α) : ψ.Realize (v ∘ f) ↔ ψ.Realize (w ∘ f) := by
+    rw [← Formula.realize_relabel (φ := ψ) (g := f) (v := v),
+        ← Formula.realize_relabel (φ := ψ) (g := f) (v := w)]
+    exact realize_iff_of_typeOf_eq v w h (ψ.relabel f)
+  apply SetLike.ext
+  intro σs
+  rw [mem_typeOf, mem_typeOf]
+  exact h' (Formula.equivSentence.symm σs)
+
+/-- Equality of joint tuple types projects to equality of the left tuple types. -/
+theorem typeOf_left_of_typeOf_sum_eq {M : Type w'} {N : Type x}
+    [L.Structure M] [Nonempty M] [M ⊨ T] [L.Structure N] [Nonempty N] [N ⊨ T]
+    {β : Type y} (a : α → M) (b : β → M) (c : α → N) (d : β → N)
+    (h : T.typeOf (Sum.elim a b) = T.typeOf (Sum.elim c d)) :
+    T.typeOf a = T.typeOf c := by
+  simpa [Sum.elim_comp_inl] using
+    (typeOf_comp_eq_of_typeOf_eq (f := Sum.inl) (v := Sum.elim a b) (w := Sum.elim c d) h)
+
+/-- Equality of joint tuple types projects to equality of the right tuple types. -/
+theorem typeOf_right_of_typeOf_sum_eq {M : Type w'} {N : Type x}
+    [L.Structure M] [Nonempty M] [M ⊨ T] [L.Structure N] [Nonempty N] [N ⊨ T]
+    {β : Type y} (a : α → M) (b : β → M) (c : α → N) (d : β → N)
+    (h : T.typeOf (Sum.elim a b) = T.typeOf (Sum.elim c d)) :
+    T.typeOf b = T.typeOf d := by
+  simpa [Sum.elim_comp_inr] using
+    (typeOf_comp_eq_of_typeOf_eq (f := Sum.inr) (v := Sum.elim a b) (w := Sum.elim c d) h)
+
+/-- If two tuples have the same type, every finite extension of the first tuple can be transferred
+to a finite extension of the second tuple, possibly in a different model. -/
+theorem exists_realize_sum_of_typeOf_eq {M : Type w'} {N : Type x}
+    [L.Structure M] [Nonempty M] [M ⊨ T] [L.Structure N] [Nonempty N] [N ⊨ T]
+    {β : Type y} (a : α → M) (b : β → M) (c : β → N)
+    (hbc : T.typeOf b = T.typeOf c) {φ : L.Formula (α ⊕ β)}
+    (hφ : φ.Realize (Sum.elim a b)) : ∃ a' : α → N, φ.Realize (Sum.elim a' c) := by
+  classical
+  apply (Formula.realize_existsLeft φ c).1
+  apply (realize_iff_of_typeOf_eq b c hbc φ.existsLeft).1
+  exact (Formula.realize_existsLeft φ b).2 ⟨a, hφ⟩
 
 end CompleteType
 
