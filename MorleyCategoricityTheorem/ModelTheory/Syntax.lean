@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
 import Mathlib.ModelTheory.Syntax
+import MorleyCategoricityTheorem.ModelTheory.LanguageEmbedding
 
 /-!
 # Additional First-Order Syntax
@@ -14,6 +15,11 @@ categoricity theorem. Its declarations are intended to migrate directly to
 
 This is the syntax-only layer. It must not depend on structures, formula realization, set
 cardinality, or elementary embeddings.
+
+This file also proves that an injective language homomorphism maps terms, formulas, and sentences
+injectively, and that a language embedding `FirstOrder.Language.LEmbedding` therefore induces
+embeddings of terms, formulas, and sentences (`LEmbedding.mapTerm`, `LEmbedding.mapFormula`,
+`LEmbedding.mapSentence`).
 
 ## Main definitions
 
@@ -122,6 +128,131 @@ noncomputable def existsLeft (φ : L.Formula (α ⊕ β)) : L.Formula β :=
   (φ.relabel Sum.swap).existsRight
 
 end Formula
+
+universe u' v' w
+
+namespace LHom
+
+variable {L : Language.{u, v}} {L' : Language.{u', v'}} {α : Type w}
+
+/-- The map on terms induced by a language map is injective when the language map is injective. -/
+theorem onTerm_injective (φ : L →ᴸ L') (h : φ.Injective) :
+    Function.Injective (φ.onTerm : L.Term α → L'.Term α) := by
+  intro t₁ t₂ h₂
+  induction t₁ generalizing t₂ with
+  | var i =>
+    cases t₂ with
+    | var j => simpa [onTerm] using h₂
+    | func f ts => cases h₂
+  | func f ts ih =>
+    cases t₂ with
+    | var j => cases h₂
+    | func f' ts' =>
+      simp only [onTerm] at h₂
+      injection h₂ with h_ar hf hts
+      subst h_ar
+      have hf' : φ.onFunction f = φ.onFunction f' := eq_of_heq hf
+      have hff : f = f' := h.onFunction hf'
+      have hts' : ts = ts' := by
+        funext i
+        exact ih i (congr_fun (eq_of_heq hts) i)
+      exact congr (congrArg Term.func hff) hts'
+
+/-- The map on bounded formulas induced by a language map is injective when the language map is
+  injective. -/
+theorem onBoundedFormula_injective (φ : L →ᴸ L') (h : φ.Injective) :
+    ∀ {n : ℕ}, Function.Injective
+      (φ.onBoundedFormula : L.BoundedFormula α n → L'.BoundedFormula α n) := by
+  intro n g₁ g₂ hg
+  induction g₁ with
+  | falsum =>
+    cases g₂ with
+    | falsum => rfl
+    | equal _ _ => cases hg
+    | rel _ _ => cases hg
+    | imp _ _ => cases hg
+    | all _ => cases hg
+  | equal t₁ s₁ =>
+    cases g₂ with
+    | falsum => cases hg
+    | equal t₂ s₂ =>
+      simp only [onBoundedFormula, Term.bdEqual] at hg
+      injection hg with _ ht hs
+      have h_t : t₁ = t₂ := onTerm_injective φ h ht
+      have h_s : s₁ = s₂ := onTerm_injective φ h hs
+      exact congr (congrArg BoundedFormula.equal h_t) h_s
+    | rel _ _ => cases hg
+    | imp _ _ => cases hg
+    | all _ => cases hg
+  | rel R₁ ts₁ =>
+    cases g₂ with
+    | falsum => cases hg
+    | equal _ _ => cases hg
+    | rel R₂ ts₂ =>
+      simp only [onBoundedFormula, Relations.boundedFormula] at hg
+      injection hg with _ h_l hR hts
+      subst h_l
+      have h_R : R₁ = R₂ := h.onRelation (eq_of_heq hR)
+      have h_ts : ts₁ = ts₂ := by
+        funext i
+        exact onTerm_injective φ h (congr_fun (eq_of_heq hts) i)
+      exact congr (congrArg BoundedFormula.rel h_R) h_ts
+    | imp _ _ => cases hg
+    | all _ => cases hg
+  | imp f₁ g₁ ih1 ih2 =>
+    cases g₂ with
+    | falsum => cases hg
+    | equal _ _ => cases hg
+    | rel _ _ => cases hg
+    | imp f₂ g₂ =>
+      simp only [onBoundedFormula] at hg
+      injection hg with _ hf hg'
+      have h_f : f₁ = f₂ := ih1 hf
+      have h_g : g₁ = g₂ := ih2 hg'
+      exact congr (congrArg BoundedFormula.imp h_f) h_g
+    | all _ => cases hg
+  | all f₁ ih =>
+    cases g₂ with
+    | falsum => cases hg
+    | equal _ _ => cases hg
+    | rel _ _ => cases hg
+    | imp _ _ => cases hg
+    | all f₂ =>
+      simp only [onBoundedFormula] at hg
+      injection hg with _ hf
+      exact congrArg BoundedFormula.all (ih hf)
+
+/-- The map on formulas induced by a language map is injective when the language map is
+  injective. -/
+theorem onFormula_injective (φ : L →ᴸ L') (h : φ.Injective) :
+    Function.Injective (φ.onFormula : L.Formula α → L'.Formula α) := by
+  simpa [onFormula] using (onBoundedFormula_injective φ h (n := 0))
+
+/-- The map on sentences induced by a language map is injective when the language map is
+  injective. -/
+theorem onSentence_injective (φ : L →ᴸ L') (h : φ.Injective) :
+    Function.Injective (φ.onSentence : L.Sentence → L'.Sentence) := by
+  simpa [onSentence] using (onFormula_injective φ h (α := Empty))
+
+end LHom
+
+namespace LEmbedding
+
+variable {L : Language.{u, v}} {L' : Language.{u', v'}}
+
+/-- A language embedding induces an embedding of terms. -/
+def mapTerm (e : L ↪ᴸ L') (α : Type w) : L.Term α ↪ L'.Term α :=
+  ⟨e.toLHom.onTerm, LHom.onTerm_injective e.toLHom e.injective⟩
+
+/-- A language embedding induces an embedding of formulas. -/
+def mapFormula (e : L ↪ᴸ L') (α : Type w) : L.Formula α ↪ L'.Formula α :=
+  ⟨e.toLHom.onFormula, LHom.onFormula_injective e.toLHom e.injective⟩
+
+/-- A language embedding induces an embedding of sentences. -/
+def mapSentence (e : L ↪ᴸ L') : L.Sentence ↪ L'.Sentence :=
+  ⟨e.toLHom.onSentence, LHom.onSentence_injective e.toLHom e.injective⟩
+
+end LEmbedding
 
 end Language
 
