@@ -6,8 +6,19 @@ import MorleyCategoricityTheorem.ModelTheory.Satisfiability
 # Complete types
 
 This file defines realization and omission for complete types, together with complete types over a
-parameter set in a structure.  Isolation of complete types is developed in
-`ModelTheory.IsolatedTypes`.
+parameter set in a structure.  It also provides the semantic dictionary for basic open sets of
+complete types over a complete theory: containment, disjointness, and nonemptiness are all
+detected by realization of the defining formula in a single nonempty model.  Isolation of complete
+types is developed in `ModelTheory.IsolatedTypes`.
+
+## Main results
+
+- `CompleteType.typesWith_subset_iff_realize_imp`: containment of basic open sets is equivalent to
+  implication between the defining formulas in a single model.
+- `CompleteType.typesWith_disjoint_iff_not_realize_and`: disjointness of basic open sets is
+  equivalent to no tuple realizing both defining formulas.
+- `CompleteType.typesWith_nonempty_iff_exists_realize`: a basic open set is nonempty exactly when
+  its defining formula is realized in the model.
 
 ## TODO
 
@@ -96,6 +107,71 @@ theorem eq_of_le {p q : T.CompleteType α} (h : (p : L[[α]].Theory) ⊆ q) : p 
 theorem typesWith_eq_union_inf_not (φ ψ : L[[α]].Sentence) :
     T.typesWith φ = T.typesWith (φ ⊓ ψ) ∪ T.typesWith (φ ⊓ ∼ψ) := by
   simp [typesWith_inf, typesWith_not]
+
+/-- Over a complete theory, containment of basic open sets of complete types is detected by
+realization in a single nonempty model: `[φ] ⊆ [ψ]` exactly when every realization of `φ` in that
+model realizes `ψ`. -/
+theorem typesWith_subset_iff_realize_imp {N : Type w'} [L.Structure N] [Nonempty N] [N ⊨ T]
+    (hT : T.IsComplete) (φ ψ : L.Formula α) :
+    T.typesWith (Formula.equivSentence φ) ⊆ T.typesWith (Formula.equivSentence ψ) ↔
+      ∀ v : α → N, φ.Realize v → ψ.Realize v := by
+  classical
+  constructor
+  · intro h v hv
+    have hmem : T.typeOf v ∈ T.typesWith (Formula.equivSentence φ) := by
+      rw [CompleteType.mem_typesWith_iff, CompleteType.formula_mem_typeOf]
+      exact hv
+    have := h hmem
+    rwa [CompleteType.mem_typesWith_iff, CompleteType.formula_mem_typeOf] at this
+  · intro h p hp
+    rw [CompleteType.mem_typesWith_iff] at hp ⊢
+    obtain ⟨N', v, hv⟩ := T.exists_modelType_is_realized_in p
+    have hφv : φ.Realize v := by
+      rw [← hv] at hp
+      exact (CompleteType.formula_mem_typeOf (T := T) (v := v)).mp hp
+    rw [← hv]
+    refine (CompleteType.formula_mem_typeOf (T := T) (v := v)).mpr ?_
+    by_contra hψv
+    have hconj : (φ ⊓ ∼ψ).Realize v := by
+      rw [Formula.realize_inf, Formula.realize_not]
+      exact ⟨hφv, hψv⟩
+    obtain ⟨w, hw⟩ := hT.exists_realize_of_isComplete v (φ ⊓ ∼ψ) hconj N
+    rw [Formula.realize_inf, Formula.realize_not] at hw
+    exact hw.2 (h w hw.1)
+
+/-- Over a complete theory, two basic open sets of complete types are disjoint exactly when no
+tuple of the model realizes both defining formulas.  This is the sibling-disjointness form used
+when building binary trees of basic open sets. -/
+theorem typesWith_disjoint_iff_not_realize_and {N : Type w'} [L.Structure N] [Nonempty N]
+    [N ⊨ T] (hT : T.IsComplete) (φ ψ : L.Formula α) :
+    Disjoint (T.typesWith (Formula.equivSentence φ)) (T.typesWith (Formula.equivSentence ψ)) ↔
+      ∀ v : α → N, φ.Realize v → ¬ψ.Realize v := by
+  have hcompl : (T.typesWith (Formula.equivSentence ψ))ᶜ =
+      T.typesWith (Formula.equivSentence (∼ψ)) := by
+    rw [Formula.equivSentence_not, typesWith_not]
+  rw [← Set.subset_compl_iff_disjoint_right, hcompl]
+  simpa only [Formula.realize_not] using
+    (typesWith_subset_iff_realize_imp (T := T) (N := N) hT φ (∼ψ))
+
+/-- Over a complete theory, a basic open set of complete types is nonempty exactly when its
+defining formula is realized in the model.  Realization in an arbitrary model transfers to the
+fixed model by completeness, so only realizations in the fixed model need to be exhibited. -/
+theorem typesWith_nonempty_iff_exists_realize {N : Type w'} [L.Structure N] [Nonempty N]
+    [N ⊨ T] (hT : T.IsComplete) (φ : L.Formula α) :
+    (T.typesWith (Formula.equivSentence φ)).Nonempty ↔ ∃ v : α → N, φ.Realize v := by
+  constructor
+  · rintro ⟨p, hp⟩
+    rw [CompleteType.mem_typesWith_iff] at hp
+    obtain ⟨N', v, hv⟩ := T.exists_modelType_is_realized_in p
+    have hφv : φ.Realize v := by
+      rw [← hv] at hp
+      exact (CompleteType.formula_mem_typeOf (T := T) (v := v)).mp hp
+    obtain ⟨w, hw⟩ := hT.exists_realize_of_isComplete v φ hφv N
+    exact ⟨w, hw⟩
+  · rintro ⟨v, hv⟩
+    exact ⟨T.typeOf v, by
+      rw [CompleteType.mem_typesWith_iff]
+      exact (CompleteType.formula_mem_typeOf (T := T) (v := v)).mpr hv⟩
 
 /-- A complete type is realized by a tuple when it is the type of that tuple. -/
 def RealizedBy {N : Type w'} [L.Structure N] [Nonempty N] [N ⊨ T]
