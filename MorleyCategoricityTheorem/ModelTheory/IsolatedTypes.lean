@@ -22,7 +22,8 @@ and transitivity results for isolated types of tuples.
 - `CompleteType.isolatedBy_iff_models_imp` and
   `CompleteType.IsolatedBy.realize_iff_typeOf_eq` give semantic characterizations of isolation.
 - `CompleteType.exists_isolated_splitting` splits a nonempty basic open set containing no isolated
-  type.
+  type, with `CompleteType.exists_isolated_splitting_formula` giving the formula-level form used by
+  the density proof.
 - `CompleteType.isIsolated_typeOf_left` projects isolation from a joint tuple to its left
   coordinates.
 - `CompleteType.typeOf_isolatedBy_iff_of_isComplete` characterizes isolation inside one model of a
@@ -304,6 +305,28 @@ theorem exists_isolated_splitting (φ : L[[α]].Sentence)
   · exact ⟨ψ, ⟨p, hpφ, hψp⟩, q, hqφ, hψ.mpr hψp⟩
   · have hψnp := (not_mem_iff p ψ).mp hψp
     exact ⟨ψ, ⟨q, hqφ, Classical.not_not.mp (mt hψ.mp hψnp)⟩, p, hpφ, hψnp⟩
+
+/-- Formula-level form of `exists_isolated_splitting`: a nonempty basic open set defined by a
+formula of arbitrary variable type and containing no isolated type splits along a formula of the
+same variable type.  This removes the need for callers to transport formulas across
+`Formula.equivSentence` and its `inf` and `not` compatibilities. -/
+theorem exists_isolated_splitting_formula (φ : L.Formula α)
+    (hne : (T.typesWith (Formula.equivSentence φ)).Nonempty)
+    (hni : ∀ p ∈ T.typesWith (Formula.equivSentence φ), ¬p.IsIsolated) :
+    ∃ ψ : L.Formula α,
+      (T.typesWith (Formula.equivSentence (φ ⊓ ψ))).Nonempty ∧
+        (T.typesWith (Formula.equivSentence (φ ⊓ ∼ψ))).Nonempty ∧
+          (∀ p ∈ T.typesWith (Formula.equivSentence (φ ⊓ ψ)), ¬p.IsIsolated) ∧
+            ∀ p ∈ T.typesWith (Formula.equivSentence (φ ⊓ ∼ψ)), ¬p.IsIsolated := by
+  obtain ⟨ψs, h1, h2, h3, h4⟩ :=
+    exists_isolated_splitting (T := T) (Formula.equivSentence φ) hne hni
+  refine ⟨Formula.equivSentence.symm ψs, ?_, ?_, ?_, ?_⟩
+  · simpa only [Formula.equivSentence_inf, _root_.Equiv.apply_symm_apply] using h1
+  · simpa only [Formula.equivSentence_inf, Formula.equivSentence_not,
+      _root_.Equiv.apply_symm_apply] using h2
+  · simpa only [Formula.equivSentence_inf, _root_.Equiv.apply_symm_apply] using h3
+  · simpa only [Formula.equivSentence_inf, Formula.equivSentence_not,
+      _root_.Equiv.apply_symm_apply] using h4
 
 /-! ## Projection of isolated types -/
 
