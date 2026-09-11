@@ -1,3 +1,4 @@
+import MorleyCategoricityTheorem.BinaryTree
 import MorleyCategoricityTheorem.ModelTheory.DefinablyFull
 import MorleyCategoricityTheorem.ModelTheory.ElementaryChain
 import MorleyCategoricityTheorem.ModelTheory.ElementaryMaps
