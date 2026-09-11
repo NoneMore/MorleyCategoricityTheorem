@@ -379,8 +379,34 @@ formula over \(A\) for the finite tuple of parameters from \(B\) that
 occurs in it.  The projected joint type is isolated over \(A\).
 \end{proof}
 
+\begin{lemma}[Binary splitting obstruction]
+\label{lem:binary-splitting-obstruction}
+\lean{FirstOrder.Language.Theory.IsOmegaStable.false_of_formula_splitting}
+\leanok
+\uses{def:omega-stability}
+Let \(T\) be \(\omega\)-stable and \(M\models T\).  Let \(P\) be a property
+of formulas over parameters in \(M\) that holds of some root formula, is
+inherited by both \(\varphi\wedge\psi\) and \(\varphi\wedge\neg\psi\)
+whenever it holds of \(\varphi\), and implies realizability in \(M\).  Then
+no formula satisfies \(P\).
+\end{lemma}
+
+\begin{proof}
+\leanok
+Recursively splitting a root formula gives a binary tree of formulas
+satisfying \(P\).  Only countably many parameters occur in this tree, so
+it lives over a countable parameter set.  Its nodes define nonempty basic
+open sets, each child is contained in its parent, and the two children of
+a node are disjoint.  Compactness then gives a point in every branch
+intersection, and the \(2^{\aleph_0}\) branches determine pairwise distinct
+complete types over the countable parameter set, contradicting
+\(\omega\)-stability.
+\end{proof}
+
 \begin{theorem}[Density of isolated types in omega-stable theories]
 \label{thm:isolated-types-dense}
+\lean{FirstOrder.Language.Theory.CompleteType.exists_isolated_mem_typesWith}
+\leanok
 \uses{def:omega-stability,def:isolated-and-omitted-types}
 If \(T\) is \(\omega\)-stable, then for every \(M\models T\) and every
 parameter set \(A\subseteq M\), the isolated types are dense in
@@ -388,7 +414,8 @@ parameter set \(A\subseteq M\), the isolated types are dense in
 \end{theorem}
 
 \begin{proof}
-\uses{lem:isolated-splitting}
+\leanok
+\uses{lem:isolated-splitting,lem:binary-splitting-obstruction}
 If some nonempty basic open set had no isolated type, repeated splitting
 would give a full binary tree of formulas using only countably many
 parameters.  Its branches determine \(2^{\aleph_0}\) distinct complete
@@ -746,6 +773,7 @@ side.
 \end{lemma}
 
 \begin{proof}
+\uses{lem:binary-splitting-obstruction}
 If every uncountable definable set had an uncountable definable split,
 then recursively splitting would produce a binary tree of formulas over
 a countable parameter set, hence \(2^{\aleph_0}\) many complete
@@ -957,6 +985,7 @@ minimal formula in \(M\).
 \end{theorem}
 
 \begin{proof}
+\uses{lem:binary-splitting-obstruction}
 If no minimal formula existed, recursively split each infinite
 definable set into two infinite definable subsets.  The resulting
 binary tree gives \(2^{\aleph_0}\) complete one-types over a countable
