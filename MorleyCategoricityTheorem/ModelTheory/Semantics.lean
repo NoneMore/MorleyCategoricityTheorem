@@ -38,6 +38,12 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
 - `FirstOrder.Language.Formula.exists_fin_params` (and the `BoundedFormula` analogue): every formula
   over a parameter set is, up to realization, a substitution instance of a constant-free formula in
   finitely many extra variables.
+- `FirstOrder.Language.Formula.realize_bindParam`: realize a formula after binding left variables as
+  parameters.
+- `FirstOrder.Language.Formula.realize_unbindParam`: realize a formula after unbinding parameters
+  back to free variables.
+- `FirstOrder.Language.Formula.realize_bind_unbind`: unbinding the parameters of a formula and
+  rebinding them along an interpretation-preserving map is semantically the identity.
 
 ## Proof outline
 
@@ -178,6 +184,51 @@ theorem realize_existsLeft [DecidableEq α] [DecidableEq β] [Nonempty M]
   refine exists_congr fun x ↦ iff_of_eq <| congrArg φ.Realize ?_
   funext z
   cases z <;> rfl
+
+/-- Realization of `bindParam`: binding the left variables as parameters is equivalent to
+interpreting those variables by the corresponding constants. -/
+theorem realize_bindParam {γ : Type*} [L[[γ]].Structure M]
+    [(L.lhomWithConstants γ).IsExpansionOn M]
+    (φ : L.Formula (β ⊕ α)) (b : β → γ) (v : α → M) :
+    (φ.bindParam b).Realize v ↔
+      φ.Realize (Sum.elim (fun x => (L.con (b x) : M)) v) := by
+  rw [bindParam, Formula.Realize,
+    ← BoundedFormula.realize_constantsVarsEquiv,
+    _root_.Equiv.apply_symm_apply, ← Formula.Realize,
+      Formula.realize_relabel]
+  congr!
+  ext (_ | _) <;> rfl
+
+/-- Realization of `unbindParam`: unbinding parameters back to free variables is equivalent to the
+original formula, provided the new left variables are interpreted as the corresponding constants. -/
+theorem realize_unbindParam {γ : Type*} [DecidableEq (γ ⊕ α)] [L[[γ]].Structure M]
+    [(L.lhomWithConstants γ).IsExpansionOn M]
+    (φ : L[[γ]].Formula α) {v₁ : φ.paramFinset → M} {v₂ : α → M}
+    (hv : ∀ c : φ.paramFinset, v₁ c = (L.con c.1 : M)) :
+    (unbindParam φ).Realize (Sum.elim v₁ v₂) ↔ φ.Realize v₂ := by
+  rw [unbindParam, Formula.realize_relabel, Formula.Realize]
+  rw [BoundedFormula.realize_restrictFreeVar (Sum.elim (fun c : γ => (L.con c : M)) v₂) (by
+    rintro ⟨a, ha⟩
+    cases a with
+    | inl c => simp [hv]
+    | inr a => rfl)]
+  exact BoundedFormula.realize_constantsVarsEquiv
+
+/-- Realization of `unbindParam` followed by `bindParam`: unbinding the finite parameters of a
+formula and rebinding them along a map that preserves their interpretation does not change the
+realization relation.
+
+This is the semantic justification for replacing the parameter set of a formula by a smaller one
+that still contains all parameters occurring in it: the map `b` sends each occurring parameter to an
+element of the new parameter type `δ` interpreted by the same element of `M`. -/
+theorem realize_bind_unbind {γ δ : Type*} [DecidableEq (γ ⊕ α)]
+    [L[[γ]].Structure M] [L[[δ]].Structure M]
+    [(L.lhomWithConstants γ).IsExpansionOn M] [(L.lhomWithConstants δ).IsExpansionOn M]
+    (φ : L[[γ]].Formula α) (b : φ.paramFinset → δ)
+    (hb : ∀ c : φ.paramFinset, (L.con (b c) : M) = (L.con c.1 : M)) (v : α → M) :
+    ((φ.unbindParam).bindParam b).Realize v ↔ φ.Realize v := by
+  rw [realize_bindParam]
+  exact realize_unbindParam φ hb
 
 section BoundaryCases
 

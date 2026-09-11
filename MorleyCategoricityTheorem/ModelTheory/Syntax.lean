@@ -127,6 +127,27 @@ Implemented by swapping the two components and applying `existsRight`. -/
 noncomputable def existsLeft (φ : L.Formula (α ⊕ β)) : L.Formula β :=
   (φ.relabel Sum.swap).existsRight
 
+variable {γ : Type*}
+
+/-- Treats the variables of `β` as parameters via the assignment `b : β → γ`, producing a formula
+over the constant expansion `L[[γ]]` with free variables `α`.  The type `γ` need not carry an
+`L`-structure. -/
+def bindParam (φ : L.Formula (β ⊕ α)) (b : β → γ) : L[[γ]].Formula α :=
+  BoundedFormula.constantsVarsEquiv.symm (φ.relabel (Sum.map b id))
+
+variable [DecidableEq (γ ⊕ α)] in
+noncomputable def paramFinset (φ : L[[γ]].Formula α) : Finset γ :=
+  ((BoundedFormula.constantsVarsEquiv φ).freeVarFinset).toLeft
+
+variable [DecidableEq (γ ⊕ α)] in
+noncomputable def unbindParam (φ : L[[γ]].Formula α) : L.Formula (φ.paramFinset ⊕ α) :=
+  let ψ := BoundedFormula.constantsVarsEquiv φ
+  let g : ψ.freeVarFinset → φ.paramFinset ⊕ α := fun x =>
+    match x with
+    | ⟨Sum.inl c, hc⟩ => Sum.inl ⟨c, Finset.mem_toLeft.2 hc⟩
+    | ⟨Sum.inr a, _⟩ => Sum.inr a
+  Formula.relabel g (ψ.restrictFreeVar id)
+
 end Formula
 
 universe u' v' w
