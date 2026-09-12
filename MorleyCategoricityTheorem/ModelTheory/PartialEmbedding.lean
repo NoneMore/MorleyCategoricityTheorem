@@ -1,11 +1,25 @@
 import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Complexity
+import MorleyCategoricityTheorem.ModelTheory.LanguageEmbedding
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
 # Partial Embeddings
 
-This file will contain partial embeddings between first-order structures.
+This file defines partial embeddings and partial elementary embeddings between first-order
+structures, and transports the complete theory of a parameter-expanded structure along a partial
+elementary embedding.
+
+## Main results
+
+- `PartialElementaryEmbedding.map_boundedFormula` and `PartialElementaryEmbedding.map_formula`:
+  preservation of bounded and ordinary formulas with an arbitrary type of free variables.
+- `PartialElementaryEmbedding.parameterLEquiv`: a partial elementary embedding `f` induces an
+  equivalence between the constant expansions `L[[A]]` and `L[[B]]` that renames each constant `a`
+  to the constant `f a`.
+- `PartialElementaryEmbedding.map_sentence`: this equivalence preserves satisfaction of sentences.
+- `PartialElementaryEmbedding.map_completeTheory`: it carries the complete theory of `M` over `A`
+  onto the complete theory of `N` over `B`.
 -/
 
 universe u v w w'
@@ -145,6 +159,71 @@ theorem map_formula (f : A ↪ₚₑ[L] B) {α : Type*} (φ : L.Formula α) (x :
     ← Unique.eq_default (Subtype.val ∘ f ∘ (default : Fin 0 → A)),
     ← Unique.eq_default (Subtype.val ∘ (default : Fin 0 → A))]
   exact f.map_boundedFormula (n := 0) φ x default
+
+/-- The equivalence between the constant expansions `L[[A]]` and `L[[B]]` induced by a partial
+elementary embedding `f : A ↪ₚₑ[L] B`: it renames the constant `a` to the constant `f a` and leaves
+the symbols of `L` unchanged. -/
+noncomputable def parameterLEquiv (f : A ↪ₚₑ[L] B) : L[[A]] ≃ᴸ L[[B]] :=
+  LEquiv.lhomWithConstantsCongr L f.toEquiv
+
+@[simp]
+theorem parameterLEquiv_toLHom (f : A ↪ₚₑ[L] B) :
+    f.parameterLEquiv.toLHom = L.lhomWithConstantsMap (f.toEquiv : A → B) :=
+  rfl
+
+/-- Renaming parameters along a partial elementary embedding preserves the realization of a formula
+of the base language in the constant expansions: `N` with the constants of `A` interpreted by
+`f.toEquiv` satisfies `Formula.equivSentence θ` exactly when `θ` is realized by those parameters.
+
+This is the semantic bridge between `L[[A]]`-sentences and base-language formulas, isolating the
+temporary `L[[A]]`-structure on `N`. -/
+private theorem realize_onSentence_equivSentence (f : A ↪ₚₑ[L] B) (θ : L.Formula A) :
+    N ⊨ (f.parameterLEquiv.toLHom).onSentence (Formula.equivSentence θ) ↔
+      θ.Realize ((Subtype.val : B → N) ∘ (f.toEquiv : A → B)) := by
+  letI : (constantsOn A).Structure N := constantsOn.structure ((Subtype.val : B → N) ∘ f.toEquiv)
+  haveI hConst : (LHom.constantsOnMap (f.toEquiv : A → B)).IsExpansionOn N :=
+    constantsOnMap_isExpansionOn (f := (f.toEquiv : A → B))
+      (fα := (Subtype.val : B → N) ∘ f.toEquiv) (fβ := (Subtype.val : B → N)) rfl
+  haveI hExp : (L.lhomWithConstantsMap (f.toEquiv : A → B)).IsExpansionOn N :=
+    LHom.sumMap_isExpansionOn (LHom.id L) (LHom.constantsOnMap (f.toEquiv : A → B)) N
+  have h1 : N ⊨ (f.parameterLEquiv.toLHom).onSentence (Formula.equivSentence θ) ↔
+      N ⊨ (Formula.equivSentence θ) := by
+    change N ⊨ (L.lhomWithConstantsMap (f.toEquiv : A → B)).onSentence
+      (Formula.equivSentence θ) ↔ N ⊨ (Formula.equivSentence θ)
+    rw [LHom.realize_onSentence]
+  rw [h1, Formula.realize_equivSentence]
+  rfl
+
+/-- Renaming parameters along a partial elementary embedding preserves satisfaction of sentences in
+the parameter-expanded language. -/
+theorem map_sentence (f : A ↪ₚₑ[L] B) (φ : L[[A]].Sentence) :
+    M ⊨ φ ↔ N ⊨ (f.parameterLEquiv.toLHom).onSentence φ := by
+  have hθ := realize_onSentence_equivSentence (M := M) f (Formula.equivSentence.symm φ)
+  have hφ' : Formula.equivSentence (Formula.equivSentence.symm φ) = φ :=
+    _root_.Equiv.apply_symm_apply Formula.equivSentence φ
+  rw [hφ'] at hθ
+  rw [hθ]
+  conv_lhs => rw [← hφ']
+  rw [Formula.realize_equivSentence]
+  exact (f.map_formula (Formula.equivSentence.symm φ) id).symm
+
+/-- The parameter-language equivalence induced by a partial elementary embedding carries the
+complete theory of `M` over `A` onto the complete theory of `N` over `B`. -/
+theorem map_completeTheory (f : A ↪ₚₑ[L] B) :
+    f.parameterLEquiv.toLHom.onTheory (L[[A]].completeTheory M) =
+      L[[B]].completeTheory N := by
+  ext ψ
+  simp only [LHom.mem_onTheory, mem_completeTheory]
+  constructor
+  · rintro ⟨φ, hφ, rfl⟩
+    exact (map_sentence f φ).mp hφ
+  · intro hψ
+    refine ⟨(f.parameterLEquiv.onSentence).symm ψ, ?_, ?_⟩
+    · have hsymm : f.parameterLEquiv.toLHom.onSentence
+          ((f.parameterLEquiv.onSentence).symm ψ) = ψ :=
+        _root_.Equiv.apply_symm_apply (f.parameterLEquiv.onSentence) ψ
+      exact (map_sentence f _).mpr (by rw [hsymm]; exact hψ)
+    · exact _root_.Equiv.apply_symm_apply (f.parameterLEquiv.onSentence) ψ
 
 end PartialElementaryEmbedding
 
