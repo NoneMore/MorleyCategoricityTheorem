@@ -192,12 +192,9 @@ theorem realize_bindParam {γ : Type*} [L[[γ]].Structure M]
     (φ : L.Formula (β ⊕ α)) (b : β → γ) (v : α → M) :
     (φ.bindParam b).Realize v ↔
       φ.Realize (Sum.elim (fun x => (L.con (b x) : M)) v) := by
-  rw [bindParam, Formula.Realize,
-    ← BoundedFormula.realize_constantsVarsEquiv,
-    _root_.Equiv.apply_symm_apply, ← Formula.Realize,
-      Formula.realize_relabel]
-  congr!
-  ext (_ | _) <;> rfl
+  rw [bindParam, Formula.Realize, ← BoundedFormula.realize_constantsVarsEquiv,
+    _root_.Equiv.apply_symm_apply, ← Formula.Realize, Formula.realize_relabel,
+    Sum.elim_comp_map, Function.comp_id, Function.comp_def]
 
 /-- Realization of `unbindParam`: unbinding parameters back to free variables is equivalent to the
 original formula, provided the new left variables are interpreted as the corresponding constants. -/
@@ -206,13 +203,10 @@ theorem realize_unbindParam {γ : Type*} [DecidableEq (γ ⊕ α)] [L[[γ]].Stru
     (φ : L[[γ]].Formula α) {v₁ : φ.paramFinset → M} {v₂ : α → M}
     (hv : ∀ c : φ.paramFinset, v₁ c = (L.con c.1 : M)) :
     (unbindParam φ).Realize (Sum.elim v₁ v₂) ↔ φ.Realize v₂ := by
-  rw [unbindParam, Formula.realize_relabel, Formula.Realize]
-  rw [BoundedFormula.realize_restrictFreeVar (Sum.elim (fun c : γ => (L.con c : M)) v₂) (by
-    rintro ⟨a, ha⟩
-    cases a with
-    | inl c => simp [hv]
-    | inr a => rfl)]
-  exact BoundedFormula.realize_constantsVarsEquiv
+  rw [unbindParam, Formula.realize_relabel, Formula.Realize,
+    BoundedFormula.realize_restrictFreeVar (Sum.elim (fun c : γ => (L.con c : M)) v₂)
+      (by rintro ⟨_ | _, _⟩ <;> simp [hv]),
+    BoundedFormula.realize_constantsVarsEquiv, Formula.Realize]
 
 /-- Realization of `unbindParam` followed by `bindParam`: unbinding the finite parameters of a
 formula and rebinding them along a map that preserves their interpretation does not change the
@@ -226,9 +220,8 @@ theorem realize_bind_unbind {γ δ : Type*} [DecidableEq (γ ⊕ α)]
     [(L.lhomWithConstants γ).IsExpansionOn M] [(L.lhomWithConstants δ).IsExpansionOn M]
     (φ : L[[γ]].Formula α) (b : φ.paramFinset → δ)
     (hb : ∀ c : φ.paramFinset, (L.con (b c) : M) = (L.con c.1 : M)) (v : α → M) :
-    ((φ.unbindParam).bindParam b).Realize v ↔ φ.Realize v := by
-  rw [realize_bindParam]
-  exact realize_unbindParam φ hb
+    ((φ.unbindParam).bindParam b).Realize v ↔ φ.Realize v :=
+  (realize_bindParam φ.unbindParam b v).trans (realize_unbindParam φ hb)
 
 section BoundaryCases
 
