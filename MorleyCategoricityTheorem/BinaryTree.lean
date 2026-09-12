@@ -24,9 +24,7 @@ def pref (x : ℕ → Bool) (n : ℕ) : List Bool :=
 
 /-- The prefix of length `k + 1` is the prefix of length `k` followed by the next bit. -/
 theorem pref_succ (x : ℕ → Bool) (k : ℕ) : pref x (k + 1) = pref x k ++ [x k] := by
-  unfold pref
-  rw [List.ofFn_succ', List.concat_eq_append]
-  rfl
+  simpa [pref] using List.ofFn_succ' (f := fun i : Fin (k + 1) ↦ x i)
 
 /-- A binary tree on `α`: a family of elements of `α` indexed by the finite binary words
 `List Bool`, each word naming the node reached from the root by following the entries of
@@ -47,7 +45,7 @@ def ofSplit (root : α) (split : α → α × α) : BinaryTree α where
 
 /-- The root node of a tree built by `ofSplit` is the given root element. -/
 @[simp] lemma ofSplit_node_nil (root : α) (split : α → α × α) :
-    (ofSplit root split).node [] = root := by
+    (ofSplit root split).node [] = root :=
   rfl
 
 /-- The left child of a node in a tree built by `ofSplit` is the first component of its
@@ -69,7 +67,7 @@ def map {β : Type v} (f : α → β) (T : BinaryTree α) : BinaryTree β where
 
 /-- The node of `map f T` at word `s` is `f` applied to the node of `T` at `s`. -/
 @[simp] lemma map_node {β : Type v} (f : α → β) (T : BinaryTree α) (s : List Bool) :
-    (map f T).node s = f (T.node s) := by
+    (map f T).node s = f (T.node s) :=
   rfl
 
 /-- The *parent–child law*: every node `T.node s` is `R`-related to each of its two children
@@ -108,8 +106,7 @@ def AllNodes (P : α → Prop) : Prop :=
 /-- If a binary tree has nodes in the subtype `{x : α // P x}`, then `Subtype.val` induces a
 binary tree on `α`, and every node of that induced tree satisfies `P`. -/
 lemma subtype_val_allNodes {P : α → Prop} (T : BinaryTree (Subtype P)) :
-    (T.map Subtype.val).AllNodes P :=
-  fun s => (T.node s).property
+    (T.map Subtype.val).AllNodes P := fun s ↦ (T.node s).property
 
 /-- If `R` satisfies the parent–child law and is reflexive and transitive, then every node is
 `R`-related to all of its descendants: whenever `s` is a prefix of `t`, we have
@@ -118,39 +115,26 @@ parent–child law along the path from `s` down to `t`. -/
 lemma parentChildLaw_prefix {T : BinaryTree α} {R : α → α → Prop}
     (hT : T.ParentChildLaw R) (hR : Std.Refl R) (hT' : IsTrans α R) :
     ∀ {s t : List Bool}, s <+: t → R (T.node s) (T.node t) := by
-  intro s t hpre
-  rcases hpre with ⟨r, hr⟩
-  rw [← hr]
-  clear hr
-  revert s
-  induction r with
-  | nil =>
-      intro s
-      simpa using hR.refl (T.node s)
+  rintro s t ⟨r, rfl⟩
+  induction r generalizing s with
+  | nil => simpa using hR.refl (T.node s)
   | cons b r ih =>
-      intro s
-      have hstep : R (T.node s) (T.node (s ++ [b])) := hT s b
-      have hrest : R (T.node (s ++ [b])) (T.node ((s ++ [b]) ++ r)) := ih
-      exact hT'.trans (T.node s) (T.node (s ++ [b])) (T.node (s ++ b :: r)) hstep
-        (by simpa [List.append_assoc] using hrest)
+      exact hT'.trans _ _ _ (hT s b) (by simpa [List.append_assoc] using ih (s := s ++ [b]))
 
 /-- If `P` is hereditary on `T`, then `P` propagates from a node to all of its descendants:
 whenever `s` is a prefix of `t` and `P (T.node s)` holds, so does `P (T.node t)`.  This is the
 specialization of `parentChildLaw_prefix` to the implication relation `P x → P y`, whose
 reflexivity and transitivity are definitional. -/
 lemma hereditary_prefix {P : α → Prop} (hP : T.Hereditary P) :
-    ∀ {s t : List Bool}, s <+: t → P (T.node s) → P (T.node t) := by
-  intro s t hpre hPs
-  exact (T.parentChildLaw_prefix (R := fun x y => P x → P y) hP
-    ⟨fun x hx => hx⟩
-    ⟨fun x y z hxy hyz hx => hyz (hxy hx)⟩) hpre hPs
+    ∀ {s t : List Bool}, s <+: t → P (T.node s) → P (T.node t) :=
+  fun hpre hPs ↦ T.parentChildLaw_prefix (R := fun x y ↦ P x → P y) hP
+    ⟨fun _ ↦ id⟩ ⟨fun _ _ _ hxy hyz hx ↦ hyz (hxy hx)⟩ hpre hPs
 
 /-- If the root node `T.node []` has property `P` and `P` is hereditary on `T`, then *every*
 node of `T` has property `P`: heredity pushes `P` from the root down along every path. -/
 lemma root_hereditary_allNodes {P : α → Prop} (hroot : P (T.node [])) (hP : T.Hereditary P) :
-    T.AllNodes P := by
-  intro s
-  exact (T.hereditary_prefix hP (s := []) (t := s) List.nil_prefix) hroot
+    T.AllNodes P :=
+  fun _ ↦ T.hereditary_prefix hP List.nil_prefix hroot
 
 /-- If `R` relates every element to both components of its split, then `R` satisfies the
 parent–child law on the tree built by `ofSplit`. -/
@@ -183,12 +167,9 @@ lemma ofSplit_forkLaw (root : α) (split : α → α × α) (S : α → α → �
 tree built by `ofSplit`. -/
 lemma ofSplit_hereditary (root : α) (split : α → α × α) (P : α → Prop)
     (h : ∀ x, P x → P (split x).1 ∧ P (split x).2) :
-    (ofSplit root split).Hereditary P := by
-  intro s b hP
-  rcases h ((ofSplit root split).node s) hP with ⟨hl, hr⟩
-  cases b with
-  | false => simpa [ofSplit_node_snoc_false] using hl
-  | true => simpa [ofSplit_node_snoc_true] using hr
+    (ofSplit root split).Hereditary P :=
+  ofSplit_parentChildLaw root split (fun x y ↦ P x → P y)
+    fun x ↦ ⟨fun hx ↦ (h x hx).1, fun hx ↦ (h x hx).2⟩
 
 /-- If the root satisfies `P` and `P` is preserved by both components of every split, then every
 node of the tree built by `ofSplit` satisfies `P`. -/
@@ -252,18 +233,14 @@ lemma ofSplit_allNodes_nonempty (root : Set α) (split : Set α → Set α × Se
 /-- If every child is a subset of its parent, then the node of a longer word is a subset of the
 node of any of its prefixes. -/
 lemma node_subset_of_prefix (hsub : T.ParentChildLaw (fun a b : Set α ↦ b ⊆ a))
-    {u v : List Bool} (h : u <+: v) : T.node v ⊆ T.node u := by
-  have hrefl : Std.Refl (fun a b : Set α ↦ b ⊆ a) := ⟨fun a ↦ Set.Subset.refl a⟩
-  have htrans : IsTrans (Set α) (fun a b : Set α ↦ b ⊆ a) :=
-    ⟨fun a b c hab hbc ↦ Set.Subset.trans hbc hab⟩
-  exact T.parentChildLaw_prefix (R := fun a b : Set α ↦ b ⊆ a) hsub hrefl htrans h
+    {u v : List Bool} (h : u <+: v) : T.node v ⊆ T.node u :=
+  T.parentChildLaw_prefix hsub inferInstance inferInstance h
 
 /-- If every child is a subset of its parent, then along any branch the node at the prefix of
 length `k + 1` is a subset of the node at the prefix of length `k`. -/
 lemma node_pref_succ_subset (hsub : T.ParentChildLaw (fun a b : Set α ↦ b ⊆ a))
     (x : ℕ → Bool) (k : ℕ) : T.node (pref x (k + 1)) ⊆ T.node (pref x k) := by
-  rw [pref_succ]
-  exact hsub (pref x k) (x k)
+  simpa [pref_succ] using hsub (pref x k) (x k)
 
 /-- If children are subsets of their parent and siblings are disjoint, then two nodes whose
 words share the prefix `s` and then diverge at two distinct bits `b₁ ≠ b₂` are disjoint. -/
@@ -273,21 +250,19 @@ lemma disjoint_of_diverge
     ∀ {s : List Bool} {b₁ b₂ : Bool} {s' t' : List Bool},
       b₁ ≠ b₂ → Disjoint (T.node (s ++ b₁ :: s')) (T.node (s ++ b₂ :: t')) := by
   intro s b₁ b₂ s' t' hne
-  have h₁ : T.node (s ++ b₁ :: s') ⊆ T.node (s ++ [b₁]) := by
-    exact node_subset_of_prefix T hsub (by simp : s ++ [b₁] <+: s ++ b₁ :: s')
-  have h₂ : T.node (s ++ b₂ :: t') ⊆ T.node (s ++ [b₂]) := by
-    exact node_subset_of_prefix T hsub (by simp : s ++ [b₂] <+: s ++ b₂ :: t')
+  have h₁ : T.node (s ++ b₁ :: s') ⊆ T.node (s ++ [b₁]) :=
+    node_subset_of_prefix T hsub (by simp : s ++ [b₁] <+: s ++ b₁ :: s')
+  have h₂ : T.node (s ++ b₂ :: t') ⊆ T.node (s ++ [b₂]) :=
+    node_subset_of_prefix T hsub (by simp : s ++ [b₂] <+: s ++ b₂ :: t')
   have hdisj' : Disjoint (T.node (s ++ [b₁])) (T.node (s ++ [b₂])) := by
     cases b₁ with
-    | false =>
-        cases b₂ with
-        | false => exact (hne rfl).elim
-        | true => simpa using hdisj s
-    | true =>
-        cases b₂ with
-        | false => exact (hdisj s).symm
-        | true => exact (hne rfl).elim
-  exact hdisj'.mono_left h₁ |>.mono_right h₂
+    | false => cases b₂ with
+      | false => exact (hne rfl).elim
+      | true => simpa using hdisj s
+    | true => cases b₂ with
+      | false => exact (hdisj s).symm
+      | true => exact (hne rfl).elim
+  exact hdisj'.mono h₁ h₂
 
 /-- *Branch selection*: if every child is a subset of its parent, siblings are disjoint, and
 every branch intersection is nonempty, then choosing a point in each branch intersection yields
@@ -301,29 +276,20 @@ theorem exists_injective_of_nonempty_branchInter
     (hne : ∀ x : ℕ → Bool, (⋂ n, T.node (pref x n)).Nonempty) :
     ∃ f : (ℕ → Bool) → α, Function.Injective f ∧ ∀ x n, f x ∈ T.node (pref x n) := by
   classical
-  let f : (ℕ → Bool) → α := fun x ↦ Classical.choose (hne x)
-  have hf : ∀ x n, f x ∈ T.node (pref x n) := fun x n ↦
-    Set.mem_iInter.mp (Classical.choose_spec (hne x)) n
+  choose f hf using hne
+  simp only [Set.mem_iInter] at hf
   refine ⟨f, ?_, hf⟩
   intro x y hxy
   by_contra hne'
   have hdiv : ∃ k, x k ≠ y k := Function.ne_iff.mp hne'
   let k := Nat.find hdiv
   have hk : x k ≠ y k := Nat.find_spec hdiv
-  have hpref : pref x k = pref y k := by
-    simp only [pref]
-    congr 1
-    funext i
-    exact not_not.mp (Nat.find_min hdiv i.isLt)
-  have hx : f x ∈ T.node (pref x k ++ [x k]) := by
-    simpa [pref_succ] using hf x (k + 1)
-  have hy : f y ∈ T.node (pref x k ++ [y k]) := by
-    have h := hf y (k + 1)
-    rw [pref_succ, ← hpref] at h
-    exact h
+  have hpref : pref x k = pref y k :=
+    List.ofFn_inj.mpr <| funext fun i ↦ not_not.mp (Nat.find_min hdiv i.isLt)
+  have hx : f x ∈ T.node (pref x k ++ [x k]) := by simpa [pref_succ] using hf x (k + 1)
+  have hy : f y ∈ T.node (pref x k ++ [y k]) := by simpa [pref_succ, hpref] using hf y (k + 1)
   have hdisj' : Disjoint (T.node (pref x k ++ [x k])) (T.node (pref x k ++ [y k])) :=
-    T.disjoint_of_diverge hsub hdisj (s := pref x k) (b₁ := x k) (b₂ := y k)
-      (s' := []) (t' := []) hk
+    T.disjoint_of_diverge hsub hdisj (s' := []) (t' := []) hk
   exact (Set.disjoint_left.mp hdisj' (hxy ▸ hx)) hy
 
 end SetBinaryTree
