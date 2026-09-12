@@ -3,7 +3,9 @@ import Mathlib.ModelTheory.LanguageMap
 /-!
 # Language maps
 
-This file contains auxiliary results about language maps and expansions by constants.
+This file contains auxiliary results about language maps and expansions by constants. In
+particular, it records the functoriality of the sum map `LHom.sumMap` (`LHom.sumMap_id`,
+`LHom.sumMap_comp`).
 -/
 
 universe u v w w'
@@ -17,6 +19,18 @@ namespace LHom
 variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
 variable [L.Structure N] [L[[M]].Structure N]
 variable [(L.lhomWithConstants M).IsExpansionOn N]
+
+/-- The sum map of two identity language maps is the identity map. -/
+@[simp]
+theorem sumMap_id (L L' : Language) :
+    (LHom.id L).sumMap (LHom.id L') = LHom.id (L.sum L') := by
+  ext n c <;> cases c <;> rfl
+
+/-- The sum map is compatible with composition of language maps. -/
+theorem sumMap_comp {L₁ L₂ L₃ L₁' L₂' L₃' : Language}
+    (φ : L₁ →ᴸ L₂) (ψ : L₁' →ᴸ L₂') (φ' : L₂ →ᴸ L₃) (ψ' : L₂' →ᴸ L₃') :
+    (φ'.sumMap ψ').comp (φ.sumMap ψ) = (φ'.comp φ).sumMap (ψ'.comp ψ) := by
+  ext n c <;> cases c <;> rfl
 
 theorem lhomWithConstantsMap_isExpansionOn_of_eq
     (f : M → N)

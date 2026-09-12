@@ -5,6 +5,8 @@ Authors: NoneMore
 -/
 import Mathlib.ModelTheory.LanguageMap
 
+import MorleyCategoricityTheorem.ModelTheory.LanguageMap
+
 /-!
 # Language embeddings
 
@@ -17,6 +19,10 @@ injective language homomorphism.
   homomorphism `L →ᴸ L'` together with a proof of injectivity on function and relation symbols.
   It is the embedding analogue of `FirstOrder.Language.LHom` and
   `FirstOrder.Language.LEquiv`.
+- `LEquiv.lhomWithConstantsCongr`: an equivalence of parameter types `α ≃ β` induces a language
+  equivalence `L[[α]] ≃ᴸ L[[β]]`, renaming the added constants.
+- `LEquiv.addConstants`: a language equivalence `L ≃ᴸ L'` extends to an equivalence
+  `L[[α]] ≃ᴸ L'[[α]]` that leaves a fixed type of new constants unchanged.
 
 ## Main results
 
@@ -26,9 +32,13 @@ injective language homomorphism.
 - `LEmbedding.lhomWithConstantsMap`: the central construction. An embedding of parameter
   types `f : α ↪ β` induces a language embedding `L[[α]] ↪ᴸ L[[β]]` between the corresponding
   expansions of the base language `L` by constants.
+- `LHom.constantsOnMap_comp`, `LHom.constantsOnMap_id`, `LHom.addConstants_comp`,
+  `LHom.id_addConstants`, `lhomWithConstantsMap_comp`, and `lhomWithConstantsMap_id` record the
+  composition and identity laws for the maps on constant-expanded languages used by the
+  equivalences above.
 -/
 
-universe u v u' v' u'' v'' u₁ v₁ u₂ v₂ w w'
+universe u v u' v' u'' v'' u₁ v₁ u₂ v₂ w w' w''
 
 namespace FirstOrder
 
@@ -76,6 +86,32 @@ theorem constantsOnMap_injective {α : Type w} {β : Type w'} {f : α → β}
   · intro n R
     exact isEmptyElim R
 
+/-- Composition of maps between constant languages is the map induced by the composite of the
+underlying maps on index types. -/
+theorem constantsOnMap_comp {α : Type w} {β : Type w'} {γ : Type w''} (f : α → β)
+    (g : β → γ) :
+    (LHom.constantsOnMap g).comp (LHom.constantsOnMap f) = LHom.constantsOnMap (g ∘ f) := by
+  ext n c <;> cases n <;> first | rfl | exact isEmptyElim c
+
+/-- The map between constant languages induced by the identity on the index type is the identity
+map. -/
+@[simp]
+theorem constantsOnMap_id (α : Type w) :
+    LHom.constantsOnMap (id : α → α) = LHom.id (constantsOn α) := by
+  ext n c <;> cases n <;> first | rfl | exact isEmptyElim c
+
+/-- Adding an unchanged type of constants to the identity language map gives the identity map on
+the expanded language. -/
+@[simp]
+theorem id_addConstants (L : Language.{u, v}) (α : Type w) :
+    (LHom.id L).addConstants α = LHom.id L[[α]] := by
+  ext n c <;> cases c <;> rfl
+
+/-- Adding an unchanged type of constants commutes with composition of language maps. -/
+theorem addConstants_comp (ϕ : L →ᴸ L') (ψ : L' →ᴸ L'') (α : Type w) :
+    (ψ.addConstants α).comp (ϕ.addConstants α) = (ψ.comp ϕ).addConstants α := by
+  ext n c <;> cases c <;> rfl
+
 end LHom
 
 variable {L : Language.{u, v}} {L' : Language.{u', v'}} {L'' : Language.{u'', v''}}
@@ -86,6 +122,49 @@ theorem lhomWithConstantsMap_injective {α : Type w} {β : Type w'} (f : α ↪ 
     (L.lhomWithConstantsMap f).Injective := by
   unfold Language.lhomWithConstantsMap
   exact LHom.sumMap_injective (LHom.id_injective L) (LHom.constantsOnMap_injective f.injective)
+
+/-- Composition of constant-expanding language maps is the constant-expanding map of the
+composite. -/
+theorem lhomWithConstantsMap_comp (L : Language.{u, v}) {α : Type w} {β : Type w'}
+    {γ : Type w''} (f : α → β) (g : β → γ) :
+    (L.lhomWithConstantsMap g).comp (L.lhomWithConstantsMap f) =
+      L.lhomWithConstantsMap (g ∘ f) := by
+  dsimp only [lhomWithConstantsMap, Language.withConstants]
+  rw [LHom.sumMap_comp, LHom.id_comp, LHom.constantsOnMap_comp]
+
+/-- The constant-expanding language map induced by the identity on the index type is the identity
+map on the expanded language. -/
+@[simp]
+theorem lhomWithConstantsMap_id (L : Language.{u, v}) (α : Type w) :
+    L.lhomWithConstantsMap (id : α → α) = LHom.id L[[α]] := by
+  dsimp only [lhomWithConstantsMap, Language.withConstants]
+  rw [LHom.constantsOnMap_id, LHom.sumMap_id]
+
+namespace LEquiv
+
+/-- An equivalence of parameter types induces an equivalence between the expansions of a language
+by the corresponding constants.
+
+The forward map renames constants along `e` and the inverse map renames them back along `e.symm`. -/
+def lhomWithConstantsCongr (L : Language.{u, v}) {α : Type w} {β : Type w'} (e : α ≃ β) :
+    L[[α]] ≃ᴸ L[[β]] where
+  toLHom := L.lhomWithConstantsMap (e : α → β)
+  invLHom := L.lhomWithConstantsMap (e.symm : β → α)
+  left_inv := by simp [lhomWithConstantsMap_comp, lhomWithConstantsMap_id]
+  right_inv := by simp [lhomWithConstantsMap_comp, lhomWithConstantsMap_id]
+
+/-- Extends a language equivalence by a type of new constants that is left unchanged: the
+forward and inverse maps act as the original equivalence on the old symbols and as the identity on
+the constants. -/
+def addConstants (e : L ≃ᴸ L') (α : Type w) : L[[α]] ≃ᴸ L'[[α]] where
+  toLHom := e.toLHom.addConstants α
+  invLHom := e.invLHom.addConstants α
+  left_inv := by
+    rw [LHom.addConstants_comp, e.left_inv, LHom.id_addConstants]
+  right_inv := by
+    rw [LHom.addConstants_comp, e.right_inv, LHom.id_addConstants]
+
+end LEquiv
 
 /-- An embedding of first-order languages is an injective language homomorphism: it maps
   function and relation symbols of the source language to symbols of the same kind and arity in
