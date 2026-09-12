@@ -41,6 +41,9 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
 - `FirstOrder.Language.BoundedFormula.realize_restrictFreeVar_iff`: realization of a bounded formula
   is unchanged by restricting its free variables to their finite set of occurrences, for an
   arbitrary ambient structure and an assignment factoring through a map out of the domain.
+- `FirstOrder.Language.BoundedFormula.realize_iff_of_realize_fin`: two assignment families into
+  `L`-structures that agree on all `Fin n`-indexed formulas agree on every bounded formula over an
+  arbitrary type of free variables.
 - `FirstOrder.Language.Formula.realize_bindParam`: realize a formula after binding left variables as
   parameters.
 - `FirstOrder.Language.Formula.realize_unbindParam`: realize a formula after unbinding parameters
@@ -73,7 +76,7 @@ This module must not import `Mathlib.ModelTheory.ElementaryMaps`; those applicat
 corresponding local extension of `ElementaryMaps`.
 -/
 
-universe u v w
+universe u v w w'
 
 open Function Set
 
@@ -307,6 +310,32 @@ theorem realize_restrictFreeVar_iff {α γ X : Type*} [L.Structure X] [Decidable
       (φ.restrictFreeVar id).Realize ((F ∘ v) ∘ (↑)) (F ∘ xs) from
     (BoundedFormula.realize_restrictFreeVar (L := L) (f := id) (v := (F ∘ v) ∘ (↑)) (F ∘ v)
       (fun _ => rfl) (xs := F ∘ xs)).symm
+
+/-- Realization of a bounded formula is determined by realization of the `Fin n`-indexed formulas.
+
+If two families of assignments, one into an `L`-structure `M` and one into an `L`-structure `N`,
+agree on `ψ.Realize` for every `ψ : L.Formula (Fin n)`, then they agree on `φ.Realize` for every
+bounded formula `φ : L.BoundedFormula α n` over an arbitrary type `α` of free variables.
+
+This turns a formula-preservation hypothesis stated for `Fin n`-indexed formulas into one for
+bounded formulas over an arbitrary free-variable type; it is the form in which the `Fin n`-indexed
+fields of partial and total elementary embeddings are used. -/
+theorem realize_iff_of_realize_fin {N : Type w'} [L.Structure N]
+    {γ : Type*} {s : γ → M} {g : γ → N}
+    (hmap : ∀ ⦃n⦄ (ψ : L.Formula (Fin n)) (x : Fin n → γ),
+      ψ.Realize (g ∘ x) ↔ ψ.Realize (s ∘ x))
+    {α : Type*} {n : ℕ} (φ : L.BoundedFormula α n) (v : α → γ) (xs : Fin n → γ) :
+    φ.Realize (g ∘ v) (g ∘ xs) ↔ φ.Realize (s ∘ v) (s ∘ xs) := by
+  classical
+  let e := Fintype.equivFin (↑φ.freeVarFinset ⊕ Fin n)
+  have h := hmap ((φ.restrictFreeVar id).toFormula.relabel e)
+    (Sum.elim (v ∘ (↑)) xs ∘ e.symm)
+  simp only [Formula.realize_relabel, BoundedFormula.realize_toFormula] at h
+  rw [BoundedFormula.realize_restrictFreeVar_iff φ v xs g,
+    BoundedFormula.realize_restrictFreeVar_iff φ v xs s]
+  -- The two sides differ only by the relabeling bookkeeping `e.symm ∘ e = id` together with the
+  -- `Sum.inl`/`Sum.inr` splitting of `Sum.elim`.
+  convert h <;> ext a <;> cases a <;> simp
 
 end BoundedFormula
 
