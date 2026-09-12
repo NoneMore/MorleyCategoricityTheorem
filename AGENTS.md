@@ -3,31 +3,27 @@
 ## Scope
 
 These instructions apply to the entire repository. More specific instructions
-under a subdirectory take precedence for files in that subtree. In particular,
-follow `blueprint/src/AGENTS.md` when editing the mathematical blueprint.
+under a subdirectory take precedence for files in that subtree.
 
 ## Project
 
 This repository formalizes Morley's categoricity theorem in Lean 4 using
-Mathlib and a Leanblueprint dependency graph.
+Mathlib.
 
 - Lean source lives under `MorleyCategoricityTheorem/`.
 - `MorleyCategoricityTheorem.lean` is the root import file.
-- Mathematical blueprint source lives under `blueprint/src/`.
 - `lakefile.toml` and `lean-toolchain` define the project configuration and
   toolchain.
 
-Treat compiled Lean declarations as the authority for formalization status.
-Treat the blueprint as the authority for the intended mathematical statements
-and dependency structure. If they disagree, do not hide the discrepancy by
-changing only a status marker; either align the requested artifacts or report
-the mismatch.
+Treat compiled Lean declarations as the authority for what is currently
+implemented. Never describe a declaration as fully proved while it or a local
+dependency still contains `sorry`.
 
 ## Lean 4 Workflow
 
 For Lean proofs, theorem statements, formalization, proof repair, diagnostics,
 Mathlib search, or Lake build work, use the discovered `lean4` skill and follow
-its relevant workflow.
+its relevant workflow when that skill is available in the active harness.
 
 When available, use the configured `lean-lsp` MCP server for interactive
 feedback. The applicable repository validation commands below remain the final
@@ -56,19 +52,18 @@ if the skill gives conflicting guidance.
 - Do not edit dependency sources under `.lake/packages/` or build artifacts
   under `.lake/build/`.
 
-## Blueprint Synchronization
+## Blueprint Boundary
 
-- When a Lean declaration implements a blueprint node, keep its fully qualified
-  name and formalization status accurate in the blueprint.
-- Do not add aspirational declaration names to `\lean{...}`. A referenced name
-  must exist in the current project or Mathlib and pass declaration checking.
-- A mathematical change is not complete merely because Lean compiles: check
-  whether the corresponding blueprint statement or dependency also needs to be
-  updated.
+Unless the user explicitly requests blueprint work, do not modify files under
+`blueprint/`, do not synchronize Lean changes into the blueprint, and do not run
+blueprint-related validation.
+
+If the user explicitly requests blueprint work, follow the user-invoked skill or
+instructions for both blueprint editing and blueprint validation instead of
+relying on repository-default blueprint rules.
 
 ## Generated Files
 
-- Edit blueprint sources, not generated HTML, PDF, or LaTeX auxiliary output.
 - Do not hand-edit `lake-manifest.json`. Update it only through Lake dependency
   commands when the task calls for a dependency change.
 - Preserve unrelated working-tree changes. Do not remove or overwrite user
@@ -82,17 +77,19 @@ Run the checks that match the files changed, from the repository root.
 |---|---|
 | Only `.lean` files, no new imports | `lake build MorleyCategoricityTheorem` |
 | `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
-| Blueprint source, declaration links, or status markers | `leanblueprint all` |
-| Both Lean and blueprint files | all three commands |
 
-If a full validation cannot be run, state exactly which command was omitted and
-why.
+If no blueprint files were changed, do not run blueprint-related validation. If
+the user explicitly requested blueprint changes, use the validation workflow
+specified by the user-invoked blueprint skill or instructions.
+
+If an applicable validation cannot be run, state exactly which command was
+omitted and why.
 
 ## Definition of Done
 
 - Relevant Lean targets build successfully.
 - No unintended `sorry` placeholders or unrelated changes were introduced.
 - Root imports reflect the current module set.
-- Blueprint labels, dependencies, Lean links, and status markers are accurate.
-- Generated artifacts were changed only by the appropriate generation command.
+- Blueprint files remain untouched unless the user explicitly requested
+  blueprint work.
 - The final report lists the files changed and the validation performed.
