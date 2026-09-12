@@ -1,181 +1,191 @@
-# Plan: Formula Realization Sets and Minimality
+# Plan: Type Spaces and Partial Elementary Embeddings
 
-## Goal
+## Target
 
-Introduce a named semantic object for the realization set of a formula after fixing its
-parameters. This should replace repeated set comprehensions, simplify the definably-full model
-construction, and provide the basic interface for minimal and strongly minimal formulas.
+Implement blueprint node `lem:type-space-homeomorphism` from
+`blueprint/src/content.tex`:
 
-The canonical representation should use tuples. Element-valued unary realization sets are a
-derived view of the `Fin 1` case, not a second primary representation.
+> If `A ⊆ M` and a partial elementary map sends `A` onto `B ⊆ N`, then the spaces of
+> complete `α`-types over `A` and `B` are homeomorphic.
 
-## Canonical interface
-
-Add the following definition in
-`MorleyCategoricityTheorem/ModelTheory/Semantics.lean`, in the
-`FirstOrder.Language.Formula` namespace:
+The intended public declaration is a bundled homeomorphism in the
+`FirstOrder.Language.PartialElementaryEmbedding` namespace:
 
 ```lean
-def realizationSet
-    {L : Language.{u, v}} {M : Type w} [L.Structure M]
-    {β : Type x} {α : Type y}
-    (φ : L.Formula (β ⊕ α)) (b : β → M) :
-    Set (α → M) :=
-  {x | φ.Realize (Sum.elim b x)}
+noncomputable def completeTypeOverHomeomorph
+    (f : A ↪ₚₑ[L] B) (α : Type x) :
+    L.CompleteTypeOver A α ≃ₜ L.CompleteTypeOver B α
 ```
 
-Here `β` indexes the fixed parameters and `α` indexes the tuple being realized. This variable
-order agrees with the existing `iExs` semantics and the explicit-parameter elementary-embedding
-interface.
+The existing definition requires `f` to be surjective onto its declared codomain `B`, so `B`
+represents the image `f(A)` appearing in the blueprint.
 
-Do not require `[Finite α]` for this definition. Evaluating a free tuple and transporting it along
-an embedding do not require finiteness. Add finiteness assumptions only to results that quantify a
-whole tuple inside a first-order formula.
+## Existing interface
 
-Provide the basic membership theorem immediately:
+- `PartialElementaryEmbedding.map_formula'` preserves formulas indexed by `Fin n`.
+- `PartialElementaryEmbedding.toEquiv` gives the underlying equivalence `A ≃ B`.
+- `LEmbedding.lhomWithConstantsMap` embeds `L[[A]]` into `L[[B]]` along an embedding of
+  parameter types.
+- `CompleteTypeOver L A α` abbreviates the complete types over
+  `L[[A]].completeTheory M`.
+- `CompleteType.isTopologicalBasis_range_typesWith` supplies the basic clopen basis of the Stone
+  topology.
+
+No current project or Mathlib declaration directly transports complete types, maximal theories,
+or their topology along a parameter-language equivalence.
+
+## Phase 1: Formula preservation for arbitrary variable types
+
+Extend `PartialElementaryEmbedding` with formula-preservation lemmas matching the public Mathlib
+interface for total elementary embeddings:
 
 ```lean
+theorem PartialElementaryEmbedding.map_boundedFormula ...
+
 @[simp]
-theorem mem_realizationSet
-    (φ : L.Formula (β ⊕ α)) (b : β → M) (x : α → M) :
-    x ∈ φ.realizationSet b ↔ φ.Realize (Sum.elim b x) :=
-  Iff.rfl
+theorem PartialElementaryEmbedding.map_formula ...
 ```
 
-## Core semantic interface
+Derive these from `map_formula'` by restricting to the finite set of free variables and identifying
+that finite subtype with `Fin n`. Keep the source and target assignments visibly factored through
+the subset inclusions `A → M` and `B → N`.
 
-Develop the realization-set laws needed by current and future callers.
+This phase belongs in `ModelTheory/PartialEmbedding.lean` and must not change the structure fields
+or the meaning of partial elementarity.
 
-1. Prove that formula conjunction, disjunction, negation, top, and bottom correspond to set
-   intersection, union, complement, univ, and empty.
-2. Prove compatibility with relabeling. In particular, relabeling parameter variables along
-   `c : β → γ` should identify the resulting realization set with the original realization set at
-   the composed parameter assignment.
-3. Package the compatibility of `BoundedFormula.constantsVarsEquiv` with realization sets. This is
-   the representation adapter between constants-language formulas and formulas with explicit
-   parameter variables.
-4. For `α = Fin 1`, provide a subtype equivalence between the canonical tuple realization set and
-   its element-valued view:
+## Phase 2: Equivalences of languages with renamed constants
 
-   ```lean
-   def realizationSetFinOneEquiv
-       (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
-       φ.realizationSet b ≃
-         {x : M | φ.Realize (Sum.elim b fun _ ↦ x)}
-   ```
-
-   Derive preservation of `Set.Infinite` and equality of `Cardinal.mk` from this equivalence rather
-   than reproving them with ad hoc injections.
-5. Add only those simp lemmas whose right-hand sides are a clear semantic normal form. Avoid simp
-   rules that repeatedly expand `realizationSet` back into a set comprehension.
-
-## Elementary embeddings
-
-Refactor the declarations in `MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean` to use the
-new definition while preserving their existing public names where practical:
+Add a language equivalence induced by an equivalence of parameter types:
 
 ```lean
-def ElementaryEmbedding.realizations_embedding
-    (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ α)) (b : β → M) :
-    φ.realizationSet b ↪ φ.realizationSet (e ∘ b)
+def LEquiv.lhomWithConstantsCongr
+    (L : Language) (e : α ≃ β) : L[[α]] ≃ᴸ L[[β]]
 ```
 
-Express `mk_realizations_le`, `encard_realizations_eq_coe_iff`, and
-`infinite_realizations_iff` in terms of `Formula.realizationSet`. The implementation should use
-`ElementaryEmbedding.map_formula`; callers should not need to unfold the realization set.
-
-The named set should become the shared seam for:
-
-- embeddings between realization subtypes;
-- `Cardinal.mk` inequalities;
-- exact finite `Set.encard` calculations;
-- preservation and reflection of infinitude.
-
-## Definably-full construction
-
-Use `Formula.realizationSet` in the explicit-parameter unary-fiber adapter from `TODO.md` and in the
-elementary-chain proof. Keep the one-step compactness theorem's existing public statement unless a
-separate interface change is justified.
-
-The `Fin 1` equivalence should be used exactly at the seam between:
-
-- the compactness construction, which naturally chooses elements interpreting new constants; and
-- the elementary-chain and elementary-embedding arguments, which naturally use tuple realization
-  sets.
-
-The chain proof should contain neither manual `Fin 1` injections nor repeated set extensionality
-proofs for unary tuple/element conversion.
-
-## Minimal formulas
-
-After the semantic interface is stable, introduce minimality in a separate model-theory module.
-For
+Its forward map should be `L.lhomWithConstantsMap e`, and its inverse should use `e.symm`. Also
+provide the minimal helper that extends a language equivalence by an unchanged type of new
+constants:
 
 ```lean
-φ : L.Formula (β ⊕ α)
-b : β → M
-D := φ.realizationSet b
+def LEquiv.addConstants (e : L ≃ᴸ L') (α : Type*) :
+    L[[α]] ≃ᴸ L'[[α]]
 ```
 
-minimality in `M` should assert:
+Place reusable syntax-only constructions in `ModelTheory/LanguageEmbedding.lean`. Prove the
+composition identities needed later rather than relying on large unfolded `simp` calls.
 
-1. `D` is infinite; and
-2. every subset of `D` definable in `M` with parameters is finite or cofinite in `D`.
+## Phase 3: Correspondence of parameter-expanded complete theories
 
-An equivalent formula-level presentation may quantify over definable sets `X` and require
+For `f : A ↪ₚₑ[L] B`, instantiate the parameter-language equivalence with `f.toEquiv` and prove
+that it carries the complete theory of `M` with constants from `A` to the complete theory of `N`
+with constants from `B`:
 
 ```lean
-(D ∩ X).Finite ∨ (D \ X).Finite.
+theorem PartialElementaryEmbedding.map_completeTheory
+    (f : A ↪ₚₑ[L] B) :
+    f.parameterLEquiv.toLHom.onTheory (L[[A]].completeTheory M) =
+      L[[B]].completeTheory N
 ```
 
-Choose the final declaration form only after checking which representation gives the cleanest
-elementary-extension theorem. The definition must cover finite tuple arities; unary minimal
-formulas should be a specialization, not the foundational definition.
+Prove this by sentence extensionality:
 
-Strong minimality should state that the transported formula and parameters are minimal in every
-elementary extension. Its implementation should reuse the realization-set transport interface
-rather than compare raw `Realize` expressions.
+1. Rewrite membership in `completeTheory` as realization.
+2. Convert a sentence with named parameters using `BoundedFormula.constantsVarsEquiv`.
+3. Apply the arbitrary-variable preservation theorem from Phase 1.
+4. Rewrite the result as realization of the renamed sentence in `N`.
+5. Use bijectivity of the sentence map to discharge image membership.
 
-## Implementation order
+This is the main semantic bottleneck. Isolate coercion and function-composition identities in
+small lemmas so the final theorem does not expose temporary constant structures.
 
-1. Add `Formula.realizationSet` and `mem_realizationSet` to `Semantics.lean`.
-2. Add Boolean-operation, relabeling, constants-variable, and `Fin 1` equivalence lemmas.
-3. Refactor the cardinality semantics in `Semantics.lean` to use the named set.
-4. Refactor `ElementaryMaps.lean` to use the named set without changing theorem content.
-5. Use the new interface in the one-step adapter and elementary-chain construction from `TODO.md`.
-6. Design and implement minimal and strongly minimal formulas in a separate module.
-7. Synchronize root imports and blueprint declaration links only after the new declarations compile.
+## Phase 4: Generic transport of complete types
 
-## Non-goals
+In a new module `ModelTheory/TypeSpaceHomeomorphism.lean`, define transport of complete types along
+a language equivalence that identifies the base theories. The forward map sends the underlying
+maximal theory through the induced equivalence after adding the free-variable constants.
 
-- Do not introduce separate competing definitions for tuple and element-valued unary realization
-  sets.
-- Do not restrict the foundational definition to `Fin 1` or require finite tuple arity.
-- Do not expose `constantsVarsEquiv`, temporary constants structures, or `onFormula` semantic
-  calculations to downstream minimality arguments.
-- Do not change existing blueprint status markers before the corresponding Lean declarations are
-  complete.
+Establish:
 
-## Validation
+- containment of the transported base theory;
+- preservation of satisfiability under the language equivalence;
+- preservation of maximality, using surjectivity on sentences and compatibility with negation;
+- inverse laws using the inverse language equivalence;
+- a formula- or sentence-membership theorem for the transported complete type.
 
-For changes confined to existing Lean modules, run:
+Keep low-level image and maximal-theory constructions private unless another caller needs them.
+Expose the complete-type equivalence and its membership rule.
+
+## Phase 5: Stone-space topology
+
+Before constructing the homeomorphism, prove that the complete-type equivalence transports basic
+open sets exactly. A suitable normal form is:
+
+```lean
+theorem preimage_typesWith ... :
+    completeTypeEquiv e h ⁻¹' T'.typesWith σ =
+      T.typesWith ((e.addConstants α).onSentence.symm σ)
+```
+
+Use `CompleteType.isTopologicalBasis_range_typesWith` and
+`IsTopologicalBasis.continuous_iff` to prove continuity of the forward and inverse maps. Package
+them as a `Homeomorph`, then specialize with `f.toEquiv` and `f.map_completeTheory` to obtain
+`PartialElementaryEmbedding.completeTypeOverHomeomorph`.
+
+Retain an explicit basic-open transport theorem as public API. It is the useful downstream form
+for moving isolating formulas in the proof of the prime-extension theorem.
+
+## File plan
+
+1. `MorleyCategoricityTheorem/ModelTheory/PartialEmbedding.lean`
+   - arbitrary-variable preservation for partial elementary embeddings;
+   - parameter-expanded semantic transport helpers if they require structure semantics.
+2. `MorleyCategoricityTheorem/ModelTheory/LanguageEmbedding.lean`
+   - equivalences for renamed constants and unchanged added constants.
+3. `MorleyCategoricityTheorem/ModelTheory/TypeSpaceHomeomorphism.lean`
+   - generic complete-type equivalence and topology;
+   - specialization to partial elementary embeddings.
+4. `MorleyCategoricityTheorem.lean`
+   - import the new module.
+5. `blueprint/src/content.tex`
+   - after the Lean declaration is complete, add its fully qualified `\lean{...}` name and
+     `\leanok` to `lem:type-space-homeomorphism`.
+
+Prefer the new module over importing the topology of complete types into the foundational partial
+embedding module. Imports must remain acyclic.
+
+## Risks and proof checkpoints
+
+- The finite-support lift from `Fin n` is likely to be the first elaboration-heavy proof; mirror
+  Mathlib's `ElementaryEmbedding.map_boundedFormula` closely.
+- The two levels of added constants must remain distinct: parameters (`A` or `B`) belong to the
+  base language of the type space, while `α` indexes the free variables of each complete type.
+- Orient theory equalities and sentence maps consistently. Prove the inverse theory equality
+  immediately after the forward one to avoid repeated rewriting later.
+- Do not replace the target with mere cardinal equality or an unbundled bijection. The blueprint
+  requires a homeomorphism and the downstream proof needs control of basic opens.
+- Do not add `\leanok` while any target declaration or local dependency contains `sorry`.
+
+## Completion criteria
+
+- `PartialElementaryEmbedding.completeTypeOverHomeomorph` exists with the intended source and
+  target `CompleteTypeOver` spaces.
+- Forward and inverse membership rules are available without unfolding maximal theories.
+- Basic clopen sets are transported explicitly.
+- The new declarations contain no `sorry`.
+- Root imports include the new module and remain acyclic.
+- Blueprint node `lem:type-space-homeomorphism` names the compiled declaration and has accurate
+  status markers.
+
+## Validation for the implementation phase
+
+Because the implementation will add a Lean module and update the blueprint, run from the project
+root:
 
 ```bash
 lake build MorleyCategoricityTheorem
-```
-
-When adding the new minimality module or changing root imports, also run:
-
-```bash
 lake exe mk_all --check
-```
-
-When blueprint declarations or status markers are updated, run:
-
-```bash
 leanblueprint all
 ```
 
-Before considering this plan complete, confirm that the new semantic and minimality declarations
-contain no `sorry`, and that no caller needs to unfold `Formula.realizationSet` merely to apply a
-standard semantic or elementary-embedding fact.
+These commands belong to the later implementation phase; producing this plan does not execute
+them.

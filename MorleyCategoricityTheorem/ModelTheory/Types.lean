@@ -33,6 +33,10 @@ types is developed in `ModelTheory.IsolatedTypes`.
   restriction map on arbitrary complete types; prove compatibility with formula membership,
   `typeOf`, and composition, relate it to continuous or open maps of Stone spaces, and reformulate
   isolation transport through it where useful.
+- Transport complete types over parameter sets along partial elementary embeddings.  Extend the
+  finite-tuple preservation field to arbitrary finitely supported formulas, identify the two
+  parameter-expanded complete theories under the induced language equivalence, and package the
+  resulting correspondence as a homeomorphism that maps basic clopen sets to basic clopen sets.
 -/
 
 universe u v w w' x y
