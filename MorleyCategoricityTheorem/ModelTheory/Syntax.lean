@@ -51,6 +51,16 @@ constructor without turning implementation details into declarations that also n
 - Do not require `[Finite α]`, because the parameter variables remain free.
 - Order variables as `α ⊕ β`, consistently with Mathlib's `Formula.iExs` / `Formula.iExsUnique`.
 - Keep the natural-number API primary; defer an arbitrary finite index type until it is needed.
+
+## TODO
+
+- Prove the syntactic naturality law
+  `(L.lhomWithConstantsMap f).onSentence (Formula.equivSentence θ) =
+    Formula.equivSentence (θ.relabel f)`.  Together with `Formula.realize_relabel`, this would turn
+  the semantic bridge `LHom.realize_onSentence_equivSentence` into a purely syntactic calculation,
+  with no temporary structure on the target of a constant expansion.  The proof needs naturality of
+  `BoundedFormula.constantsVarsEquiv` and `BoundedFormula.relabelEquiv` with respect to
+  `lhomWithConstantsMap`, which Mathlib does not provide yet.
 -/
 
 universe u v

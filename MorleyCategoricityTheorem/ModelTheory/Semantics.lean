@@ -50,6 +50,12 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   back to free variables.
 - `FirstOrder.Language.Formula.realize_bind_unbind`: unbinding the parameters of a formula and
   rebinding them along an interpretation-preserving map is semantically the identity.
+- `FirstOrder.Language.LEquiv.onTheory_completeTheory_eq_iff`: a language equivalence carries the
+  complete theory of one structure onto that of another exactly when it preserves satisfaction of
+  all sentences.
+- `FirstOrder.Language.LHom.realize_onSentence_equivSentence`: renaming parameters along a map of
+  parameter sets commutes with `Formula.equivSentence`, identifying satisfaction of the translated
+  sentence in the constant expansion with realization of the original base-language formula.
 
 ## Proof outline
 
@@ -76,7 +82,7 @@ This module must not import `Mathlib.ModelTheory.ElementaryMaps`; those applicat
 corresponding local extension of `ElementaryMaps`.
 -/
 
-universe u v w w'
+universe u v u' v' w w'
 
 open Function Set
 
@@ -353,6 +359,64 @@ lemma exists_fin_params {α : Type*} {B : Set M} (φ : (L[[B]]).Formula α) :
   exact ⟨n, b, φ', fun v => h v default⟩
 
 end Formula
+
+namespace LEquiv
+
+variable {L' : Language.{u', v'}} {N : Type w'}
+variable [L.Structure M] [L'.Structure N]
+
+/-- A language equivalence carries the complete theory of one structure onto that of another exactly
+when it preserves satisfaction of all sentences.
+
+This is the cross-language form of `completeTheory`: the forward direction pushes a sentence through
+`LHom.onTheory`, while the reverse direction pulls an arbitrary sentence of the target language back
+along the bijection `LEquiv.onSentence`. -/
+theorem onTheory_completeTheory_eq_iff (e : L ≃ᴸ L') :
+    e.toLHom.onTheory (L.completeTheory M) = L'.completeTheory N ↔
+      ∀ σ : L.Sentence, M ⊨ σ ↔ N ⊨ e.toLHom.onSentence σ := by
+  constructor
+  · intro h σ
+    rw [← mem_completeTheory (M := N), ← h, LHom.mem_onTheory, ← mem_completeTheory]
+    exact ⟨fun hσ => ⟨σ, hσ, rfl⟩,
+      fun ⟨τ, hτ, hτσ⟩ => (_root_.Equiv.injective e.onSentence hτσ) ▸ hτ⟩
+  · intro h
+    ext ψ
+    rw [LHom.mem_onTheory, mem_completeTheory]
+    constructor
+    · rintro ⟨φ, hφ, rfl⟩
+      exact (h φ).mp hφ
+    · intro hψ
+      obtain ⟨φ, hφ⟩ := e.onSentence.surjective ψ
+      subst hφ
+      exact ⟨φ, (h φ).mpr hψ, rfl⟩
+
+end LEquiv
+
+namespace LHom
+
+variable {N : Type w'}
+variable [L.Structure N]
+
+/-- Renaming parameters along a map of subsets `g : A → B` preserves the realization of a formula of
+the base language in the constant expansions: `N` with the constants of `A` interpreted by
+`Subtype.val ∘ g` satisfies `Formula.equivSentence θ` exactly when `θ` is realized by those
+parameters.
+
+This is the semantic bridge between `L[[A]]`-sentences and base-language formulas. The temporary
+`L[[A]]`-structure on `N` determined by `Subtype.val ∘ g` is local to the proof, so the statement
+itself only mentions the canonical structures. -/
+theorem realize_onSentence_equivSentence {A : Set M} {B : Set N} (g : A → B)
+    (θ : L.Formula A) :
+    N ⊨ (L.lhomWithConstantsMap g).onSentence (Formula.equivSentence θ) ↔
+      θ.Realize ((Subtype.val : B → N) ∘ g) := by
+  letI : (constantsOn A).Structure N := constantsOn.structure ((Subtype.val : B → N) ∘ g)
+  haveI : (LHom.constantsOnMap g).IsExpansionOn N := constantsOnMap_isExpansionOn (f := g) rfl
+  haveI : (L.lhomWithConstantsMap g).IsExpansionOn N :=
+    LHom.sumMap_isExpansionOn (LHom.id L) (LHom.constantsOnMap g) N
+  rw [LHom.realize_onSentence, Formula.realize_equivSentence]
+  rfl
+
+end LHom
 
 end Language
 
