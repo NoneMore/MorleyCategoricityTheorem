@@ -1,5 +1,6 @@
 import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Complexity
+import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
 # Partial Embeddings
@@ -118,6 +119,52 @@ noncomputable def toEquiv (f : A ↪ₚₑ[L] B) : A ≃ B :=
 @[simp]
 theorem toEquiv_apply (f : A ↪ₚₑ[L] B) (a : A) : f.toEquiv a = f a :=
   rfl
+
+/-- A pair of maps `s : A → M` and `g : A → N` that preserve the realization of `Fin n`-indexed
+formulas also preserves the realization of bounded formulas over an arbitrary type `α` of free
+variables. This isolates the relabeling step of `map_boundedFormula` from the partial-embedding
+data. -/
+private theorem map_boundedFormula_of_map_formula {s : A → M} {g : A → N}
+    (hmap : ∀ ⦃n⦄ (ψ : L.Formula (Fin n)) (x : Fin n → A),
+      ψ.Realize (g ∘ x) ↔ ψ.Realize (s ∘ x))
+    {α : Type*} {n : ℕ} (φ : L.BoundedFormula α n) (v : α → A) (xs : Fin n → A) :
+    φ.Realize (g ∘ v) (g ∘ xs) ↔ φ.Realize (s ∘ v) (s ∘ xs) := by
+  classical
+  let e := Fintype.equivFin (↑φ.freeVarFinset ⊕ Fin n)
+  have h := hmap ((φ.restrictFreeVar id).toFormula.relabel e)
+    (Sum.elim (v ∘ (↑)) xs ∘ e.symm)
+  simp only [Formula.realize_relabel, BoundedFormula.realize_toFormula] at h
+  rw [BoundedFormula.realize_restrictFreeVar_iff φ v xs g,
+    BoundedFormula.realize_restrictFreeVar_iff φ v xs s]
+  -- The two sides differ only by the relabeling bookkeeping `e.symm ∘ e = id` together with the
+  -- `Sum.inl`/`Sum.inr` splitting of `Sum.elim`.
+  convert h <;> ext a <;> cases a <;> simp
+
+/-- A partial elementary embedding preserves the realization of bounded formulas, for an arbitrary
+type `α` of free variables and an arbitrary number `n` of bound variables.
+
+The source assignment is factored through the inclusion `A → M` and the target assignment through
+the inclusion `B → N`, so that both sides are realized in the ambient structures. This is the
+partial analogue of `FirstOrder.Language.ElementaryEmbedding.map_boundedFormula`. -/
+@[simp]
+theorem map_boundedFormula (f : A ↪ₚₑ[L] B) {α : Type*} {n : ℕ} (φ : L.BoundedFormula α n)
+    (v : α → A) (xs : Fin n → A) :
+    φ.Realize (Subtype.val ∘ f ∘ v) (Subtype.val ∘ f ∘ xs) ↔
+      φ.Realize (Subtype.val ∘ v) (Subtype.val ∘ xs) :=
+  map_boundedFormula_of_map_formula (g := Subtype.val ∘ f) (s := (Subtype.val : A → M))
+    (fun _ ψ x => (f.map_formula' ψ x).symm) φ v xs
+
+/-- A partial elementary embedding preserves the realization of formulas, for an arbitrary type of
+free variables.
+
+This is the partial analogue of `FirstOrder.Language.ElementaryEmbedding.map_formula`. -/
+@[simp]
+theorem map_formula (f : A ↪ₚₑ[L] B) {α : Type*} (φ : L.Formula α) (x : α → A) :
+    φ.Realize (Subtype.val ∘ f ∘ x) ↔ φ.Realize (Subtype.val ∘ x) := by
+  rw [Formula.Realize, Formula.Realize,
+    ← Unique.eq_default (Subtype.val ∘ f ∘ (default : Fin 0 → A)),
+    ← Unique.eq_default (Subtype.val ∘ (default : Fin 0 → A))]
+  exact f.map_boundedFormula (n := 0) φ x default
 
 end PartialElementaryEmbedding
 

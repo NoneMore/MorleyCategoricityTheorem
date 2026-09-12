@@ -38,6 +38,9 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
 - `FirstOrder.Language.Formula.exists_fin_params` (and the `BoundedFormula` analogue): every formula
   over a parameter set is, up to realization, a substitution instance of a constant-free formula in
   finitely many extra variables.
+- `FirstOrder.Language.BoundedFormula.realize_restrictFreeVar_iff`: realization of a bounded formula
+  is unchanged by restricting its free variables to their finite set of occurrences, for an
+  arbitrary ambient structure and an assignment factoring through a map out of the domain.
 - `FirstOrder.Language.Formula.realize_bindParam`: realize a formula after binding left variables as
   parameters.
 - `FirstOrder.Language.Formula.realize_unbindParam`: realize a formula after unbinding parameters
@@ -289,6 +292,21 @@ lemma exists_fin_params {α : Type*} {B : Set M} {k : ℕ} (φ : (L[[B]]).Bounde
   rw [BoundedFormula.realize_restrictFreeVar (Sum.elim (fun x : B => (L.con x : M)) v) (by
     rintro ⟨z, hz⟩
     cases z <;> simp [f, b]), BoundedFormula.realize_constantsVarsEquiv]
+
+/-- Realization of a bounded formula is unchanged by restricting its free variables to their finite
+set of occurrences.
+
+Compared with `BoundedFormula.realize_restrictFreeVar`, the ambient structure and the assignment are
+kept general: values are placed by an arbitrary map `F : γ → X` out of the domain, which is the form
+needed when `γ` is a subset of a larger structure rather than a structure itself. -/
+theorem realize_restrictFreeVar_iff {α γ X : Type*} [L.Structure X] [DecidableEq α] {n : ℕ}
+    (φ : L.BoundedFormula α n) (v : α → γ) (xs : Fin n → γ) (F : γ → X) :
+    φ.Realize (F ∘ v) (F ∘ xs) ↔
+      (φ.restrictFreeVar id).Realize ((F ∘ v) ∘ (↑)) (F ∘ xs) :=
+  show φ.Realize (F ∘ v) (F ∘ xs) ↔
+      (φ.restrictFreeVar id).Realize ((F ∘ v) ∘ (↑)) (F ∘ xs) from
+    (BoundedFormula.realize_restrictFreeVar (L := L) (f := id) (v := (F ∘ v) ∘ (↑)) (F ∘ v)
+      (fun _ => rfl) (xs := F ∘ xs)).symm
 
 end BoundedFormula
 
