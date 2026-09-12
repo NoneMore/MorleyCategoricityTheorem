@@ -53,9 +53,9 @@ def IsOmegaStable : Prop :=
 inexhaustible family of branches whose distinctness contradicts omega-stability. -/
 theorem not_countable_nat_bool : ¬ Countable (ℕ → Bool) := by
   intro h
-  have h' : Countable (Set ℕ) := by
-    letI : Countable (ℕ → Bool) := h
-    exact Countable.of_equiv (ℕ → Bool) (Equiv.piCongrRight fun _ => Equiv.propEquivBool.symm)
+  letI : Countable (ℕ → Bool) := h
+  have h' : Countable (Set ℕ) :=
+    Countable.of_equiv _ (Equiv.piCongrRight fun _ ↦ Equiv.propEquivBool.symm)
   obtain ⟨g, hg⟩ := exists_surjective_nat (Set ℕ)
   exact Function.cantor_surjective g hg
 
@@ -97,12 +97,10 @@ theorem IsOmegaStable.false_of_formula_splitting
   -- Each child conjoins its parent with `chi s` or with its negation.
   have hchild_false (s : List Bool) :
       (tf.node (s ++ [false])).1 = (tf.node s).1 ⊓ chi s := by
-    have h := BinaryTree.ofSplit_node_snoc_false ⟨φ, hφ⟩ split s
-    rw [h]
+    rw [BinaryTree.ofSplit_node_snoc_false ⟨φ, hφ⟩ split s]
   have hchild_true (s : List Bool) :
       (tf.node (s ++ [true])).1 = (tf.node s).1 ⊓ ∼(chi s) := by
-    have h := BinaryTree.ofSplit_node_snoc_true ⟨φ, hφ⟩ split s
-    rw [h]
+    rw [BinaryTree.ofSplit_node_snoc_true ⟨φ, hφ⟩ split s]
   have hchild_disj (s : List Bool) (v : Fin n → M) :
       ¬ ((tf.node (s ++ [false])).1.Realize v ∧ (tf.node (s ++ [true])).1.Realize v) := by
     rw [hchild_false s, hchild_true s]
@@ -115,64 +113,51 @@ theorem IsOmegaStable.false_of_formula_splitting
     · simpa using hchild_true s
   -- Collect the parameters occurring in the tree into one countable set `A₀`.
   let A₀ : Set M := ⋃ s : List Bool,
-    Set.range fun c : (tf.node s).1.paramFinset => (c.1 : M)
-  have hA₀ : A₀.Countable := by
-    dsimp only [A₀]
-    exact Set.countable_iUnion fun s => Set.countable_range _
+    Set.range fun c : (tf.node s).1.paramFinset ↦ (c.1 : M)
+  have hA₀ : A₀.Countable :=
+    Set.countable_iUnion fun _ ↦ Set.countable_range _
   let b (s : List Bool) : (tf.node s).1.paramFinset → A₀ :=
-    fun c => ⟨(c.1 : M), Set.mem_iUnion.mpr ⟨s, Set.mem_range_self c⟩⟩
+    fun c ↦ ⟨(c.1 : M), Set.mem_iUnion.mpr ⟨s, Set.mem_range_self c⟩⟩
   -- Move every node formula to the smaller parameter set `A₀`.
   let θ (s : List Bool) : (L[[A₀]]).Formula (Fin n) :=
     (tf.node s).1.unbindParam.bindParam (b s)
   have hθ_realize (s : List Bool) (v : Fin n → M) :
       (θ s).Realize v ↔ (tf.node s).1.Realize v :=
-    Formula.realize_bind_unbind (tf.node s).1 (b s) (fun _ => rfl) v
-  have hθ_realized (s : List Bool) : ∃ v : Fin n → M, (θ s).Realize v := by
-    obtain ⟨v, hv⟩ := hrealize (tf.node s).1 (tf.node s).2
-    exact ⟨v, (hθ_realize s v).mpr hv⟩
+    Formula.realize_bind_unbind (tf.node s).1 (b s) (fun _ ↦ rfl) v
+  have hθ_realized (s : List Bool) : ∃ v : Fin n → M, (θ s).Realize v :=
+    (hrealize (tf.node s).1 (tf.node s).2).imp fun v hv ↦ (hθ_realize s v).mpr hv
   let T₀ : (L[[A₀]]).Theory := (L[[A₀]]).completeTheory M
-  have hT₀c : T₀.IsComplete := by
-    simpa [T₀] using completeTheory.isComplete (L := L[[A₀]]) M
+  have hT₀c : T₀.IsComplete := completeTheory.isComplete (L := L[[A₀]]) M
   have hCnonempty (x : ℕ → Bool) (k : ℕ) :
       (T₀.typesWith (Formula.equivSentence (θ (pref x k)))).Nonempty :=
-    (CompleteType.typesWith_nonempty_iff_exists_realize (T := T₀) (N := M) hT₀c
-      (θ (pref x k))).mpr (hθ_realized (pref x k))
+    (CompleteType.typesWith_nonempty_iff_exists_realize hT₀c _).mpr (hθ_realized (pref x k))
   -- The tree of basic open sets defined by the moved formulas.
   let C : SetBinaryTree (T₀.CompleteType (Fin n)) :=
-    { node := fun s => T₀.typesWith (Formula.equivSentence (θ s)) }
+    { node := fun s ↦ T₀.typesWith (Formula.equivSentence (θ s)) }
   have hCsub : C.ParentChildLaw (fun a b : Set (T₀.CompleteType (Fin n)) ↦ b ⊆ a) := by
     intro s b
-    show T₀.typesWith (Formula.equivSentence (θ (s ++ [b]))) ⊆
-      T₀.typesWith (Formula.equivSentence (θ s))
-    rw [CompleteType.typesWith_subset_iff_realize_imp (T := T₀) (N := M) hT₀c]
+    rw [CompleteType.typesWith_subset_iff_realize_imp (N := M) hT₀c]
     intro v hv
-    rw [hθ_realize (s ++ [b]) v] at hv
-    rw [hchild s b] at hv
-    rw [hθ_realize s v]
-    exact (Formula.realize_inf.mp hv).1
+    rw [hθ_realize (s ++ [b]) v, hchild s b] at hv
+    exact (hθ_realize s v).mpr (Formula.realize_inf.mp hv).1
   have hCdisj : C.SiblingRaw (fun a b : Set (T₀.CompleteType (Fin n)) ↦ Disjoint a b) := by
     intro s
-    show Disjoint (T₀.typesWith (Formula.equivSentence (θ (s ++ [false]))))
-      (T₀.typesWith (Formula.equivSentence (θ (s ++ [true]))))
-    rw [CompleteType.typesWith_disjoint_iff_not_realize_and (T := T₀) (N := M) hT₀c]
+    rw [CompleteType.typesWith_disjoint_iff_not_realize_and (N := M) hT₀c]
     intro v hv hw
     rw [hθ_realize (s ++ [false]) v] at hv
     rw [hθ_realize (s ++ [true]) v] at hw
     exact hchild_disj s v ⟨hv, hw⟩
-  have hCne (x : ℕ → Bool) : (⋂ k, C.node (pref x k)).Nonempty := by
-    exact IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
-      (fun k => C.node (pref x k))
-      (fun k => SetBinaryTree.node_pref_succ_subset C hCsub x k)
-      (fun k => hCnonempty x k)
+  have hCne (x : ℕ → Bool) : (⋂ k, C.node (pref x k)).Nonempty :=
+    IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
+      (fun k ↦ C.node (pref x k))
+      (fun k ↦ SetBinaryTree.node_pref_succ_subset C hCsub x k)
+      (fun k ↦ hCnonempty x k)
       ((CompleteType.isClosed_typesWith (T := T₀) _).isCompact)
-      (fun k => CompleteType.isClosed_typesWith (T := T₀) _)
+      (fun k ↦ CompleteType.isClosed_typesWith (T := T₀) _)
   obtain ⟨f, hf_inj, _⟩ :=
     SetBinaryTree.exists_injective_of_nonempty_branchInter C hCsub hCdisj hCne
-  have hcount : Countable (T₀.CompleteType (Fin n)) := hT M A₀ hA₀ n hn
-  have : Countable (ℕ → Bool) := by
-    letI : Countable (T₀.CompleteType (Fin n)) := hcount
-    exact hf_inj.countable
-  exact not_countable_nat_bool this
+  letI : Countable (T₀.CompleteType (Fin n)) := hT M A₀ hA₀ n hn
+  exact not_countable_nat_bool hf_inj.countable
 
 end FormulaSplitting
 
@@ -191,24 +176,20 @@ theorem exists_isolated_mem_typesWith (hT : T.IsOmegaStable.{u, v, w})
   by_contra hcon
   push Not at hcon
   let T' : (L[[A]]).Theory := (L[[A]]).completeTheory M
-  have hT'c : T'.IsComplete := by
-    simpa [T'] using completeTheory.isComplete (L := L[[A]]) M
+  have hT'c : T'.IsComplete := completeTheory.isComplete (L := L[[A]]) M
   -- The property specific to this argument: defining a nonempty basic open set with no isolated
   -- type.  The binary splitting obstruction then takes over the rest of the proof.
   let Good : (L[[A]]).Formula (Fin n) → Prop := fun ψ =>
     (T'.typesWith (Formula.equivSentence ψ)).Nonempty ∧
       ∀ p ∈ T'.typesWith (Formula.equivSentence ψ), ¬ p.IsIsolated
-  have hroot : Good φ := ⟨hne, hcon⟩
   have hsplit : ∀ ψ : (L[[A]]).Formula (Fin n), Good ψ →
       ∃ χ : (L[[A]]).Formula (Fin n), Good (ψ ⊓ χ) ∧ Good (ψ ⊓ ∼χ) := by
     intro ψ hψ
     obtain ⟨χ, h1, h2, h3, h4⟩ :=
       exists_isolated_splitting_formula (T := T') ψ hψ.1 hψ.2
     exact ⟨χ, ⟨h1, h3⟩, ⟨h2, h4⟩⟩
-  have hrealize : ∀ ψ : (L[[A]]).Formula (Fin n), Good ψ → ∃ v : Fin n → M, ψ.Realize v := by
-    intro ψ hψ
-    exact (typesWith_nonempty_iff_exists_realize (T := T') (N := M) hT'c ψ).mp hψ.1
-  exact hT.false_of_formula_splitting n hn Good φ hroot hsplit hrealize
+  exact hT.false_of_formula_splitting n hn Good φ ⟨hne, hcon⟩ hsplit fun ψ hψ ↦
+    (typesWith_nonempty_iff_exists_realize hT'c ψ).mp hψ.1
 
 end CompleteType
 
