@@ -3,6 +3,9 @@
 ## Lake
 .lake/*
 .cache/*
+## Python
+__pycache__/
+*.py[cod]
 ## Local agent workspace
 .agents/
 ## Blueprint
