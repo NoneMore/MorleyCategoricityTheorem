@@ -61,6 +61,14 @@ constructor without turning implementation details into declarations that also n
   with no temporary structure on the target of a constant expansion.  The proof needs naturality of
   `BoundedFormula.constantsVarsEquiv` and `BoundedFormula.relabelEquiv` with respect to
   `lhomWithConstantsMap`, which Mathlib does not provide yet.
+- Move the general functoriality laws for symbol renaming next to `LHom.onBoundedFormula`,
+  `LHom.onFormula`, `LHom.onSentence`, and `LHom.onTheory` when these are upstreamed: composition
+  and identity (`LHom.comp_onFormula`, `LHom.comp_onSentence`, `LHom.id_onSentence`,
+  `LHom.onTheory_comp`, `LHom.id_onTheory`), compatibility of `LHom.onSentence` with negation
+  (`LHom.onSentence_not`), and the mutual-inverse laws `LEquiv.invLHom_onTheory_toLHom_onTheory` and
+  `LEquiv.toLHom_onTheory_invLHom_onTheory` together with the constant-expansion naturality
+  `LEquiv.onTheory_addConstants_lhomWithConstants`.  These are syntax-only but currently live in
+  `ModelTheory/TypeSpaceHomeomorphism.lean`, which already imports `Mathlib.ModelTheory.Syntax`.
 -/
 
 universe u v
