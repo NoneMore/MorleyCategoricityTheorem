@@ -13,3 +13,4 @@ import MorleyCategoricityTheorem.ModelTheory.Semantics
 import MorleyCategoricityTheorem.ModelTheory.Syntax
 import MorleyCategoricityTheorem.ModelTheory.TypeSpaceHomeomorphism
 import MorleyCategoricityTheorem.ModelTheory.Types
+import MorleyCategoricityTheorem.ModelTheory.VaughtianPair
