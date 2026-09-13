@@ -36,6 +36,8 @@ injective language homomorphism.
   `LHom.id_addConstants`, `lhomWithConstantsMap_comp`, and `lhomWithConstantsMap_id` record the
   composition and identity laws for the maps on constant-expanded languages used by the
   equivalences above.
+- `LEquiv.toLHom_addConstants_comp_lhomWithConstants`: adding an unchanged type of constants to a
+  language equivalence is compatible with the canonical embedding into a constants expansion.
 -/
 
 universe u v u' v' u'' v'' u₁ v₁ u₂ v₂ w w' w''
@@ -163,6 +165,13 @@ def addConstants (e : L ≃ᴸ L') (α : Type w) : L[[α]] ≃ᴸ L'[[α]] where
     rw [LHom.addConstants_comp, e.left_inv, LHom.id_addConstants]
   right_inv := by
     rw [LHom.addConstants_comp, e.right_inv, LHom.id_addConstants]
+
+/-- Adding an unchanged type of constants to a language equivalence commutes with the canonical
+embedding of a language into its constants expansion. -/
+theorem toLHom_addConstants_comp_lhomWithConstants (e : L ≃ᴸ L') (α : Type w) :
+    (e.addConstants α).toLHom.comp (L.lhomWithConstants α) =
+      (L'.lhomWithConstants α).comp e.toLHom :=
+  LHom.sumMap_comp_inl (ϕ := e.toLHom) (ψ := LHom.id (constantsOn α))
 
 end LEquiv
 

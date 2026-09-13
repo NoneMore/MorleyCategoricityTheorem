@@ -52,6 +52,18 @@ constructor without turning implementation details into declarations that also n
 - Order variables as `α ⊕ β`, consistently with Mathlib's `Formula.iExs` / `Formula.iExsUnique`.
 - Keep the natural-number API primary; defer an arbitrary finite index type until it is needed.
 
+## Main results
+
+- `FirstOrder.Language.LHom.comp_onFormula`, `LHom.comp_onSentence`, `LHom.id_onSentence`, and
+  `LHom.onSentence_not`: symbol renaming is compatible with composition, identity, and negation.
+- `FirstOrder.Language.LHom.onTheory_comp` and `LHom.id_onTheory`: the induced maps on theories are
+  compatible with composition and identity.
+- `FirstOrder.Language.LEquiv.invLHom_onTheory_toLHom_onTheory` and
+  `LEquiv.toLHom_onTheory_invLHom_onTheory`: the two maps of a language equivalence are mutually
+  inverse on theories.
+- `FirstOrder.Language.LEquiv.onTheory_addConstants_lhomWithConstants`: adding constants to a
+  language equivalence is natural with respect to the constants expansion of a theory.
+
 ## TODO
 
 - Prove the syntactic naturality law
@@ -61,14 +73,6 @@ constructor without turning implementation details into declarations that also n
   with no temporary structure on the target of a constant expansion.  The proof needs naturality of
   `BoundedFormula.constantsVarsEquiv` and `BoundedFormula.relabelEquiv` with respect to
   `lhomWithConstantsMap`, which Mathlib does not provide yet.
-- Move the general functoriality laws for symbol renaming next to `LHom.onBoundedFormula`,
-  `LHom.onFormula`, `LHom.onSentence`, and `LHom.onTheory` when these are upstreamed: composition
-  and identity (`LHom.comp_onFormula`, `LHom.comp_onSentence`, `LHom.id_onSentence`,
-  `LHom.onTheory_comp`, `LHom.id_onTheory`), compatibility of `LHom.onSentence` with negation
-  (`LHom.onSentence_not`), and the mutual-inverse laws `LEquiv.invLHom_onTheory_toLHom_onTheory` and
-  `LEquiv.toLHom_onTheory_invLHom_onTheory` together with the constant-expansion naturality
-  `LEquiv.onTheory_addConstants_lhomWithConstants`.  These are syntax-only but currently live in
-  `ModelTheory/TypeSpaceHomeomorphism.lean`, which already imports `Mathlib.ModelTheory.Syntax`.
 -/
 
 universe u v
@@ -292,6 +296,72 @@ def mapSentence (e : L ↪ᴸ L') : L.Sentence ↪ L'.Sentence :=
   ⟨e.toLHom.onSentence, LHom.onSentence_injective e.toLHom e.injective⟩
 
 end LEmbedding
+
+universe u'' v''
+
+namespace LHom
+
+variable {L : Language.{u, v}} {L' : Language.{u', v'}} {L'' : Language.{u'', v''}}
+
+/-- Renaming the symbols of a formula along a composite language map is the composite of the two
+renamings. -/
+theorem comp_onFormula {α : Type*} (φ : L' →ᴸ L'') (ψ : L →ᴸ L') :
+    ((φ.comp ψ).onFormula : L.Formula α → L''.Formula α) = φ.onFormula ∘ ψ.onFormula :=
+  comp_onBoundedFormula φ ψ
+
+/-- Renaming the symbols of a sentence along a composite language map is the composite of the two
+renamings. -/
+theorem comp_onSentence (φ : L' →ᴸ L'') (ψ : L →ᴸ L') :
+    ((φ.comp ψ).onSentence : L.Sentence → L''.Sentence) = φ.onSentence ∘ ψ.onSentence :=
+  comp_onFormula φ ψ
+
+/-- Renaming the symbols of a sentence along the identity language map is the identity. -/
+@[simp]
+theorem id_onSentence (L : Language.{u, v}) :
+    ((LHom.id L).onSentence : L.Sentence → L.Sentence) = id :=
+  id_onBoundedFormula
+
+/-- Renaming the symbols of a sentence along a language map commutes with negation. -/
+@[simp]
+theorem onSentence_not (g : L →ᴸ L') (φ : L.Sentence) :
+    g.onSentence φ.not = (g.onSentence φ).not :=
+  rfl
+
+/-- Renaming the symbols of a theory along a composite language map is the composite of the two
+renamings. -/
+theorem onTheory_comp (φ : L' →ᴸ L'') (ψ : L →ᴸ L') (T : L.Theory) :
+    (φ.comp ψ).onTheory T = φ.onTheory (ψ.onTheory T) := by
+  simp only [onTheory, comp_onSentence, Set.image_comp]
+
+/-- Renaming the symbols of a theory along the identity language map is the identity. -/
+@[simp]
+theorem id_onTheory (T : L.Theory) : (LHom.id L).onTheory T = T := by
+  simp [onTheory]
+
+end LHom
+
+namespace LEquiv
+
+variable {L : Language.{u, v}} {L' : Language.{u', v'}}
+
+/-- Extending a language equivalence by an unchanged type of constants is natural with respect to
+the constants expansion of a theory. -/
+theorem onTheory_addConstants_lhomWithConstants (e : L ≃ᴸ L') (α : Type w) (T : L.Theory) :
+    (e.addConstants α).toLHom.onTheory ((L.lhomWithConstants α).onTheory T) =
+      (L'.lhomWithConstants α).onTheory (e.toLHom.onTheory T) := by
+  rw [← LHom.onTheory_comp, toLHom_addConstants_comp_lhomWithConstants, LHom.onTheory_comp]
+
+/-- The inverse of a language equivalence undoes the renaming of a theory. -/
+theorem invLHom_onTheory_toLHom_onTheory (e : L ≃ᴸ L') (T : L.Theory) :
+    e.invLHom.onTheory (e.toLHom.onTheory T) = T := by
+  rw [← LHom.onTheory_comp, e.left_inv, LHom.id_onTheory]
+
+/-- The forward map of a language equivalence undoes the inverse renaming of a theory. -/
+theorem toLHom_onTheory_invLHom_onTheory (e : L ≃ᴸ L') (T : L'.Theory) :
+    e.toLHom.onTheory (e.invLHom.onTheory T) = T := by
+  rw [← LHom.onTheory_comp, e.right_inv, LHom.id_onTheory]
+
+end LEquiv
 
 end Language
 

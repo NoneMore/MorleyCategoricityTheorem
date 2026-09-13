@@ -13,6 +13,7 @@ types is developed in `ModelTheory.IsolatedTypes`.
 
 ## Main results
 
+- `CompleteType.ext`: two complete types are equal as soon as their underlying theories are equal.
 - `CompleteType.typesWith_subset_iff_realize_imp`: containment of basic open sets is equivalent to
   implication between the defining formulas in a single model.
 - `CompleteType.typesWith_disjoint_iff_not_realize_and`: disjointness of basic open sets is
@@ -52,6 +53,13 @@ namespace Theory
 namespace CompleteType
 
 variable {L : Language.{u, v}} {T : L.Theory} {α : Type w}
+
+/-- Two complete types are equal as soon as their underlying maximal theories are equal. -/
+@[ext]
+theorem ext {p q : T.CompleteType α} (h : p.toTheory = q.toTheory) : p = q := by
+  cases p
+  cases q
+  congr
 
 /-- A semantic consequence of a sentence in a complete type also belongs to that type. -/
 theorem mem_of_mem_of_models_imp (p : T.CompleteType α) {φ ψ : L[[α]].Sentence}
