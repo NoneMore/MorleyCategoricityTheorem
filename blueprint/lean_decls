@@ -46,3 +46,4 @@ FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_left
 FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_trans
 FirstOrder.Language.Theory.IsOmegaStable.false_of_formula_splitting
 FirstOrder.Language.Theory.CompleteType.exists_isolated_mem_typesWith
+FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph

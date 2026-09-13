@@ -424,12 +424,22 @@ types over a countable parameter set, contradicting \(\omega\)-stability.
 
 \begin{lemma}[Type spaces and partial elementary maps]
 \label{lem:type-space-homeomorphism}
+\lean{FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph}
+\leanok
 \uses{def:types-over-parameters,def:partial-elementary-embedding}
 If \(A\subseteq M\) and \(f:A\to N\) is partial elementary, then
 \(S_n^M(A)\) is homeomorphic to \(S_n^N(f(A))\).
+\emph{Formalization note.}  The Lean declaration listed above is a
+bundled homeomorphism of complete type spaces for an arbitrary type
+\(\alpha\) of free variables.  Its codomain is the subset
+\(B\subseteq N\) onto which the surjective partial elementary map
+\(f:A\hookrightarrow_{\!pe}[L] B\) maps, so \(B\) represents the image
+\(f(A)\); the transport acts by renaming the parameter constants along
+the equivalence \(A\simeq B\) induced by \(f\).
 \end{lemma}
 
 \begin{proof}
+\leanok
 \uses{thm:compactness}
 Apply \(f\) to the parameters occurring in formulas of a type.  Partial
 elementarity preserves finite satisfiability, compactness gives a
