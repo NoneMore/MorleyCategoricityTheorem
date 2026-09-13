@@ -160,9 +160,8 @@ defined by the inverse-renamed sentence. -/
 theorem preimage_typesWith (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T')
     (σ : L'[[α]].Sentence) :
     completeTypeEquiv e h ⁻¹' T'.typesWith σ =
-      T.typesWith ((e.addConstants α).onSentence.symm σ) := by
-  ext p
-  simp only [Set.mem_preimage, mem_typesWith_iff, mem_completeTypeEquiv_iff]
+      T.typesWith ((e.addConstants α).onSentence.symm σ) :=
+  Set.ext fun p => by simp only [Set.mem_preimage, mem_typesWith_iff, mem_completeTypeEquiv_iff]
 
 /-- Pulling back a basic open set along the inverse transport of complete types is the basic open
 set defined by the renamed sentence. -/
@@ -190,11 +189,9 @@ theorem image_typesWith (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T')
 because every basic open set pulls back to a basic open set. -/
 theorem continuous_completeTypeEquiv (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T') :
     Continuous (completeTypeEquiv (α := α) e h) := by
-  refine (CompleteType.isTopologicalBasis_range_typesWith (T := T')
-    (α := α)).continuous_iff.mpr ?_
+  refine (CompleteType.isTopologicalBasis_range_typesWith (T := T') (α := α)).continuous_iff.mpr ?_
   rintro s ⟨σ, rfl⟩
-  rw [preimage_typesWith]
-  exact CompleteType.isOpen_typesWith _
+  simpa using CompleteType.isOpen_typesWith _
 
 /-- The inverse of the transport of complete types is continuous for the Stone topology: as a
 function it is the forward transport along the inverse language equivalence `e.symm`. -/
@@ -244,8 +241,7 @@ equivalence is a homeomorphism of the corresponding Stone spaces. This expresses
 statement that `S_α^M(A)` and `S_α^N(B)` are homeomorphic. -/
 noncomputable def completeTypeOverHomeomorph (f : A ↪ₚₑ[L] B) (α : Type x) :
     L.CompleteTypeOver A α ≃ₜ L.CompleteTypeOver B α :=
-  Theory.CompleteType.completeTypeHomeomorph (T := L[[A]].completeTheory M)
-    (T' := L[[B]].completeTheory N) f.parameterLEquiv f.map_completeTheory
+  Theory.CompleteType.completeTypeHomeomorph f.parameterLEquiv f.map_completeTheory
 
 /-- The parameter-set homeomorphism acts on complete types as the transport of complete types along
 the parameter-language equivalence. -/
@@ -279,8 +275,7 @@ the basic open set defined by the renamed sentence over `B`. -/
 theorem completeTypeOverHomeomorph_image_typesWith (f : A ↪ₚₑ[L] B) (α : Type x)
     (φ : (L[[A]])[[α]].Sentence) :
     f.completeTypeOverHomeomorph α '' (L[[A]].completeTheory M).typesWith φ =
-      (L[[B]].completeTheory N).typesWith
-        ((f.parameterLEquiv.addConstants α).onSentence φ) :=
+      (L[[B]].completeTheory N).typesWith ((f.parameterLEquiv.addConstants α).onSentence φ) :=
   Theory.CompleteType.image_typesWith f.parameterLEquiv f.map_completeTheory φ
 
 end PartialElementaryEmbedding

@@ -56,10 +56,8 @@ variable {L : Language.{u, v}} {T : L.Theory} {α : Type w}
 
 /-- Two complete types are equal as soon as their underlying maximal theories are equal. -/
 @[ext]
-theorem ext {p q : T.CompleteType α} (h : p.toTheory = q.toTheory) : p = q := by
-  cases p
-  cases q
-  congr
+theorem ext {p q : T.CompleteType α} (h : p.toTheory = q.toTheory) : p = q :=
+  SetLike.ext' h
 
 /-- A semantic consequence of a sentence in a complete type also belongs to that type. -/
 theorem mem_of_mem_of_models_imp (p : T.CompleteType α) {φ ψ : L[[α]].Sentence}
