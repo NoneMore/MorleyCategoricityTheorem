@@ -1,191 +1,324 @@
-# Plan: Type Spaces and Partial Elementary Embeddings
+# Plan: The Realization Set of a Formula
 
 ## Target
 
-Implement blueprint node `lem:type-space-homeomorphism` from
-`blueprint/src/content.tex`:
+Introduce a thin, unbundled semantic layer that names the set of tuples realizing a formula once
+its parameter variables have been assigned values, and equip it with the membership, Boolean,
+relabelling, elementary-embedding, and cardinality API needed by the two-cardinal part of the
+blueprint.  The layer is a naming and reuse exercise, not a new theory of definable sets.
 
-> If `A ⊆ M` and a partial elementary map sends `A` onto `B ⊆ N`, then the spaces of
-> complete `α`-types over `A` and `B` are homeomorphic.
-
-The intended public declaration is a bundled homeomorphism in the
-`FirstOrder.Language.PartialElementaryEmbedding` namespace:
+The public definition is intended to be:
 
 ```lean
-noncomputable def completeTypeOverHomeomorph
-    (f : A ↪ₚₑ[L] B) (α : Type x) :
-    L.CompleteTypeOver A α ≃ₜ L.CompleteTypeOver B α
+def FirstOrder.Language.Formula.realizationSet
+    (φ : L.Formula (α ⊕ β)) (a : α → M) : Set (β → M)
 ```
 
-The existing definition requires `f` to be surjective onto its declared codomain `B`, so `B`
-represents the image `f(A)` appearing in the blueprint.
+with a unary specialization `Formula.realizationSet₁ : Set M`.
 
-## Existing interface
+## Motivation
 
-- `PartialElementaryEmbedding.map_formula'` preserves formulas indexed by `Fin n`.
-- `PartialElementaryEmbedding.toEquiv` gives the underlying equivalence `A ≃ B`.
-- `LEmbedding.lhomWithConstantsMap` embeds `L[[A]]` into `L[[B]]` along an embedding of
-  parameter types.
-- `CompleteTypeOver L A α` abbreviates the complete types over
-  `L[[A]].completeTheory M`.
-- `CompleteType.isTopologicalBasis_range_typesWith` supplies the basic clopen basis of the Stone
-  topology.
-
-No current project or Mathlib declaration directly transports complete types, maximal theories,
-or their topology along a parameter-language equivalence.
-
-## Phase 1: Formula preservation for arbitrary variable types
-
-Extend `PartialElementaryEmbedding` with formula-preservation lemmas matching the public Mathlib
-interface for total elementary embeddings:
+Commit `e5b2d77` (`feat: define Vaughtian pairs`) had to hand-write the same set-builder four times
+inside a 119-line file:
 
 ```lean
-theorem PartialElementaryEmbedding.map_boundedFormula ...
+{x : M | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))}
+{y : N | φ.Realize (Sum.elim ((e : M → N) ∘ a) (fun _ : Fin 1 => y))}
+```
+
+`ElementaryEmbedding.image_realizations_subset` exists only to re-derive "an elementary embedding
+sends the source realization set into the target realization set" for the unary shape
+`Fin n ⊕ Fin 1`, because it cannot reuse `ElementaryMaps.realizations_embedding` stated for the
+general shape `β ⊕ α`.
+
+This is not an isolated incident.  The same set-builder is the working representation of
+"parameter-definable subset" throughout the project:
+
+| Location | Occurrences |
+|---|---|
+| `ModelTheory/Semantics.lean`, `realize_iExsAtLeast/AtMost/Exactly` | `{x : β → M \| φ.Realize (Sum.elim v x)}` |
+| `ModelTheory/ElementaryMaps.lean` | `{x : α → M \| φ.Realize (Sum.elim b x)}` in all four statements |
+| `ModelTheory/DefinablyFull.lean` | `{x : Fin 1 → M \| ψ.Realize (Sum.elim b x)}`, `{x : M \| φ.Realize fun _ ↦ x}` |
+| `ModelTheory/VaughtianPair.lean` | unary `Fin n ⊕ Fin 1` shape, four times |
+
+The project therefore already uses "the realization set of a formula" everywhere but has never
+given it a name.  Consequently no `simp` or `rw` lemma can move between call sites, and every new
+node of the form "this parameter-definable set is infinite / has cardinality λ / is unchanged in an
+elementary extension" restates the object in a slightly different shape.
+
+The blueprint nodes that will need the layer are:
+
+- `def:kappa-lambda-model` ("some one-variable parameter-definable subset of `M`"),
+- `lem:kappa-lambda-model-gives-vaughtian-pair` (`φ(M,ā) = φ(N,ā)`),
+- `cor:no-small-infinite-definable-sets-without-vaughtian-pairs`,
+- `lem:countable-vaughtian-pair` ("no realizations outside the `U`-part"),
+- and the existing `lem:elementary-embedding-definable-set-cardinality`.
+
+## Relationship to Mathlib
+
+Mathlib already provides two related but insufficient notions.
+
+```lean
+def Set.Definable (s : Set (α → M)) : Prop :=
+  ∃ φ : L[[A]].Formula α, s = setOf φ.Realize
+
+def L.DefinableSet (A : Set M) (α : Type*) :=
+  { s : Set (α → M) // A.Definable L s }
+```
+
+Neither replaces the proposed definition.
+
+- `Set.Definable` is a proposition, so it cannot be used as a set.
+- `L.DefinableSet` is a bundled subtype with a Boolean algebra structure.  Using it makes the image
+  of a definable set under an elementary embedding no longer a definable set over the same
+  parameter set, so the Vaughtian condition "unchanged in `N`" becomes an asymmetric coercion
+  problem rather than an equality of sets.
+- Both take parameters as constants of the expansion `L[[A]]`, while the two-cardinal part of the
+  blueprint uses parameters as tuple variables `a : α → M`.  The translation between the two
+  conventions should be one lemma, not repeated inline.
+
+The proposed definition is exactly the unbundled companion of `Set.Definable`: with it,
+Mathlib's `Set.definable_iff_exists_formula_sum` becomes
+
+```lean
+A.Definable L s ↔ ∃ φ : L.Formula (A ⊕ α), s = φ.realizationSet (Subtype.val)
+```
+
+so the witnessing formula of a definable set *is* the formula whose realization set it is, and the
+bridge to `DefinableSet` is `⟨φ, rfl⟩`.  This is the main argument that the layer belongs upstream
+rather than being a local invention.
+
+## Relationship to Type Spaces
+
+`T.typesWith σ` is a clopen subset of the Stone space of complete types; its elements are types, not
+tuples.  `φ.realizationSet a` is a subset of the model `β → M` and is the model-side counterpart.
+The dictionary between the two already exists in `ModelTheory/Types.lean` as
+`CompleteType.typesWith_nonempty_iff_exists_realize`.  The new definition does not duplicate it; the
+module documentation should state which side of the dictionary each object lives on.
+
+## Design
+
+### Definition and conventions
+
+```lean
+namespace FirstOrder.Language.Formula
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
+variable {α : Type x} {β : Type y}
+
+/-- `φ.realizationSet a` is the set of `β`-tuples realizing `φ` when the `α`-variables are
+assigned the parameter tuple `a`. -/
+def realizationSet (φ : L.Formula (α ⊕ β)) (a : α → M) : Set (β → M) :=
+  {x | φ.Realize (Sum.elim a x)}
 
 @[simp]
-theorem PartialElementaryEmbedding.map_formula ...
+theorem mem_realizationSet {φ : L.Formula (α ⊕ β)} {a : α → M} {x : β → M} :
+    x ∈ φ.realizationSet a ↔ φ.Realize (Sum.elim a x) :=
+  Iff.rfl
 ```
 
-Derive these from `map_formula'` by restricting to the finite set of free variables and identifying
-that finite subtype with `Fin n`. Keep the source and target assignments visibly factored through
-the subset inclusions `A → M` and `B → N`.
+Conventions, chosen to match the existing code rather than to introduce a third one:
 
-This phase belongs in `ModelTheory/PartialEmbedding.lean` and must not change the structure fields
-or the meaning of partial elementarity.
+- **Parameters first.**  The index type is `α ⊕ β`, the parameter tuple is `a : α → M`, and the
+  realized tuples live in `β → M`.  This is the orientation already used by
+  `Formula.realize_iExsAtLeast` (`φ : L.Formula (α ⊕ β)`, `v : α → M`,
+  `{x : β → M | …}.encard`) and by `ElementaryMaps.realizations_embedding`.  It also lets the
+  counting-formula lemmas be restated as
+  `(φ.iExsAtLeast β n).Realize v ↔ (n : ℕ∞) ≤ (φ.realizationSet v).encard`.
+- **`def`, not `abbrev`.**  An `abbrev` would unfold during every `simp`, risking defeq blow-ups and
+  simp loops in the large cardinality proofs; a `def` together with a `@[simp]` membership lemma is
+  the Mathlib convention and keeps the `Definable` bridge available.
+- **Unbundled.**  The object is a plain `Set`, so images, preimages, and equality behave as in
+  ordinary set theory and the `Cardinal.mk` / `Set.encard` API applies directly.
+- **No notation.**  A custom notation would add blueprint-matching cost for little gain.
 
-## Phase 2: Equivalences of languages with renamed constants
+### Unary specialization
 
-Add a language equivalence induced by an equivalence of parameter types:
+The two-cardinal story only uses unary sets, and `Set (Fin 1 → M)` is an awkward home for
+`Set.Infinite`, `Set.encard`, and `Cardinal.mk`.  Provide
 
 ```lean
-def LEquiv.lhomWithConstantsCongr
-    (L : Language) (e : α ≃ β) : L[[α]] ≃ᴸ L[[β]]
+/-- The unary realization set. -/
+def realizationSet₁ (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) : Set M :=
+  {x | φ.Realize (Sum.elim a fun _ => x)}
+
+@[simp]
+theorem mem_realizationSet₁ {φ : L.Formula (α ⊕ Fin 1)} {a : α → M} {x : M} :
+    x ∈ φ.realizationSet₁ a ↔ φ.Realize (Sum.elim a fun _ => x) :=
+  Iff.rfl
 ```
 
-Its forward map should be `L.lhomWithConstantsMap e`, and its inverse should use `e.symm`. Also
-provide the minimal helper that extends a language equivalence by an unchanged type of new
-constants:
+and relate the two shapes once:
 
 ```lean
-def LEquiv.addConstants (e : L ≃ᴸ L') (α : Type*) :
-    L[[α]] ≃ᴸ L'[[α]]
+theorem realizationSet_fin_one_image (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    φ.realizationSet a = (fun x : M => fun _ : Fin 1 => x) '' φ.realizationSet₁ a
+
+theorem infinite_realizationSet_fin_one_iff (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    (φ.realizationSet a).Infinite ↔ (φ.realizationSet₁ a).Infinite
 ```
 
-Place reusable syntax-only constructions in `ModelTheory/LanguageEmbedding.lean`. Prove the
-composition identities needed later rather than relying on large unfolded `simp` calls.
+`DefinablyFull.Formula.finOneRealizationsEquiv` is the subtype-level version of the second lemma and
+should move next to the new definitions or be generalized to `Equiv.funUnique (Fin 1) M`.
 
-## Phase 3: Correspondence of parameter-expanded complete theories
+### Core API
 
-For `f : A ↪ₚₑ[L] B`, instantiate the parameter-language equivalence with `f.toEquiv` and prove
-that it carries the complete theory of `M` with constants from `A` to the complete theory of `N`
-with constants from `B`:
+1. **Membership and extensionality.**
+   `mem_realizationSet`, `mem_realizationSet₁`,
+   `realizationSet_congr : (∀ x, φ.Realize (Sum.elim a x) ↔ ψ.Realize (Sum.elim b x)) → φ.realizationSet a = ψ.realizationSet b`,
+   and the `Set.ext` corollary.
+2. **Boolean laws**, each one `ext x; simp`:
+   `realizationSet_top`, `realizationSet_bot`, `realizationSet_inf`, `realizationSet_sup`,
+   `realizationSet_compl`, `realizationSet_imp`.  These attach the existing
+   `Formula.realize_inf`/`realize_sup`/`realize_not`/`realize_imp` lemmas to the new name.  The
+   Boolean-algebra structure itself stays in Mathlib's `DefinableSet`; do not duplicate it.
+3. **Variable relabelling.**
+   ```lean
+   theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β' → β) :
+       (φ.relabel (Sum.map id f)).realizationSet a =
+         (fun x : β → M => x ∘ f) ⁻¹' φ.realizationSet a
+   ```
+   proved from `Formula.realize_relabel` and `Sum.elim_comp_map`.  This absorbs the `Sum.inl` /
+   `Sum.inr` projections currently hand-rolled in `ModelTheory/Types.lean`.
+4. **Elementary-embedding transport.**
+   ```lean
+   theorem ElementaryEmbedding.image_realizationSet_subset
+       (e : M ↪ₑ[L] N) (φ : L.Formula (α ⊕ β)) (a : α → M) :
+       (e : M → N) '' φ.realizationSet a ⊆ φ.realizationSet (e ∘ a)
+   ```
+   This generalizes `VaughtianPair.image_realizations_subset`, which should then be deleted.  Also
+   restate `ElementaryMaps` as
+   `realizations_embedding e φ b : φ.realizationSet b ↪ φ.realizationSet (e ∘ b)`.
+5. **Cardinality.**  Restate `mk_realizations_le`, `encard_realizations_eq_coe_iff`, and
+   `infinite_realizations_iff` with `realizationSet`.  Because `realizationSet` is a `def`, each
+   restatement is definitionally equal to the current statement, so this is safe; see the risk
+   note about declaration types below.  Keep the documented boundary: `Set.encard` only for
+   comparison with a natural number, `Cardinal.mk` for monotonicity and arbitrary infinite lower
+   bounds.
+
+### Bridge to definable sets
 
 ```lean
-theorem PartialElementaryEmbedding.map_completeTheory
-    (f : A ↪ₚₑ[L] B) :
-    f.parameterLEquiv.toLHom.onTheory (L[[A]].completeTheory M) =
-      L[[B]].completeTheory N
+theorem Set.definable_realizationSet {A : Set M} (φ : L.Formula (A ⊕ β)) :
+    A.Definable L (φ.realizationSet (Subtype.val : A → M)) :=
+  ⟨φ, rfl⟩
 ```
 
-Prove this by sentence extensionality:
-
-1. Rewrite membership in `completeTheory` as realization.
-2. Convert a sentence with named parameters using `BoundedFormula.constantsVarsEquiv`.
-3. Apply the arbitrary-variable preservation theorem from Phase 1.
-4. Rewrite the result as realization of the renamed sentence in `N`.
-5. Use bijectivity of the sentence map to discharge image membership.
-
-This is the main semantic bottleneck. Isolate coercion and function-composition identities in
-small lemmas so the final theorem does not expose temporary constant structures.
-
-## Phase 4: Generic transport of complete types
-
-In a new module `ModelTheory/TypeSpaceHomeomorphism.lean`, define transport of complete types along
-a language equivalence that identifies the base theories. The forward map sends the underlying
-maximal theory through the induced equivalence after adding the free-variable constants.
-
-Establish:
-
-- containment of the transported base theory;
-- preservation of satisfiability under the language equivalence;
-- preservation of maximality, using surjectivity on sentences and compatibility with negation;
-- inverse laws using the inverse language equivalence;
-- a formula- or sentence-membership theorem for the transported complete type.
-
-Keep low-level image and maximal-theory constructions private unless another caller needs them.
-Expose the complete-type equivalence and its membership rule.
-
-## Phase 5: Stone-space topology
-
-Before constructing the homeomorphism, prove that the complete-type equivalence transports basic
-open sets exactly. A suitable normal form is:
+plus the reformulation of `Set.definable_iff_exists_formula_sum` in terms of `realizationSet`.
+Optionally a bundled constructor for callers that want the Boolean algebra:
 
 ```lean
-theorem preimage_typesWith ... :
-    completeTypeEquiv e h ⁻¹' T'.typesWith σ =
-      T.typesWith ((e.addConstants α).onSentence.symm σ)
+def Formula.toDefinableSet {A : Set M} (φ : L.Formula (A ⊕ β)) : L.DefinableSet A β :=
+  ⟨φ.realizationSet Subtype.val, Set.definable_realizationSet φ⟩
 ```
 
-Use `CompleteType.isTopologicalBasis_range_typesWith` and
-`IsTopologicalBasis.continuous_iff` to prove continuity of the forward and inverse maps. Package
-them as a `Homeomorph`, then specialize with `f.toEquiv` and `f.map_completeTheory` to obtain
-`PartialElementaryEmbedding.completeTypeOverHomeomorph`.
+Add `toDefinableSet` only if a caller needs `⊔`, `ᶜ`, or `Definable.mono` on the realization set;
+do not add it preemptively.
 
-Retain an explicit basic-open transport theorem as public API. It is the useful downstream form
-for moving isolating formulas in the proof of the prime-extension theorem.
+### Rewriting the Vaughtian pair
+
+```lean
+def IsVaughtianPair (T : L.Theory) (e : M ↪ₑ[L] N) : Prop :=
+  M ⊨ T ∧ N ⊨ T ∧ ¬ Function.Surjective e ∧
+    ∃ (n : ℕ) (φ : L.Formula (Fin n ⊕ Fin 1)) (a : Fin n → M),
+      (φ.realizationSet₁ a).Infinite ∧
+      φ.realizationSet₁ (e ∘ a) = (e : M → N) '' φ.realizationSet₁ a
+```
+
+Because `realizationSet₁` unfolds to the current set-builder, this is a definitionally equal
+restatement: `isVaughtianPair_iff` keeps its proof, and `image_realizations_subset` disappears.
+After the rewrite `VaughtianPair.lean` should contain no `Sum.elim` at all.
 
 ## File plan
 
-1. `MorleyCategoricityTheorem/ModelTheory/PartialEmbedding.lean`
-   - arbitrary-variable preservation for partial elementary embeddings;
-   - parameter-expanded semantic transport helpers if they require structure semantics.
-2. `MorleyCategoricityTheorem/ModelTheory/LanguageEmbedding.lean`
-   - equivalences for renamed constants and unchanged added constants.
-3. `MorleyCategoricityTheorem/ModelTheory/TypeSpaceHomeomorphism.lean`
-   - generic complete-type equivalence and topology;
-   - specialization to partial elementary embeddings.
-4. `MorleyCategoricityTheorem.lean`
-   - import the new module.
-5. `blueprint/src/content.tex`
-   - after the Lean declaration is complete, add its fully qualified `\lean{...}` name and
-     `\leanok` to `lem:type-space-homeomorphism`.
+1. `MorleyCategoricityTheorem/ModelTheory/Semantics.lean`
+   - `Formula.realizationSet`, `Formula.realizationSet₁`, membership, Boolean, and relabelling
+     lemmas.  No new imports.
+2. `MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean`
+   - elementary-embedding transport and cardinality restatements.  No new imports.
+3. `MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean` (or a small new module)
+   - the `Set.Definable` bridge, placed where `Mathlib.ModelTheory.Definability` is already
+     imported.  Do not add that import to the foundational `Semantics.lean`.
+4. `MorleyCategoricityTheorem/ModelTheory/VaughtianPair.lean`
+   - restate `IsVaughtianPair` and delete the superseded lemma.
+5. `MorleyCategoricityTheorem.lean`
+   - only if a new module is added.
 
-Prefer the new module over importing the topology of complete types into the foundational partial
-embedding module. Imports must remain acyclic.
+## Implementation order
 
-## Risks and proof checkpoints
+1. Search the current Mathlib dependency again for an upstream realization-set definition; confirm
+   that only `Set.Definable` and `L.DefinableSet` exist.
+2. Define `Formula.realizationSet` and prove `mem_realizationSet`.
+3. Add the unary specialization and the two shape-conversion lemmas; relocate or generalize
+   `finOneRealizationsEquiv`.
+4. Add the Boolean and relabelling laws.
+5. Add `ElementaryEmbedding.image_realizationSet_subset` and restate
+   `realizations_embedding`, `mk_realizations_le`, `encard_realizations_eq_coe_iff`,
+   `infinite_realizations_iff`.
+6. Optionally restate the counting-formula lemmas in `Semantics.lean` in terms of
+   `realizationSet`.
+7. Add the `Set.Definable` bridge and the `definable_iff_exists_formula_sum` reformulation.
+8. Restate `IsVaughtianPair` and delete `image_realizations_subset`.
+9. Recheck whether the blueprint proof text of the two-cardinal nodes should reference the new
+   declaration names; update the blueprint only when explicitly authorized.
 
-- The finite-support lift from `Fin n` is likely to be the first elaboration-heavy proof; mirror
-  Mathlib's `ElementaryEmbedding.map_boundedFormula` closely.
-- The two levels of added constants must remain distinct: parameters (`A` or `B`) belong to the
-  base language of the type space, while `α` indexes the free variables of each complete type.
-- Orient theory equalities and sentence maps consistently. Prove the inverse theory equality
-  immediately after the forward one to avoid repeated rewriting later.
-- Do not replace the target with mere cardinal equality or an unbundled bijection. The blueprint
-  requires a homeomorphism and the downstream proof needs control of basic opens.
-- Do not add `\leanok` while any target declaration or local dependency contains `sorry`.
+## Non-goals
 
-## Completion criteria
+- Do not introduce a bundled realization-set or definable-set type alongside `L.DefinableSet`.
+- Do not change the two-cardinal encoding in which the Vaughtian formula is unary with `Fin n`
+  parameters; keep the general layer at `α ⊕ β` and specialize.
+- Do not decide between `Set.encard` and `Cardinal.mk` inside the definition layer.
+- Do not add `Formula.toDefinableSet` or any notation without a concrete caller.
+- Do not conflate the model-side realization set with the type-space basic open set `typesWith`.
+- Do not modify `blueprint/` as part of this work unless the user explicitly requests blueprint
+  changes.
 
-- `PartialElementaryEmbedding.completeTypeOverHomeomorph` exists with the intended source and
-  target `CompleteTypeOver` spaces.
-- Forward and inverse membership rules are available without unfolding maximal theories.
-- Basic clopen sets are transported explicitly.
-- The new declarations contain no `sorry`.
-- Root imports include the new module and remain acyclic.
-- Blueprint node `lem:type-space-homeomorphism` names the compiled declaration and has accurate
-  status markers.
+## Risks and invariants
 
-## Validation for the implementation phase
+- **Declaration types of `\leanok` nodes.**  `lem:elementary-embedding-definable-set-cardinality`
+  already names `realizations_embedding`, `mk_realizations_le`, `encard_realizations_eq_coe_iff`,
+  and `infinite_realizations_iff` with `\leanok`.  Keep those names.  Restating their types in
+  terms of `realizationSet` is definitionally neutral, but if it causes churn, add parallel
+  `realizationSet`-stated lemmas instead and leave the original statements untouched.
+- **Definitional transparency.**  `realizationSet` must remain a plain `def` whose body is the
+  set-builder, so that `mem_realizationSet` is `Iff.rfl` and the Vaughtian restatement is
+  definitionally equal to the committed one.
+- **Orientation.**  Mixing `α ⊕ β` with `β ⊕ α` is the historical source of the duplication this
+  plan removes.  Fix parameters-first everywhere and provide `Sum.comm`-based conversion lemmas
+  only if a concrete caller needs them.
+- **Import discipline.**  The `Definability` bridge must not force
+  `Mathlib.ModelTheory.Definability` into the foundational `Semantics.lean`; place it under
+  `DefinablyFull.lean` or a new module and keep imports acyclic.
 
-Because the implementation will add a Lean module and update the blueprint, run from the project
-root:
+## Estimated cost
+
+Definition, unary specialization, membership, Boolean, relabelling, and embedding transport:
+roughly 120–180 lines, dominated by `ext; simp`.  The only non-trivial proof is
+`image_realizationSet_subset`, whose current unary proof transfers directly.  `VaughtianPair.lean`
+should shrink.
+
+## Validation
+
+For Lean-only changes without new imports:
 
 ```bash
 lake build MorleyCategoricityTheorem
-lake exe mk_all --check
-leanblueprint all
 ```
 
-These commands belong to the later implementation phase; producing this plan does not execute
-them.
+If a module is added or imports change, additionally run:
+
+```bash
+lake exe mk_all --check
+```
+
+Blueprint validation is out of scope unless blueprint files are changed.
+
+## Completion criteria
+
+- `Formula.realizationSet` and `Formula.realizationSet₁` exist with `[simp]` membership lemmas.
+- Boolean, relabelling, and elementary-embedding transport lemmas are available.
+- No `sorry` is introduced.
+- `VaughtianPair.lean` states its condition through `realizationSet₁` and no longer hand-writes the
+  set-builder.
+- Root imports reflect the current module set and remain acyclic.
+- `blueprint/` is untouched unless explicitly requested.
