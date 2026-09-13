@@ -86,12 +86,12 @@ theorem onSentence_not (g : L →ᴸ L') (φ : L.Sentence) :
 renamings. -/
 theorem onTheory_comp (φ : L' →ᴸ L'') (ψ : L →ᴸ L') (T : L.Theory) :
     (φ.comp ψ).onTheory T = φ.onTheory (ψ.onTheory T) := by
-  rw [onTheory, onTheory, onTheory, comp_onSentence, Set.image_comp]
+  simp only [onTheory, comp_onSentence, Set.image_comp]
 
 /-- Renaming the symbols of a theory along the identity language map is the identity. -/
 @[simp]
 theorem id_onTheory (T : L.Theory) : (LHom.id L).onTheory T = T := by
-  rw [onTheory, id_onSentence, Set.image_id]
+  simp [onTheory]
 
 end LHom
 
@@ -111,20 +111,17 @@ the constants expansion of a theory. -/
 theorem onTheory_addConstants_lhomWithConstants (e : L ≃ᴸ L') (α : Type w) (T : L.Theory) :
     (e.addConstants α).toLHom.onTheory ((L.lhomWithConstants α).onTheory T) =
       (L'.lhomWithConstants α).onTheory (e.toLHom.onTheory T) := by
-  conv_lhs => rw [← LHom.onTheory_comp]
-  rw [toLHom_addConstants_comp_lhomWithConstants, LHom.onTheory_comp]
+  rw [← LHom.onTheory_comp, toLHom_addConstants_comp_lhomWithConstants, LHom.onTheory_comp]
 
 /-- The inverse of a language equivalence undoes the renaming of a theory. -/
 theorem invLHom_onTheory_toLHom_onTheory (e : L ≃ᴸ L') (T : L.Theory) :
     e.invLHom.onTheory (e.toLHom.onTheory T) = T := by
-  conv_lhs => rw [← LHom.onTheory_comp]
-  rw [e.left_inv, LHom.id_onTheory]
+  rw [← LHom.onTheory_comp, e.left_inv, LHom.id_onTheory]
 
 /-- The forward map of a language equivalence undoes the inverse renaming of a theory. -/
 theorem toLHom_onTheory_invLHom_onTheory (e : L ≃ᴸ L') (T : L'.Theory) :
     e.toLHom.onTheory (e.invLHom.onTheory T) = T := by
-  conv_lhs => rw [← LHom.onTheory_comp]
-  rw [e.right_inv, LHom.id_onTheory]
+  rw [← LHom.onTheory_comp, e.right_inv, LHom.id_onTheory]
 
 /-- A language equivalence carries maximal theories to maximal theories.
 
@@ -132,17 +129,12 @@ Satisfiability transfers along the equivalence, and each sentence of the image i
 sentence of the source theory or of its negation. -/
 theorem isMaximal_onTheory (e : L ≃ᴸ L') (T : L.Theory) (hT : T.IsMaximal) :
     (e.toLHom.onTheory T).IsMaximal := by
-  refine ⟨?_, ?_⟩
-  · exact (Theory.isSatisfiable_onTheory_iff (LEmbedding.ofLEquiv e).injective).mpr hT.1
-  · intro φ
-    obtain ⟨ψ, rfl⟩ := e.onSentence.surjective φ
-    rcases hT.mem_or_not_mem ψ with hψ | hψ
-    · exact Or.inl (LHom.mem_onTheory.mpr ⟨ψ, hψ, rfl⟩)
-    · have hnot : (e.onSentence ψ).not = e.toLHom.onSentence ψ.not :=
-        (LHom.onSentence_not e.toLHom ψ).symm
-      refine Or.inr ?_
-      rw [hnot]
-      exact LHom.mem_onTheory.mpr ⟨ψ.not, hψ, rfl⟩
+  refine ⟨(Theory.isSatisfiable_onTheory_iff (LEmbedding.ofLEquiv e).injective).mpr hT.1, ?_⟩
+  intro φ
+  obtain ⟨ψ, rfl⟩ := e.onSentence.surjective φ
+  rcases hT.mem_or_not_mem ψ with hψ | hψ
+  · exact Or.inl (LHom.mem_onTheory.mpr ⟨ψ, hψ, rfl⟩)
+  · exact Or.inr (LHom.mem_onTheory.mpr ⟨ψ.not, hψ, LHom.onSentence_not e.toLHom ψ⟩)
 
 end LEquiv
 
@@ -157,8 +149,7 @@ variable {T : L.Theory} {T' : L'.Theory} {α : Type w}
 `T'`, then `e.symm` identifies `T'` with `T`. -/
 private theorem onTheory_symm (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T') :
     e.symm.toLHom.onTheory T' = T := by
-  change e.invLHom.onTheory T' = T
-  rw [← h, ← LHom.onTheory_comp, e.left_inv, LHom.id_onTheory]
+  simpa [← h] using LEquiv.invLHom_onTheory_toLHom_onTheory e T
 
 /-- The forward transport of a complete type along a language equivalence `e` identifying `T` with
 `T'`: it renames the symbols of the underlying maximal theory along the constants-extended
@@ -174,18 +165,14 @@ private noncomputable def map (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T')
 /-- Applying the inverse transport after the forward transport returns the original theory. -/
 private theorem map_map_toTheory (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T')
     (p : T.CompleteType α) :
-    (map e.symm (onTheory_symm e h) (map e h p)).toTheory = p.toTheory := by
-  change (e.addConstants α).invLHom.onTheory ((e.addConstants α).toLHom.onTheory p.toTheory)
-      = p.toTheory
-  rw [LEquiv.invLHom_onTheory_toLHom_onTheory]
+    (map e.symm (onTheory_symm e h) (map e h p)).toTheory = p.toTheory :=
+  LEquiv.invLHom_onTheory_toLHom_onTheory (e.addConstants α) p.toTheory
 
 /-- Applying the forward transport after the inverse transport returns the original theory. -/
 private theorem map_map_toTheory' (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T')
     (p : T'.CompleteType α) :
-    (map e h (map e.symm (onTheory_symm e h) p)).toTheory = p.toTheory := by
-  change (e.addConstants α).toLHom.onTheory ((e.addConstants α).invLHom.onTheory p.toTheory)
-      = p.toTheory
-  rw [LEquiv.toLHom_onTheory_invLHom_onTheory]
+    (map e h (map e.symm (onTheory_symm e h) p)).toTheory = p.toTheory :=
+  LEquiv.toLHom_onTheory_invLHom_onTheory (e.addConstants α) p.toTheory
 
 /-- A language equivalence that carries a theory `T` onto a theory `T'` induces an equivalence
 between the complete types over `T` and the complete types over `T'` with the same variables.
@@ -196,14 +183,10 @@ noncomputable def completeTypeEquiv (e : L ≃ᴸ L') (h : e.toLHom.onTheory T =
     T.CompleteType α ≃ T'.CompleteType α where
   toFun := map e h
   invFun := map e.symm (onTheory_symm e h)
-  left_inv := fun p => by
-    apply SetLike.ext
-    intro σ
+  left_inv := fun p => SetLike.ext fun σ => by
     change σ ∈ (map e.symm (onTheory_symm e h) (map e h p)).toTheory ↔ σ ∈ p.toTheory
     rw [map_map_toTheory e h p]
-  right_inv := fun p => by
-    apply SetLike.ext
-    intro σ
+  right_inv := fun p => SetLike.ext fun σ => by
     change σ ∈ (map e h (map e.symm (onTheory_symm e h) p)).toTheory ↔ σ ∈ p.toTheory
     rw [map_map_toTheory' e h p]
 
@@ -225,8 +208,7 @@ theorem mem_completeTypeEquiv_symm_iff (e : L ≃ᴸ L') (h : e.toLHom.onTheory 
     φ ∈ (completeTypeEquiv e h).symm p ↔ (e.addConstants α).onSentence φ ∈ p := by
   change φ ∈ ((e.addConstants α).onSentence).symm '' p.toTheory ↔
     (e.addConstants α).onSentence φ ∈ p.toTheory
-  rw [Equiv.image_symm_eq_preimage]
-  rfl
+  exact Set.mem_image_equiv
 
 end CompleteType
 
