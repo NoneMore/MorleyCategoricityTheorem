@@ -36,14 +36,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Bump the v2 prefix only when the dependency-side build artifacts required
-      # by CI change. Project source changes belong in the project build cache key.
+      - name: Compute Mathlib cache roots
+        id: mathlib-cache-roots
+        shell: bash
+        run: |
+          roots_file="$RUNNER_TEMP/mathlib-cache-roots.txt"
+          grep -hRE --include='*.lean' '^[[:space:]]*import[[:space:]]+' \
+            MorleyCategoricityTheorem.lean MorleyCategoricityTheorem \
+            | sed -E 's/^[[:space:]]*import[[:space:]]+//' \
+            | tr '[:space:]' '\n' \
+            | grep -E '^Mathlib($|\.)' \
+            | sed -e 's#\.#/#g' -e 's#$#.lean#' \
+            | sort -u > "$roots_file"
+
+          if [ ! -s "$roots_file" ]; then
+            echo "No Mathlib imports found in project sources."
+            exit 1
+          fi
+
+          echo "hash=$(sha256sum "$roots_file" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "file=$roots_file" >> "$GITHUB_OUTPUT"
+          echo "Mathlib cache roots:"
+          cat "$roots_file"
+
+      # v3 caches only the transitive closure of Mathlib modules imported by this
+      # project. The roots hash changes only when the Mathlib import boundary changes.
       - name: Restore Lean dependency cache
         id: dependency-cache
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .lake/packages
-          key: lake-packages-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+          key: lake-packages-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ steps.mathlib-cache-roots.outputs.hash }}
 
       - name: Restore project build cache
         id: project-cache
@@ -54,24 +77,46 @@ jobs:
           restore-keys: |
             lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-
 
-      - name: Build project
+      - name: Set up Lean
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
-          build: true
-          build-args: MorleyCategoricityTheorem checkdecls
+          build: false
+          test: false
+          lint: false
           use-github-cache: false
-          use-mathlib-cache: ${{ steps.dependency-cache.outputs.cache-hit != 'true' }}
+          use-mathlib-cache: false
+
+      - name: Fetch selective Mathlib cache
+        if: steps.dependency-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mapfile -t roots < "${{ steps.mathlib-cache-roots.outputs.file }}"
+          echo "Fetching cache for ${#roots[@]} directly imported Mathlib modules and their dependencies."
+          ~/.elan/bin/lake exe cache get "${roots[@]}"
+
+      - name: Build project
+        run: ~/.elan/bin/lake build MorleyCategoricityTheorem checkdecls
 
       - name: Check root import file
         run: ~/.elan/bin/lake exe mk_all --check
+
+      - name: Report Lean dependency cache size
+        shell: bash
+        run: |
+          echo "Total package cache:"
+          du -sh .lake/packages
+          echo "Package build directories:"
+          du -sh .lake/packages/*/.lake/build 2>/dev/null | sort -h || true
+          echo "Package Git metadata:"
+          du -sh .lake/packages/*/.git 2>/dev/null | sort -h || true
 
       - name: Save Lean dependency cache
         if: steps.dependency-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .lake/packages
-          key: lake-packages-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+          key: lake-packages-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ steps.mathlib-cache-roots.outputs.hash }}
 
       - name: Save project build cache
         if: steps.project-cache.outputs.cache-hit != 'true'
