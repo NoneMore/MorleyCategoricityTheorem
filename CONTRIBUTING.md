@@ -53,11 +53,19 @@ If modules are added, removed, or renamed, synchronize the root import file and 
 lake exe mk_all --check
 ```
 
+If Lean declarations referenced by the blueprint are renamed, removed, or otherwise changed, also
+check the declaration references with:
+
+```bash
+lake exe checkdecls blueprint/lean_decls
+```
+
 ## Blueprint changes
 
 Keep blueprint edits separate from unrelated Lean or infrastructure changes whenever practical.
 If a pull request intentionally changes the blueprint, describe which nodes or dependencies were
-updated and run the blueprint validation appropriate to that change.
+updated. The documentation CI builds the blueprint and checks its Lean declaration references on
+relevant pull requests.
 
 A Lean-only or repository-infrastructure pull request does not need to modify the blueprint.
 
@@ -67,9 +75,12 @@ Run the checks relevant to the files you changed:
 
 - Lean changes: `lake build MorleyCategoricityTheorem`
 - Added, removed, or renamed Lean modules: also run `lake exe mk_all --check`
-- Documentation-only changes: review rendered Markdown and verify links where applicable
+- Lean declarations referenced by the blueprint: also run `lake exe checkdecls blueprint/lean_decls`
+- Blueprint or `home_page/` changes: ensure the documentation validation workflow passes
+- Documentation-only Markdown changes: review rendered Markdown and verify links where applicable
 
-If you cannot run an applicable check, mention that explicitly in the pull request description.
+If you cannot run an applicable local check, mention that explicitly in the pull request
+description. CI remains the final validation gate for checks configured in the repository.
 
 ## Pull requests
 
