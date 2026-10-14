@@ -122,7 +122,7 @@ theorem typesWith_eq_singleton_iff (p : T.CompleteType α) (φ : L[[α]].Sentenc
   refine and_congr_right fun _ ↦ ?_
   constructor
   · intro hp ψ hψ
-    simpa [← setOf_mem_eq_univ_iff, Set.eq_univ_iff_forall, imp_mem_iff] using
+    simpa [← setOfPred_mem_eq_univ_iff, Set.eq_univ_iff_forall, imp_mem_iff] using
       fun q hφq ↦ hp q hφq ▸ hψ
   · intro hφp q hφq
     exact (eq_of_le (fun ψ hψ ↦ mem_of_mem_of_models_imp q hφq (hφp ψ hψ))).symm

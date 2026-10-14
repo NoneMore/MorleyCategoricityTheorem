@@ -53,7 +53,7 @@ def IsOmegaStable : Prop :=
 inexhaustible family of branches whose distinctness contradicts omega-stability. -/
 theorem not_countable_nat_bool : ¬ Countable (ℕ → Bool) := by
   intro h
-  letI : Countable (ℕ → Bool) := h
+  let : Countable (ℕ → Bool) := h
   have h' : Countable (Set ℕ) :=
     Countable.of_equiv _ (Equiv.piCongrRight fun _ ↦ Equiv.propEquivBool.symm)
   obtain ⟨g, hg⟩ := exists_surjective_nat (Set ℕ)
@@ -156,7 +156,7 @@ theorem IsOmegaStable.false_of_formula_splitting
       (fun k ↦ CompleteType.isClosed_typesWith (T := T₀) _)
   obtain ⟨f, hf_inj, _⟩ :=
     SetBinaryTree.exists_injective_of_nonempty_branchInter C hCsub hCdisj hCne
-  letI : Countable (T₀.CompleteType (Fin n)) := hT M A₀ hA₀ n hn
+  let : Countable (T₀.CompleteType (Fin n)) := hT M A₀ hA₀ n hn
   exact not_countable_nat_bool hf_inj.countable
 
 end FormulaSplitting

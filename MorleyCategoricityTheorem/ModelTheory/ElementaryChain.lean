@@ -71,7 +71,7 @@ private theorem directLimitMkEqISupLiftMk {ι : Type w} [Preorder ι] {F : ι �
   by_cases! hc : ℵ₀ ≤ ⨆ i, lift.{w, w'} #(F i)
   · exact directLimitMkLeOfAleph0Le f _ hc hι fun i ↦
       le_ciSup Cardinal.bddAbove_of_small i
-  · haveI : Finite ι := mk_lt_aleph0_iff.mp (lift_lt_aleph0.mp (hι.trans_lt hc))
+  · have : Finite ι := mk_lt_aleph0_iff.mp (lift_lt_aleph0.mp (hι.trans_lt hc))
     cases isEmpty_or_nonempty ι with
     | inl hle =>
       simp
