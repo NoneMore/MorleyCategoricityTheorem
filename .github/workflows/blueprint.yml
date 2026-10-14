@@ -69,7 +69,6 @@ jobs:
           auto-config: false
           build: true
           build-args: MorleyCategoricityTheorem
-          mk_all-check: true
           use-github-cache: true
           use-mathlib-cache: true
 
