@@ -7,10 +7,18 @@ on:
     paths:
       - 'lean-toolchain'
 
+concurrency:
+  group: lean-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   lean-release-tag:
     name: Add Lean release tag
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

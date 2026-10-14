@@ -25,6 +25,7 @@ permissions:
 jobs:
   publish_documentation:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     name: Build and deploy documentation
     permissions:
       contents: read
@@ -124,9 +125,26 @@ jobs:
           path: .lake/build
           key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ hashFiles('MorleyCategoricityTheorem.lean', 'MorleyCategoricityTheorem/**/*.lean', 'lakefile.toml') }}
 
-      - name: Compile and deploy blueprint and documentation
+      - name: Build blueprint
+        uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
+        with:
+          docker_image: ghcr.io/xu-cheng/texlive-small:20250401@sha256:d3f65cc1473a6c0b60f08f4b5e6b8cb36f5f3cbee34bf28d342db5674c4fb25a
+          run: bash blueprint/ci-build.sh
+
+      - name: Check generated declaration list is committed
+        shell: bash
+        run: |
+          if ! git diff --exit-code -- blueprint/lean_decls; then
+            echo "blueprint/lean_decls is out of date; regenerate it with the pinned Blueprint CI environment and commit the result."
+            exit 1
+          fi
+
+      - name: Check blueprint declaration references
+        run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
+
+      - name: Compile and deploy API documentation and homepage
         uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
         with:
-          blueprint: true
+          blueprint: false
           homepage: home_page
           ruby-version: default

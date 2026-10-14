@@ -16,6 +16,7 @@ permissions:
 jobs:
   classify:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     name: Classify changes
     outputs:
       lean: ${{ steps.changes.outputs.lean }}
@@ -32,21 +33,25 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "lean=true" >> "$GITHUB_OUTPUT"
-            echo "blueprint=true" >> "$GITHUB_OUTPUT"
-            echo "homepage=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "lean=true"
+              echo "blueprint=true"
+              echo "homepage=true"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           base="origin/${{ github.base_ref }}...HEAD"
 
-          # Workflow changes exercise every validation path so changes to this
-          # routing logic validate themselves before merge.
+          # Changes to validation or publishing workflows exercise every path so
+          # routing/build changes validate themselves before merge.
           if ! git diff --quiet "$base" -- \
             .github/workflows/build-project.yml .github/workflows/blueprint.yml; then
-            echo "lean=true" >> "$GITHUB_OUTPUT"
-            echo "blueprint=true" >> "$GITHUB_OUTPUT"
-            echo "homepage=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "lean=true"
+              echo "blueprint=true"
+              echo "homepage=true"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -58,7 +63,7 @@ jobs:
             echo "lean=true" >> "$GITHUB_OUTPUT"
           fi
 
-          if git diff --quiet "$base" -- blueprint/src blueprint/lean_decls; then
+          if git diff --quiet "$base" -- blueprint references.bib; then
             echo "blueprint=false" >> "$GITHUB_OUTPUT"
           else
             echo "blueprint=true" >> "$GITHUB_OUTPUT"
@@ -70,10 +75,40 @@ jobs:
             echo "homepage=true" >> "$GITHUB_OUTPUT"
           fi
 
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: Validate workflows
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install actionlint
+        shell: bash
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
+            --output "$archive"
+          echo "$ACTIONLINT_SHA256  $archive" | sha256sum --check --strict -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -version
+
+      - name: Check workflows
+        run: |
+          "$RUNNER_TEMP/actionlint" -color
+
+      - name: Check Blueprint CI script syntax
+        run: bash -n blueprint/ci-build.sh
+
   lean:
     needs: classify
     if: needs.classify.outputs.lean == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     name: Validate Lean
     steps:
       - name: Checkout project
@@ -174,6 +209,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.blueprint == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     name: Validate blueprint
     steps:
       - name: Checkout project
@@ -182,25 +218,8 @@ jobs:
       - name: Build blueprint
         uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
         with:
-          docker_image: ghcr.io/xu-cheng/texlive-small:20250401
-          run: |
-            apk add --no-cache py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
-            git config --global --add safe.directory "$GITHUB_WORKSPACE"
-            git config --global --add safe.directory "$(pwd)"
-            python3 -m venv env
-            source env/bin/activate
-            pip install --no-cache-dir --upgrade pip wheel
-            pip install --no-cache-dir pygraphviz \
-              --config-settings="--global-option=build_ext" \
-              --config-settings="--global-option=-L/usr/lib/graphviz/" \
-              --config-settings="--global-option=-R/usr/lib/graphviz/"
-            pip install --no-cache-dir leanblueprint
-            leanblueprint pdf
-            leanblueprint web
-            mkdir -p home_page
-            cp blueprint/print/print.pdf home_page/blueprint.pdf
-            rm -rf home_page/blueprint
-            cp -r blueprint/web home_page/blueprint
+          docker_image: ghcr.io/xu-cheng/texlive-small:20250401@sha256:d3f65cc1473a6c0b60f08f4b5e6b8cb36f5f3cbee34bf28d342db5674c4fb25a
+          run: bash blueprint/ci-build.sh
 
       - name: Check generated declaration list is committed
         shell: bash
@@ -227,6 +246,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.homepage == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: Validate homepage
     steps:
       - name: Checkout project
@@ -248,16 +268,19 @@ jobs:
   validate:
     needs:
       - classify
+      - workflows
       - lean
       - blueprint
       - homepage
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     name: Validate repository
     steps:
       - name: Check validation results
         env:
           CLASSIFY_RESULT: ${{ needs.classify.result }}
+          WORKFLOWS_RESULT: ${{ needs.workflows.result }}
           LEAN_RESULT: ${{ needs.lean.result }}
           BLUEPRINT_RESULT: ${{ needs.blueprint.result }}
           HOMEPAGE_RESULT: ${{ needs.homepage.result }}
@@ -268,7 +291,7 @@ jobs:
             exit 1
           fi
 
-          for result in "$LEAN_RESULT" "$BLUEPRINT_RESULT" "$HOMEPAGE_RESULT"; do
+          for result in "$WORKFLOWS_RESULT" "$LEAN_RESULT" "$BLUEPRINT_RESULT" "$HOMEPAGE_RESULT"; do
             case "$result" in
               success|skipped) ;;
               *)
