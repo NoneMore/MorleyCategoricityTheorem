@@ -46,7 +46,6 @@ jobs:
             | sed -E 's/^[[:space:]]*import[[:space:]]+//' \
             | tr '[:space:]' '\n' \
             | grep -E '^Mathlib($|\.)' \
-            | sed -e 's#\.#/#g' -e 's#$#.lean#' \
             | sort -u > "$roots_file"
 
           if [ ! -s "$roots_file" ]; then
