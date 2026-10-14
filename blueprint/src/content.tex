@@ -501,11 +501,14 @@ extends to an isomorphism \(f:M\cong N\).  In particular,
 \end{theorem}
 
 \begin{proof}
-Enumerate the two models and perform the standard back-and-forth
-construction starting from \(f_0\).  At each one-point extension step,
-homogeneity realizes the transported type over the finite current
-domain or range.  The union of the finite partial elementary maps is a
-bijective elementary map extending \(f_0\).
+Enumerate the two models and start the usual back-and-forth construction
+from \(f_0\).  For a forth step, the joint finite tuple consisting of the
+current domain and the new element realizes some complete type over
+\(\emptyset\) in \(M\); the same type is realized by a tuple in \(N\).
+The current image tuple has the same type as the base part of that target
+tuple, so homogeneity of \(N\) moves the extra coordinate to a point
+extending the current partial elementary map.  The back step is
+symmetric.  The union is a bijective elementary map extending \(f_0\).
 \end{proof}
 
 \begin{lemma}[Isomorphisms preserve definable set cardinalities]
@@ -935,13 +938,16 @@ is minimal in every elementary extension.
 \begin{definition}[Algebraic closure on a strongly minimal set over a base]
 \label{def:strongly-minimal-pregeometry}
 \uses{def:minimality}
-Let \(D\subseteq M\) be a strongly minimal set definable over a
-parameter set \(A\subseteq M\).  For \(X\subseteq D\), define
+An element \(b\in M\) is algebraic over \(B\subseteq M\) if it belongs
+to a finite set definable with parameters from \(B\); write
+\(\operatorname{acl}(B)\) for the set of all such elements.  Let
+\(D\subseteq M\) be a strongly minimal set definable over a parameter
+set \(A\subseteq M\).  For \(X\subseteq D\), define
 \[
   \operatorname{cl}_A(X)=D\cap\operatorname{acl}(A\cup X).
 \]
-Thus \(b\in\operatorname{cl}_A(X)\) exactly when \(b\in D\) belongs to
-a finite set definable with parameters from \(A\cup X\).
+Thus \(b\in\operatorname{cl}_A(X)\) exactly when \(b\in D\) is
+algebraic over \(A\cup X\).
 \end{definition}
 
 \begin{proposition}[Relative algebraic closure is a pregeometry]
