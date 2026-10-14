@@ -2,8 +2,21 @@
 set -euo pipefail
 
 # This script runs inside the pinned TeX Live Alpine image used by both PR
-# validation and the production documentation workflow.
-apk add --no-cache py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
+# validation and the production documentation workflow. Pin the primary Alpine
+# build tools as well, so repository updates fail closed instead of silently
+# changing the Blueprint toolchain. Transitive APK dependencies still come from
+# the Alpine v3.21 repositories; a fully hermetic build would require a custom
+# immutable image containing these tools.
+apk add --no-cache \
+  'py3-pip=24.3.1-r0' \
+  'python3=3.12.15-r0' \
+  'python3-dev=3.12.15-r0' \
+  'git=2.47.3-r0' \
+  'pkgconf=2.3.0-r0' \
+  'graphviz=12.2.0-r0' \
+  'graphviz-dev=12.2.0-r0' \
+  'gcc=14.2.0-r4' \
+  'musl-dev=1.2.5-r11'
 
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
 git config --global --add safe.directory "$(pwd)"
