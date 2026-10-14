@@ -58,7 +58,7 @@ An embedding \(j:M\to N\) is elementary if, for every formula
 \[
   M\models\varphi(\bar a)
   \Longleftrightarrow
-  N\models\varphi(j\bar a).
+  N\models\varphi(j(\bar a)).
 \]
 If the inclusion \(M\hookrightarrow N\) is elementary, then \(M\preceq N\).
 \end{definition}
@@ -810,8 +810,8 @@ one-types, contradicting \(\omega\)-stability.
 \uses{def:omega-stability,def:isolated-and-omitted-types}
 Suppose \(T\) is \(\omega\)-stable, \(M\models T\), and
 \(|M|\geq\aleph_1\).  Then there is a proper elementary extension
-\(N\succeq M\) with \(|N|=|M|\) such that every countable type over
-\(M\) realized in \(N\) is already realized in \(M\).
+\(N\succeq M\) with \(|N|=|M|\) such that every countable partial type
+over \(M\) realized in \(N\) is already realized in \(M\).
 \end{lemma}
 
 \begin{proof}
@@ -823,9 +823,9 @@ Realize \(\Gamma\) by an element \(c\) in an elementary extension of
 cardinality \(|M|\) containing \(M\cup\{c\}\); inside it take a model
 prime over \(M\cup\{c\}\).  This prime model is proper over \(M\) and
 still has cardinality \(|M|\).  Isolation in the prime extension reduces
-any countable type over \(M\) realized there to a countable intersection
-of co-countable subsets of the large definable set, hence to a
-realization already in \(M\).
+any countable partial type over \(M\) realized there to a countable
+intersection of co-countable subsets of the large definable set, hence
+to a realization already in \(M\).
 \end{proof}
 
 \begin{theorem}[Two-cardinal transfer above \(\aleph_1\)]
@@ -840,11 +840,11 @@ a \((\kappa,\aleph_0)\)-model.
 \uses{lem:proper-extension-realizes-no-new-countable-types,thm:loewenheim-skolem-constructions}
 Start from the \((\aleph_1,\aleph_0)\)-model and repeatedly take proper
 elementary extensions of the same cardinality as the previous stage,
-realizing no new countable types over that stage.  The type saying that
-a new element belongs to the old countable definable set is countable
-and therefore remains omitted.  At limit stages take elementary unions.
-The resulting chain of length \(\kappa\) has union of size \(\kappa\)
-and keeps that definable set countable.
+realizing no new countable partial types over that stage.  The type
+saying that a new element belongs to the old countable definable set is
+countable and therefore remains omitted.  At limit stages take
+elementary unions.  The resulting chain of length \(\kappa\) has union
+of size \(\kappa\) and keeps that definable set countable.
 \end{proof}
 
 \begin{theorem}[Uncountable categoricity rules out Vaughtian pairs]
@@ -1068,9 +1068,11 @@ proper elementary submodel of \(M\) contains \(A\cup X\).
 
 \begin{proof}
 \uses{thm:prime-extension-over-set}
-If a proper elementary submodel \(N\preceq M\) contained \(A\cup X\),
-then the parameters defining \(X\) would lie in \(N\), and
-\(X(N)=X(M)=X\) would give a Vaughtian pair.  Hence no such proper
+Write \(X=\varphi(M,\bar a)\) with \(\bar a\) from \(A\).  If a proper
+elementary submodel \(N\preceq M\) contained \(A\cup X\), then
+\(\bar a\in N\) and elementarity would give
+\(\varphi(N,\bar a)=\varphi(M,\bar a)\cap N=X\).  Thus \((M,N)\)
+would be a Vaughtian pair, a contradiction.  Hence no such proper
 submodel exists.  The prime-extension theorem gives an elementary
 submodel of \(M\) prime over \(A\cup X\); since it contains
 \(A\cup X\), it cannot be proper, so it is all of \(M\).
