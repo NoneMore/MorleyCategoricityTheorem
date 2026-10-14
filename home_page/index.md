@@ -7,10 +7,10 @@ This site collects the generated documentation for the Lean 4 formalization proj
 
 ## Project resources
 
-- [Blueprint]({{ site.url }}/blueprint/) — web version of the formalization blueprint.
-- [Blueprint PDF]({{ site.url }}/blueprint.pdf) — printable version of the blueprint.
-- [Dependency graph]({{ site.url }}/blueprint/dep_graph_document.html) — dependency graph for blueprint statements.
-- [API documentation]({{ site.url }}/docs/) — generated documentation for the Lean declarations.
+- [Blueprint]({{ '/blueprint/' | relative_url }}) — web version of the formalization blueprint.
+- [Blueprint PDF]({{ '/blueprint.pdf' | relative_url }}) — printable version of the blueprint.
+- [Dependency graph]({{ '/blueprint/dep_graph_document.html' | relative_url }}) — dependency graph for blueprint statements.
+- [API documentation]({{ '/docs/' | relative_url }}) — generated documentation for the Lean declarations.
 - [GitHub repository](https://github.com/NoneMore/MorleyCategoricityTheorem) — source, issues, and pull requests.
 
 The generated site is built from the repository's `main` branch. Pull requests that change the
