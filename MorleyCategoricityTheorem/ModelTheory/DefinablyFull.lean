@@ -236,7 +236,7 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
   have hNT : N ⊨ T := (eN.theory_model_iff T).mp (ModelType.is_model M)
   have hNne : Nonempty N := by
     simpa [← Cardinal.mk_ne_zero_iff, hNcard, ← Cardinal.one_le_iff_ne_zero] using one_le_aleph0.trans hκ
-  haveI : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N :=
+  have : (L.lhomWithConstantsMap ⇑eN).IsExpansionOn ↑N :=
     LHom.lhomWithConstantsMap_isExpansionOn_of_eq _ fun _ ↦ rfl
   refine ⟨ModelType.of T N, eN, by simpa, ?_⟩
   intro β ψ b hψb
