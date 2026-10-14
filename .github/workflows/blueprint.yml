@@ -36,22 +36,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check whether documentation validation is needed
+      - name: Classify documentation changes
         id: docs-changes
         shell: bash
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "required=true" >> "$GITHUB_OUTPUT"
-          elif git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
-            blueprint home_page references.bib lean-toolchain lakefile.toml lake-manifest.json \
-            .github/workflows/blueprint.yml; then
-            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "full=true" >> "$GITHUB_OUTPUT"
+            echo "homepage=false" >> "$GITHUB_OUTPUT"
           else
-            echo "required=true" >> "$GITHUB_OUTPUT"
+            if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
+              blueprint references.bib lean-toolchain lakefile.toml lake-manifest.json \
+              .github/workflows/blueprint.yml; then
+              echo "full=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "full=true" >> "$GITHUB_OUTPUT"
+            fi
+
+            if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- home_page; then
+              echo "homepage=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "homepage=true" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
-      - name: Build project
-        if: steps.docs-changes.outputs.required == 'true'
+      - name: Build project for full documentation validation
+        if: steps.docs-changes.outputs.full == 'true'
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
@@ -61,13 +70,26 @@ jobs:
           use-mathlib-cache: true
 
       - name: Compile blueprint and documentation
-        if: steps.docs-changes.outputs.required == 'true'
+        if: steps.docs-changes.outputs.full == 'true'
         uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
         with:
           blueprint: true
           homepage: home_page
           ruby-version: default
           deploy: false
+
+      - name: Set up Ruby for homepage-only validation
+        if: steps.docs-changes.outputs.full != 'true' && steps.docs-changes.outputs.homepage == 'true'
+        uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c
+        with:
+          working-directory: home_page
+          ruby-version: default
+          bundler-cache: true
+
+      - name: Build homepage
+        if: steps.docs-changes.outputs.full != 'true' && steps.docs-changes.outputs.homepage == 'true'
+        working-directory: home_page
+        run: bundle exec jekyll build --trace
 
   publish_documentation:
     if: github.event_name == 'push'
