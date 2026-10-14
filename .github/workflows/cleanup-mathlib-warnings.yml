@@ -49,7 +49,7 @@ jobs:
           replace("MorleyCategoricityTheorem/ModelTheory/IsolatedTypes.lean",
                   "setOf_mem_eq_univ_iff", "setOfPred_mem_eq_univ_iff")
           replace("MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean",
-                  "Set.mem_setOf", "Set.mem_ofPred")
+                  "mem_setOf", "mem_ofPred")
 
           fixes = {
               "MorleyCategoricityTheorem/ModelTheory/ElementaryChain.lean": {
