@@ -69,3 +69,4 @@ jobs:
         with:
           blueprint: true
           homepage: home_page
+          ruby-version: default
