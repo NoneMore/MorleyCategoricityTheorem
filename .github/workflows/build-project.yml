@@ -27,7 +27,7 @@ jobs:
           auto-config: false
           build: true
           build-args: MorleyCategoricityTheorem
-          use-github-cache: true
+          use-github-cache: false
           use-mathlib-cache: true
 
       - name: Check root import file
