@@ -45,8 +45,7 @@ jobs:
             echo "homepage=false" >> "$GITHUB_OUTPUT"
           else
             if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
-              blueprint references.bib lean-toolchain lakefile.toml lake-manifest.json \
-              .github/workflows/blueprint.yml; then
+              blueprint .github/workflows/blueprint.yml; then
               echo "full=false" >> "$GITHUB_OUTPUT"
             else
               echo "full=true" >> "$GITHUB_OUTPUT"
