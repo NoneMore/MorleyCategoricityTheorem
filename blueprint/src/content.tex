@@ -195,6 +195,15 @@ For \(A\subseteq M\models T\), an \(n\)-type over \(A\) is a set of
 write \(S_n^M(A)\) for the space of complete \(n\)-types over \(A\).
 \end{definition}
 
+\begin{definition}[Algebraicity and algebraic closure]
+\label{def:algebraic-closure}
+Let \(A\) be a parameter set in a structure \(M\).  An element
+\(b\in M\) is algebraic over \(A\) if it belongs to a finite set
+definable with parameters from \(A\).  The algebraic closure
+\(\operatorname{acl}(A)\) is the set of all elements algebraic over
+\(A\).
+\end{definition}
+
 \begin{definition}[Realization, omission, and isolation]
 \label{def:isolated-and-omitted-types}
 \lean{FirstOrder.Language.Theory.CompleteType.RealizedBy, FirstOrder.Language.Theory.CompleteType.IsRealizedIn, FirstOrder.Language.Theory.CompleteType.IsOmittedIn, FirstOrder.Language.Theory.CompleteType.IsIsolated, FirstOrder.Language.Theory.CompleteType.IsolatedBy}
@@ -204,6 +213,18 @@ A tuple realizes a type if it satisfies every formula in the type.  A
 model omits a type if no tuple realizes it.  A complete type is isolated
 if some formula in it determines that type uniquely.
 \end{definition}
+
+\begin{proposition}[Algebraic types are isolated]
+\label{prop:algebraic-implies-isolated}
+\uses{def:types-over-parameters,def:algebraic-closure,def:isolated-and-omitted-types}
+If \(b\in\operatorname{acl}(A)\), then \(\operatorname{tp}(b/A)\) is
+isolated.
+\end{proposition}
+
+\begin{proof}
+Choose a finite \(A\)-definable set containing \(b\) and refine its
+defining formula to distinguish the finitely many possible types.
+\end{proof}
 
 \begin{definition}[Omega-stability]
 \label{def:omega-stability}
@@ -734,9 +755,11 @@ Vaughtian witness persists.
 
 \begin{proof}
 \uses{lem:realize-type-in-submodel-side,lem:realize-type-in-extension-pair,thm:loewenheim-skolem-constructions}
-Iterate the requirements that types seen on the larger side appear on
-the smaller side and that every one-point homogeneity request is
-realized.  A countable elementary-chain limit satisfies all requests.
+Dovetail the requirements that types seen on the larger side appear on
+the smaller side with all one-point homogeneity requests.  Re-enumerate
+the countably many requirements after each elementary extension, so any
+new requirement that appears at a later stage is eventually handled.
+The resulting countable elementary-chain limit satisfies all requests.
 \end{proof}
 
 \begin{lemma}[Copying a Vaughtian successor over its parameters]
@@ -891,6 +914,7 @@ to the realizing tuple to obtain a realization already in \(M\).
 
 \begin{lemma}[No-new-countable-types extensions preserve countable definable sets]
 \label{lem:no-new-countable-types-preserve-countable-definable-sets}
+\uses{def:types-over-parameters,def:elementary-maps}
 Let \(M\preceq N\), and suppose every countable finite-arity partial type
 over \(M\) realized in \(N\) is already realized in \(M\).  If
 \(D=\varphi(M,\bar a)\) is countable for parameters \(\bar a\in M\),
@@ -969,7 +993,7 @@ strongly minimal if this remains true in every elementary extension.
 
 \begin{definition}[Algebraic closure on a strongly minimal set over a base]
 \label{def:strongly-minimal-pregeometry}
-\uses{def:minimality}
+\uses{def:minimality,def:algebraic-closure}
 For a strongly minimal set \(D\) definable over \(A\), define
 \[
   \operatorname{cl}_A(X)=D\cap\operatorname{acl}(A\cup X).
@@ -980,7 +1004,7 @@ algebraic over \(A\cup X\).
 
 \begin{lemma}[Closure laws for relative algebraic closure]
 \label{lem:strongly-minimal-closure-laws}
-\uses{def:strongly-minimal-pregeometry}
+\uses{def:strongly-minimal-pregeometry,def:algebraic-closure}
 The operator \(\operatorname{cl}_A\) is reflexive, monotone, idempotent,
 and has finite character.
 \end{lemma}
@@ -992,7 +1016,7 @@ restricted to \(D\) after adjoining the fixed base \(A\).
 
 \begin{lemma}[Nonalgebraic types have arbitrarily many distinct conjugates]
 \label{lem:nonalgebraic-type-many-realizations}
-\uses{thm:compactness,def:counting-formulas}
+\uses{thm:compactness,def:types-over-parameters,def:algebraic-closure}
 If \(b\notin\operatorname{acl}(B)\), then for every
 \(n\in\mathbb N\) there is an elementary extension containing distinct
 \(b_0,\ldots,b_n\), each realizing \(\operatorname{tp}(b/B)\).
@@ -1065,18 +1089,6 @@ Independence, bases, and dimension are those of the pregeometry
 a basis of \(Y\subseteq D\) over \(A\).
 \end{definition}
 
-\begin{proposition}[Algebraic types are isolated]
-\label{prop:algebraic-implies-isolated}
-\uses{def:types-over-parameters,def:strongly-minimal-pregeometry}
-If \(b\in\operatorname{acl}(A)\), then \(\operatorname{tp}(b/A)\) is
-isolated.
-\end{proposition}
-
-\begin{proof}
-Choose a finite \(A\)-definable set containing \(b\) and refine its
-defining formula to distinguish the finitely many possible types.
-\end{proof}
-
 \begin{lemma}[Independent tuples in a strongly minimal set have the same type]
 \label{lem:independent-tuples-same-type}
 \uses{def:minimality,def:strongly-minimal-independence}
@@ -1129,16 +1141,20 @@ extends the identity on \(A\) to a partial elementary map.  Extend that
 map maximally inside the two strongly minimal sets.  Every remaining
 point is algebraic over the base together with a finite part of a basis,
 so its type over the current domain is isolated.  Transport the isolated
-type across the current partial elementary map; its isolating formula is
-realized on the other side by elementarity.  This contradicts maximality
-unless the map is total, and the symmetric argument makes it surjective.
-For a strongly minimal theory take \(A=\emptyset\) and
+type across the current partial elementary map.  Its isolating formula
+is realized on the other side by partial elementarity, and it entails
+inequality from every element already in the current range because the
+original isolated type contains the corresponding inequalities from the
+current domain.  Hence any such realization is a fresh point extending
+the partial elementary map, contradicting maximality unless the map is
+total.  Apply the same argument to the inverse map to obtain
+surjectivity.  For a strongly minimal theory take \(A=\emptyset\) and
 \(\varphi(v)\equiv(v=v)\).
 \end{proof}
 
 \begin{lemma}[Cardinality bound for algebraic closure]
 \label{lem:algebraic-closure-cardinality}
-\uses{def:strongly-minimal-pregeometry}
+\uses{def:algebraic-closure}
 In a countable language, for every parameter set \(A\) in a structure,
 \[
   |\operatorname{acl}(A)|\leq |A|+\aleph_0.
@@ -1192,11 +1208,17 @@ There is \(n\in\mathbb N\) such that, for every \(\bar a\in M\), if
 
 \begin{proof}
 \uses{thm:compactness,def:pair-language,lem:pair-relativization,lem:elementary-pair-axiomatization,def:counting-formulas}
-Otherwise choose parameters defining arbitrarily large finite sets.
-Counting formulas and compactness in the pair language produce a proper
-pair-model in which the limiting set is infinite but gains no new points.
-The elementary-pair axioms ensure that the \(U\)-part is an elementary
-submodel of the ambient reduct, so this pair-model is a Vaughtian pair.
+Otherwise choose parameters defining arbitrarily large finite sets.  For
+a finite fragment of the desired pair-language type, choose a parameter
+tuple whose fiber is finite but larger than every requested bound, and
+take a proper elementary extension of \(M\), available by compactness.
+Elementarity preserves the exact finite cardinality of that fiber, so all
+of its realizations remain on the \(U\)-side while the pair itself is
+proper.  Thus the pair-language type is finitely satisfiable.  Counting
+formulas and compactness produce a proper pair-model in which the
+limiting set is infinite but gains no new points.  The elementary-pair
+axioms ensure that the \(U\)-part is an elementary submodel of the
+ambient reduct, so this pair-model is a Vaughtian pair.
 \end{proof}
 
 \begin{theorem}[Minimal formulas are strongly minimal without Vaughtian pairs]
