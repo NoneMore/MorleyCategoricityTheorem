@@ -66,7 +66,7 @@ jobs:
           auto-config: false
           build: true
           build-args: MorleyCategoricityTheorem
-          use-github-cache: true
+          use-github-cache: false
           use-mathlib-cache: true
 
       - name: Compile blueprint and documentation
@@ -80,7 +80,7 @@ jobs:
 
       - name: Set up Ruby for homepage-only validation
         if: steps.docs-changes.outputs.full != 'true' && steps.docs-changes.outputs.homepage == 'true'
-        uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c
+        uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c # v1.237.0
         with:
           working-directory: home_page
           ruby-version: default
@@ -89,7 +89,9 @@ jobs:
       - name: Build homepage
         if: steps.docs-changes.outputs.full != 'true' && steps.docs-changes.outputs.homepage == 'true'
         working-directory: home_page
-        run: bundle exec jekyll build --trace
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
+        run: JEKYLL_ENV=production bundle exec jekyll build --trace
 
   publish_documentation:
     if: github.event_name == 'push'
@@ -112,7 +114,7 @@ jobs:
           build: true
           build-args: MorleyCategoricityTheorem
           mk_all-check: true
-          use-github-cache: true
+          use-github-cache: false
           use-mathlib-cache: true
 
       - name: Compile and deploy blueprint and documentation
