@@ -331,6 +331,28 @@ Transport parameters along \(f\); partial elementarity preserves finite
 satisfiability, and compactness produces the transported complete type.
 \end{proof}
 
+\begin{lemma}[Extending partial elementary maps by isolated types]
+\label{lem:extend-partial-elementary-by-isolated-type}
+\uses{def:isolated-and-omitted-types,def:partial-elementary-embedding,lem:type-space-homeomorphism}
+Let \(f:A\to B\) be partial elementary between subsets of models
+\(M,N\models T\), and let \(a\in M\) realize an isolated type over
+\(A\).  Then \(f\) extends to a partial elementary map on
+\(A\cup\{a\}\).  If \(a\notin A\), the new image point may be chosen
+outside \(B\).
+\end{lemma}
+
+\begin{proof}
+Transport \(\operatorname{tp}(a/A)\) across \(f\).  If
+\(\theta(x,\bar c)\) isolates the original type, partial elementarity
+preserves the existential statement \(\exists x\,\theta(x,\bar c)\),
+so the transported isolating formula has a realization \(b\in N\).
+That realization has exactly the transported complete type, hence
+mapping \(a\) to \(b\) extends \(f\) elementarily on its enlarged
+domain.  If \(a\notin A\), the isolated type contains every inequality
+\(x\neq c\) for \(c\in A\); their transported consequences force
+\(b\notin B\).
+\end{proof}
+
 \begin{definition}[Prime models over parameter sets]
 \label{def:prime-over}
 \uses{def:elementary-maps,def:partial-elementary-embedding}
@@ -338,6 +360,48 @@ A model is prime over \(A\) if every partial elementary map from \(A\)
 into a model of \(T\) extends to an elementary embedding of the whole
 model.
 \end{definition}
+
+\begin{lemma}[Elementary submodels from isolated constructions]
+\label{lem:isolated-elementary-submodel-over-set}
+\uses{def:omega-stability,def:isolated-and-omitted-types}
+Let \(T\) be \(\omega\)-stable, \(M\models T\), and \(A\subseteq M\).
+There is an elementary submodel \(M_0\preceq M\) containing \(A\), with
+a well-ordering \((a_i)_{i<\alpha}\) of \(M_0\setminus A\), such that
+\[
+  \operatorname{tp}(a_i/A\cup\{a_j:j<i\})
+\]
+is isolated for every \(i<\alpha\).  Moreover every finite tuple from
+\(M_0\) realizes an isolated type over \(A\).
+\end{lemma}
+
+\begin{proof}
+\uses{thm:tarski-vaught-test,thm:isolated-types-dense,lem:isolated-transitivity}
+Build inside \(M\) by dovetailing the Tarski--Vaught witness
+requirements.  At each successor step, density of isolated types lets us
+choose a required witness whose type over the current parameter set is
+isolated; at limit stages take unions.  The resulting set satisfies
+Tarski--Vaught and hence is elementary.  Reading the chosen witnesses in
+construction order gives the required well-ordering, and isolation
+transitivity shows inductively that every finite tuple from the final
+model has isolated type over the original base \(A\).
+\end{proof}
+
+\begin{lemma}[Isolated constructions are prime]
+\label{lem:isolated-construction-prime}
+\uses{def:prime-over,lem:extend-partial-elementary-by-isolated-type}
+Suppose \(M\models T\) contains \(A\) and
+\(M\setminus A=\{a_i:i<\alpha\}\) is well-ordered so that each
+\(\operatorname{tp}(a_i/A\cup\{a_j:j<i\})\) is isolated.  Then \(M\)
+is prime over \(A\).
+\end{lemma}
+
+\begin{proof}
+Given a partial elementary map on \(A\), recursively extend it along the
+well-ordering.  At successor stages apply the isolated-type one-point
+extension lemma.  At limit stages take unions; every formula uses only
+finitely many parameters, so the union remains partial elementary.  The
+final map is defined on all of \(M\), hence is an elementary embedding.
+\end{proof}
 
 \begin{theorem}[Prime extension over a set]
 \label{thm:prime-extension-over-set}
@@ -349,12 +413,10 @@ an isolated type over \(A\).
 \end{theorem}
 
 \begin{proof}
-\uses{thm:tarski-vaught-test,thm:isolated-types-dense,lem:type-space-homeomorphism,lem:isolated-transitivity}
-Construct the model by adjoining witnesses whose types over the current
-stage are isolated.  Density supplies the witnesses, Tarski--Vaught
-proves elementarity, and the construction order lets any partial
-elementary map on \(A\) extend through the construction.  Isolation
-transitivity records atomicity over the original base.
+\uses{lem:isolated-elementary-submodel-over-set,lem:isolated-construction-prime}
+Take \(M_0\) and its isolated construction from the first lemma.  The
+second lemma makes \(M_0\) prime over \(A\), while the first already
+records the required isolation of finite tuples over \(A\).
 \end{proof}
 
 \begin{lemma}[Isomorphisms preserve definable set cardinalities]
@@ -714,34 +776,24 @@ elementarity preserves properness, infinitude, and the assertion that no
 witness lies outside the \(U\)-part.
 \end{proof}
 
-\begin{lemma}[Realizing a type on the submodel side]
-\label{lem:realize-type-in-submodel-side}
-\uses{def:pair-language,def:isolated-and-omitted-types}
-Let \(M_0\preceq N_0\) be countable.  If a type over parameters from
+\begin{lemma}[Realizing types in elementary extensions of pairs]
+\label{lem:realize-types-in-extension-pair}
+\uses{def:pair-language,def:types-over-parameters}
+Let \(M_0\preceq N_0\) be countable.  Any type over parameters from
+\(N_0\) is realized on the ambient side of some countable elementary
+extension of the pair.  Moreover, if a type over parameters from
 \(M_0\) is realized in \(N_0\), then some countable elementary extension
-of the pair realizes that type on the \(M\)-side.
+of the pair realizes that type on its \(U\)-side.
 \end{lemma}
 
 \begin{proof}
 \uses{lem:pair-relativization,lem:elementary-pair-axiomatization,thm:compactness,thm:downward-lowenheim-skolem}
-Relativize the type to \(U\), add it to the elementary diagram of the
-pair, and use compactness followed by downward Loewenheim--Skolem.  The
-pair axioms ensure that the resulting structure is again an elementary
-pair.
-\end{proof}
-
-\begin{lemma}[Realizing a type in an elementary extension of pairs]
-\label{lem:realize-type-in-extension-pair}
-\uses{def:pair-language,def:isolated-and-omitted-types}
-Any type over parameters from the larger side of a countable elementary
-pair is realized in some countable elementary extension of that pair.
-\end{lemma}
-
-\begin{proof}
-\uses{lem:elementary-pair-axiomatization,thm:compactness,thm:downward-lowenheim-skolem}
-Add the type to the elementary diagram of the pair and apply compactness
-and downward Loewenheim--Skolem; the pair axioms preserve the elementary
-pair structure.
+For the ambient-side statement, add the type to the elementary diagram of
+the pair.  For the \(U\)-side statement, relativize the type to \(U\)
+before adjoining it; finite satisfiability follows from
+\(M_0\preceq N_0\).  Compactness gives the required elementary pair
+extension in either case, and downward Loewenheim--Skolem makes it
+countable.
 \end{proof}
 
 \begin{lemma}[Homogeneous countable Vaughtian pair]
@@ -754,7 +806,7 @@ Vaughtian witness persists.
 \end{lemma}
 
 \begin{proof}
-\uses{lem:realize-type-in-submodel-side,lem:realize-type-in-extension-pair,thm:loewenheim-skolem-constructions}
+\uses{lem:realize-types-in-extension-pair,thm:loewenheim-skolem-constructions}
 Dovetail the requirements that types seen on the larger side appear on
 the smaller side with all one-point homogeneity requests.  Re-enumerate
 the countably many requirements after each elementary extension, so any
@@ -1135,20 +1187,16 @@ they have the same dimension.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:basis-bijection-partial-elementary,prop:algebraic-implies-isolated,lem:type-space-homeomorphism}
+\uses{lem:basis-bijection-partial-elementary,prop:algebraic-implies-isolated,lem:extend-partial-elementary-by-isolated-type}
 Choose bases and a bijection between them.  By the preceding lemma this
 extends the identity on \(A\) to a partial elementary map.  Extend that
 map maximally inside the two strongly minimal sets.  Every remaining
 point is algebraic over the base together with a finite part of a basis,
-so its type over the current domain is isolated.  Transport the isolated
-type across the current partial elementary map.  Its isolating formula
-is realized on the other side by partial elementarity, and it entails
-inequality from every element already in the current range because the
-original isolated type contains the corresponding inequalities from the
-current domain.  Hence any such realization is a fresh point extending
-the partial elementary map, contradicting maximality unless the map is
-total.  Apply the same argument to the inverse map to obtain
-surjectivity.  For a strongly minimal theory take \(A=\emptyset\) and
+hence algebraic over the current domain, so its type over that domain is
+isolated.  The isolated-type extension lemma then adds it with a fresh
+image point, contradicting maximality unless the map is total.  Apply
+the same argument to the inverse map to obtain surjectivity.  For a
+strongly minimal theory take \(A=\emptyset\) and
 \(\varphi(v)\equiv(v=v)\).
 \end{proof}
 
