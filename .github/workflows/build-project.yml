@@ -36,3 +36,9 @@ jobs:
           build-args: MorleyCategoricityTheorem
           use-github-cache: true
           use-mathlib-cache: true
+
+      - name: Check root import file
+        run: ~/.elan/bin/lake exe mk_all --check
+
+      - name: Check blueprint declaration references
+        run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
