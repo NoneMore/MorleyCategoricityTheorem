@@ -1,7 +1,7 @@
 ---
 name: Formalization task
 about: Track a definition, lemma, theorem, or blueprint node that should be formalized
- title: ''
+title: ''
 labels: ''
 assignees: ''
 ---
