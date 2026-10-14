@@ -14,9 +14,13 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  classify:
     runs-on: ubuntu-latest
-    name: Validate repository
+    name: Classify changes
+    outputs:
+      lean: ${{ steps.changes.outputs.lean }}
+      blueprint: ${{ steps.changes.outputs.blueprint }}
+      homepage: ${{ steps.changes.outputs.homepage }}
     steps:
       - name: Checkout project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,34 +33,53 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "lean=true" >> "$GITHUB_OUTPUT"
-            echo "full_docs=true" >> "$GITHUB_OUTPUT"
-            echo "homepage=false" >> "$GITHUB_OUTPUT"
+            echo "blueprint=true" >> "$GITHUB_OUTPUT"
+            echo "homepage=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
-            ':(glob)**/*.lean' lean-toolchain lakefile.toml lake-manifest.json blueprint \
+          base="origin/${{ github.base_ref }}...HEAD"
+
+          # Workflow changes exercise every validation path so changes to this
+          # routing logic validate themselves before merge.
+          if ! git diff --quiet "$base" -- \
             .github/workflows/build-project.yml .github/workflows/blueprint.yml; then
+            echo "lean=true" >> "$GITHUB_OUTPUT"
+            echo "blueprint=true" >> "$GITHUB_OUTPUT"
+            echo "homepage=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --quiet "$base" -- \
+            ':(glob)**/*.lean' lean-toolchain lakefile.toml lake-manifest.json \
+            blueprint/lean_decls; then
             echo "lean=false" >> "$GITHUB_OUTPUT"
           else
             echo "lean=true" >> "$GITHUB_OUTPUT"
           fi
 
-          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
-            blueprint .github/workflows/build-project.yml .github/workflows/blueprint.yml; then
-            echo "full_docs=false" >> "$GITHUB_OUTPUT"
+          if git diff --quiet "$base" -- blueprint/src; then
+            echo "blueprint=false" >> "$GITHUB_OUTPUT"
           else
-            echo "full_docs=true" >> "$GITHUB_OUTPUT"
+            echo "blueprint=true" >> "$GITHUB_OUTPUT"
           fi
 
-          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- home_page; then
+          if git diff --quiet "$base" -- home_page; then
             echo "homepage=false" >> "$GITHUB_OUTPUT"
           else
             echo "homepage=true" >> "$GITHUB_OUTPUT"
           fi
 
+  lean:
+    needs: classify
+    if: needs.classify.outputs.lean == 'true'
+    runs-on: ubuntu-latest
+    name: Validate Lean
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Build project
-        if: steps.changes.outputs.lean == 'true'
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
@@ -66,15 +89,21 @@ jobs:
           use-mathlib-cache: true
 
       - name: Check root import file
-        if: steps.changes.outputs.lean == 'true'
         run: ~/.elan/bin/lake exe mk_all --check
 
       - name: Check blueprint declaration references
-        if: steps.changes.outputs.lean == 'true'
         run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
 
+  blueprint:
+    needs: classify
+    if: needs.classify.outputs.blueprint == 'true'
+    runs-on: ubuntu-latest
+    name: Validate blueprint
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Build blueprint
-        if: steps.changes.outputs.full_docs == 'true'
         uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
         with:
           docker_image: ghcr.io/xu-cheng/texlive-small:20250401
@@ -91,13 +120,18 @@ jobs:
               --config-settings="--global-option=-R/usr/lib/graphviz/"
             pip install --no-cache-dir leanblueprint
             leanblueprint pdf
-            mkdir -p home_page
-            cp blueprint/print/print.pdf home_page/blueprint.pdf
             leanblueprint web
-            cp -r blueprint/web home_page/blueprint
+
+  homepage:
+    needs: classify
+    if: needs.classify.outputs.homepage == 'true'
+    runs-on: ubuntu-latest
+    name: Validate homepage
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Ruby
-        if: steps.changes.outputs.full_docs == 'true' || steps.changes.outputs.homepage == 'true'
         uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c # v1.237.0
         with:
           working-directory: home_page
@@ -105,8 +139,40 @@ jobs:
           bundler-cache: true
 
       - name: Build homepage
-        if: steps.changes.outputs.full_docs == 'true' || steps.changes.outputs.homepage == 'true'
         working-directory: home_page
         env:
           JEKYLL_GITHUB_TOKEN: ${{ github.token }}
         run: JEKYLL_ENV=production bundle exec jekyll build --trace
+
+  validate:
+    needs:
+      - classify
+      - lean
+      - blueprint
+      - homepage
+    if: always()
+    runs-on: ubuntu-latest
+    name: Validate repository
+    steps:
+      - name: Check validation results
+        env:
+          CLASSIFY_RESULT: ${{ needs.classify.result }}
+          LEAN_RESULT: ${{ needs.lean.result }}
+          BLUEPRINT_RESULT: ${{ needs.blueprint.result }}
+          HOMEPAGE_RESULT: ${{ needs.homepage.result }}
+        shell: bash
+        run: |
+          if [ "$CLASSIFY_RESULT" != "success" ]; then
+            echo "Change classification failed: $CLASSIFY_RESULT"
+            exit 1
+          fi
+
+          for result in "$LEAN_RESULT" "$BLUEPRINT_RESULT" "$HOMEPAGE_RESULT"; do
+            case "$result" in
+              success|skipped) ;;
+              *)
+                echo "Validation job did not succeed: $result"
+                exit 1
+                ;;
+            esac
+          done
