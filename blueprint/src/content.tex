@@ -495,12 +495,17 @@ with \(|A|<\kappa\) can be extended over any additional element of
 \uses{def:homogeneous-model,def:types-over-parameters}
 If \(M\) and \(N\) are countable homogeneous models of \(T\) realizing
 the same complete \(n\)-types over \(\emptyset\) for every \(n\geq 1\),
-then \(M\cong N\).
+then every finite partial elementary map \(f_0:M\rightharpoonup N\)
+extends to an isomorphism \(f:M\cong N\).  In particular,
+\(M\cong N\).
 \end{theorem}
 
 \begin{proof}
 Enumerate the two models and perform the standard back-and-forth
-construction, using homogeneity for the one-point extensions.
+construction starting from \(f_0\).  At each one-point extension step,
+homogeneity realizes the transported type over the finite current
+domain or range.  The union of the finite partial elementary maps is a
+bijective elementary map extending \(f_0\).
 \end{proof}
 
 \begin{lemma}[Isomorphisms preserve definable set cardinalities]
@@ -539,23 +544,25 @@ well-defined, and \(f^{-1}\) gives the inverse.
 
 \begin{definition}[Order indiscernibles]
 \label{def:order-indiscernibles}
-Let \((I,<)\) be a linear order.  A sequence \((x_i)_{i\in I}\) in a
-model \(M\) is a sequence of order indiscernibles if any two increasing
-finite subsequences of the same length satisfy the same \(L\)-formulas.
+Let \((I,<)\) be a linear order.  An injective sequence
+\((x_i)_{i\in I}\) in a model \(M\) is a sequence of order
+indiscernibles if any two increasing finite subsequences of the same
+length satisfy the same \(L\)-formulas.
 \end{definition}
 
 \begin{theorem}[Existence of order indiscernibles]
 \label{thm:existence-of-order-indiscernibles}
 \uses{def:order-indiscernibles}
 If \(T\) has infinite models and \(I\) is an infinite linear order, then
-some model of \(T\) contains a sequence of order indiscernibles indexed
-by \(I\).
+some model of \(T\) contains an injective sequence of order
+indiscernibles indexed by \(I\).
 \end{theorem}
 
 \begin{proof}
 \uses{thm:compactness}
 Use the Ehrenfeucht--Mostowski compactness construction: prescribe the
-finite ordered patterns consistently and apply compactness to obtain an
+finite ordered patterns together with the inequalities \(x_i\neq x_j\)
+for distinct indices, and apply compactness to obtain an injective
 \(I\)-indexed indiscernible sequence.
 \end{proof}
 
@@ -581,7 +588,10 @@ realizes at most \(|A|+\aleph_0\) complete \(n\)-types over \(A\).
 \uses{thm:skolem-expansion,thm:existence-of-order-indiscernibles,def:skolem-hull}
 Pass to a countable Skolem expansion.  Index the indiscernibles by the
 initial ordinal of cardinality \(\kappa\), with its well-order, and take
-their Skolem hull.  A parameter set \(A\) involves only
+their Skolem hull.  Injectivity gives at least \(\kappa\) distinct
+generators in the hull, while countability of the Skolem language and
+finiteness of terms give at most \(\kappa\) elements; hence the hull has
+cardinality exactly \(\kappa\).  A parameter set \(A\) involves only
 \(|A|+\aleph_0\) many indices in its Skolem terms; let \(I_A\) be this
 set of indices.  For a fixed finite tuple of indices, record its full
 quantifier-free order type over \(I_A\): the order and equality relations
@@ -774,12 +784,29 @@ If \(T\) is in a countable language and \(T\) has a Vaughtian pair, then
 \begin{proof}
 \uses{lem:countable-vaughtian-pair,lem:homogeneous-vaughtian-pair,thm:homogeneous-back-and-forth,thm:loewenheim-skolem-constructions}
 Start with a countable homogeneous Vaughtian pair \((N,M)\) whose sides
-realize the same types.  Build an elementary chain
-\((N_\alpha)_{\alpha<\omega_1}\) so that each successor pair is
-isomorphic to \((N,M)\).  Homogeneous back-and-forth identifies the
-models needed at the limit and successor stages.  The union has size
-\(\aleph_1\), while the witnessing definable set remains the original
-countable set.
+realize the same complete types, and fix a witnessing formula
+\(\varphi(x,\bar a)\) with \(\bar a\in M\).  Build an elementary chain
+\((N_\alpha)_{\alpha<\omega_1}\), beginning with \(N_0=N\), such that
+each successor pair is isomorphic to \((N,M)\) by an isomorphism whose
+restriction to \(M\) fixes \(\bar a\).
+
+At a successor stage, \(M\preceq N_0\preceq N_\alpha\), so the identity
+map on the finite tuple \(\bar a\) is partial elementary from \(M\) to
+\(N_\alpha\).  The strengthened homogeneous back-and-forth theorem
+extends it to an isomorphism \(h_\alpha:M\cong N_\alpha\) fixing
+\(\bar a\).  Transporting the extension \(M\preceq N\) along
+\(h_\alpha\) gives \(N_{\alpha+1}\succeq N_\alpha\) with
+\((N_{\alpha+1},N_\alpha)\cong(N,M)\) over \(\bar a\).  Therefore no
+new element of \(N_{\alpha+1}\setminus N_\alpha\) satisfies
+\(\varphi(x,\bar a)\).  At a countable limit stage take the elementary
+union; it is again countable, homogeneous, and realizes the same
+complete types as \(N\), so the construction continues.
+
+The union has size \(\aleph_1\) because every successor extension is
+proper, while the fixed definable set
+\(\varphi(-,\bar a)\) never grows and hence remains the original
+countably infinite set \(\varphi(N_0,\bar a)\).  Thus the union is an
+\((\aleph_1,\aleph_0)\)-model.
 \end{proof}
 
 \begin{theorem}[Vaught's two-cardinal theorem]
@@ -814,13 +841,14 @@ a countable parameter set, hence \(2^{\aleph_0}\) many complete
 one-types, contradicting \(\omega\)-stability.
 \end{proof}
 
-\begin{lemma}[Proper extension realizing no new countable types]
+\begin{lemma}[Proper extension realizing no new countable finite-arity types]
 \label{lem:proper-extension-realizes-no-new-countable-types}
 \uses{def:omega-stability,def:isolated-and-omitted-types}
 Suppose \(T\) is \(\omega\)-stable, \(M\models T\), and
 \(|M|\geq\aleph_1\).  Then there is a proper elementary extension
 \(N\succeq M\) with \(|N|=|M|\) such that every countable partial type
-over \(M\) realized in \(N\) is already realized in \(M\).
+over \(M\) in a finite tuple of variables that is realized in \(N\) is
+already realized in \(M\).
 \end{lemma}
 
 \begin{proof}
@@ -831,10 +859,11 @@ Realize \(\Gamma\) by an element \(c\) in an elementary extension of
 \(M\).  Downward Loewenheim--Skolem gives an elementary submodel of
 cardinality \(|M|\) containing \(M\cup\{c\}\); inside it take a model
 prime over \(M\cup\{c\}\).  This prime model is proper over \(M\) and
-still has cardinality \(|M|\).  Isolation in the prime extension reduces
-any countable partial type over \(M\) realized there to a countable
-intersection of co-countable subsets of the large definable set, hence
-to a realization already in \(M\).
+still has cardinality \(|M|\).  If a countable partial type in a finite
+tuple of variables is realized there, isolation of the realizing finite
+tuple over \(M\cup\{c\}\) reduces the type to a countable intersection
+of co-countable subsets of the large definable set, hence to a
+realization already in \(M\).
 \end{proof}
 
 \begin{theorem}[Two-cardinal transfer above \(\aleph_1\)]
@@ -849,11 +878,12 @@ a \((\kappa,\aleph_0)\)-model.
 \uses{lem:proper-extension-realizes-no-new-countable-types,thm:loewenheim-skolem-constructions}
 Start from the \((\aleph_1,\aleph_0)\)-model and repeatedly take proper
 elementary extensions of the same cardinality as the previous stage,
-realizing no new countable partial types over that stage.  The type
-saying that a new element belongs to the old countable definable set is
-countable and therefore remains omitted.  At limit stages take
-elementary unions.  The resulting chain of length \(\kappa\) has union
-of size \(\kappa\) and keeps that definable set countable.
+realizing no new countable finite-arity partial types over that stage.
+The one-variable type saying that a new element belongs to the old
+countable definable set is countable and therefore remains omitted.  At
+limit stages take elementary unions.  The resulting chain of length
+\(\kappa\) has union of size \(\kappa\) and keeps that definable set
+countable.
 \end{proof}
 
 \begin{theorem}[Uncountable categoricity rules out Vaughtian pairs]
@@ -893,60 +923,46 @@ theorem with this \(\omega\)-stability rules out Vaughtian pairs.
 
 \section{Strong Minimality and Dimension}
 
-\begin{definition}[Minimal and strongly minimal formulas]
-\label{def:minimality}
-Let \(M\) be an \(L\)-structure and let \(D\subseteq M\) be an infinite
-one-variable definable set.  The set \(D\) is minimal in \(M\) if every
-definable subset of \(D\) is finite or cofinite in \(D\).  A formula
-defining \(D\) is minimal.  The set or formula is strongly minimal if it
-is minimal in every elementary extension.
-\end{definition}
-
-\begin{definition}[Algebraic closure in a strongly minimal set]
+\begin{definition}[Algebraic closure on a strongly minimal set over a base]
 \label{def:strongly-minimal-pregeometry}
 \uses{def:minimality}
-An element is algebraic over \(A\) if it belongs to a finite set
-definable with parameters from \(A\).  If \(D\) is strongly minimal and
-\(A\subseteq D\), then
+Let \(D\subseteq M\) be a strongly minimal set definable over a
+parameter set \(A\subseteq M\).  For \(X\subseteq D\), define
 \[
-  \operatorname{acl}_D(A)=\{b\in D:b\text{ is algebraic over }A\}.
+  \operatorname{cl}_A(X)=D\cap\operatorname{acl}(A\cup X).
 \]
+Thus \(b\in\operatorname{cl}_A(X)\) exactly when \(b\in D\) belongs to
+a finite set definable with parameters from \(A\cup X\).
 \end{definition}
 
-\begin{proposition}[Strongly minimal algebraic closure is a pregeometry]
+\begin{proposition}[Relative algebraic closure is a pregeometry]
 \label{prop:strongly-minimal-pregeometry}
 \uses{def:strongly-minimal-pregeometry}
-For a strongly minimal set \(D\), the operator
-\(\operatorname{acl}_D\) satisfies reflexivity, monotonicity,
-idempotence, finite character, and exchange.
+Let \(D\) be strongly minimal and definable over \(A\).  Then
+\(\operatorname{cl}_A\) is a pregeometry on \(D\): it satisfies
+reflexivity, monotonicity, idempotence, finite character, and exchange.
 \end{proposition}
 
 \begin{proof}
-The first four properties follow from the definition of algebraicity by
-finite definable sets.  Exchange is the standard strongly-minimal
-exchange argument: if exchange failed, a definable family of finite
-fibers would cut a strongly minimal set into an infinite coinfinite
-definable subset.
+Reflexivity, monotonicity, idempotence, and finite character follow from
+the corresponding elementary facts about algebraicity after adjoining
+the fixed base \(A\).  Exchange is the standard strongly-minimal
+exchange argument over parameters \(A\): if exchange failed, a definable
+family of finite fibers would cut \(D\) into an infinite coinfinite
+subset definable over parameters, contradicting strong minimality.
 \end{proof}
 
 \begin{definition}[Independence, bases, and dimension]
 \label{def:strongly-minimal-independence}
 \uses{def:strongly-minimal-pregeometry,prop:strongly-minimal-pregeometry}
-Let \(D\) be a strongly minimal set in a model \(M\), and let
-\(A\subseteq M\) contain parameters over which \(D\) is defined.  For
-\(X\subseteq D\), set
-\[
-  \operatorname{cl}_A(X)=D\cap\operatorname{acl}(A\cup X).
-\]
-The exchange property makes \(\operatorname{cl}_A\) a pregeometry on
-\(D\).  A set \(X\subseteq D\) is independent over \(A\) if no
-\(x\in X\) lies in
-\(\operatorname{acl}(A\cup(X\setminus\{x\}))\).  A basis of
+Let \(D\) be a strongly minimal set in a model \(M\), definable over
+\(A\subseteq M\).  A set \(X\subseteq D\) is independent over \(A\) if
+no \(x\in X\) lies in
+\(\operatorname{cl}_A(X\setminus\{x\})\).  A basis of
 \(Y\subseteq D\) over \(A\) is an independent set \(B\subseteq Y\)
-such that \(Y\subseteq\operatorname{acl}(A\cup B)\).  Its cardinality
-is the relative dimension \(\dim_A^M(Y)\).  When the ambient model is
-clear we write \(\dim_A(Y)\), and for \(A=\emptyset\) simply
-\(\dim(Y)\).
+such that \(Y\subseteq\operatorname{cl}_A(B)\).  Its cardinality is the
+relative dimension \(\dim_A^M(Y)\).  When the ambient model is clear we
+write \(\dim_A(Y)\), and when \(A=\emptyset\) simply \(\dim(Y)\).
 \end{definition}
 
 \begin{proposition}[Algebraic types are isolated]
