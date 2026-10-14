@@ -365,8 +365,9 @@ Send the type of \(\bar a\) over \(A\) to the type of \(f\bar a\) over
 \begin{theorem}[Skolem expansion]
 \label{thm:skolem-expansion}
 For every \(L\)-theory \(T\), there is an expanded language \(L^*\) and
-theory \(T^*\) with Skolem functions such that every model of \(T\)
-admits an expansion to a model of \(T^*\), and
+a theory \(T^*\supseteq T\) with Skolem functions such that every model
+of \(T\) admits an expansion to a model of \(T^*\), every model of
+\(T^*\) has an \(L\)-reduct satisfying \(T\), and
 \(|L^*|=|L|+\aleph_0\) may be arranged.
 \end{theorem}
 
@@ -449,17 +450,18 @@ Let \(L\) be countable and \(T\) have infinite models.  For every
 
 \begin{proof}
 \uses{thm:skolem-expansion,thm:existence-of-order-indiscernibles,thm:skolem-hull-elementary,lem:few-relative-order-types}
-Take a countable Skolem expansion, index indiscernibles by the initial
-ordinal of size \(\kappa\), and take their Skolem hull.  The hull has
-size exactly \(\kappa\).  A parameter set \(A\) involves only
-\(|A|+\aleph_0\) indices in its Skolem terms; call their set \(I_A\).
-For any fixed finite tuple of Skolem terms, order indiscernibility shows
-that the complete type of its value over \(A\) is determined by the
-relative order type over \(I_A\) of the finitely many indices occurring
-in the terms.  Because the index order is a well-order, the preceding
-lemma bounds the number of such relative order types by
-\(|A|+\aleph_0\).  There are only countably many finite tuples of Skolem
-terms, so the same bound holds for the realized finite-arity types.
+Take a countable Skolem expansion, build order indiscernibles in the
+expanded language \(L^*\) indexed by the initial ordinal of size
+\(\kappa\), and take their Skolem hull.  The hull has size exactly
+\(\kappa\).  A parameter set \(A\) involves only \(|A|+\aleph_0\)
+indices in its Skolem terms; call their set \(I_A\).  For any fixed
+finite tuple of Skolem terms, \(L^*\)-order indiscernibility shows that
+the complete type of its value over \(A\) is determined by the relative
+order type over \(I_A\) of the finitely many indices occurring in the
+terms.  Because the index order is a well-order, the preceding lemma
+bounds the number of such relative order types by \(|A|+\aleph_0\).
+There are only countably many finite tuples of Skolem terms, so the same
+bound holds for the realized finite-arity types in the reduct.
 \end{proof}
 
 \begin{lemma}[Non-omega-stability produces a large model realizing many types]
@@ -625,6 +627,32 @@ are immediate, and the quantified step uses that \(U\) is interpreted
 as exactly \(M\).
 \end{proof}
 
+\begin{lemma}[Elementary pairs are first-order and preserved]
+\label{lem:elementary-pair-axiomatization}
+\uses{def:pair-language,lem:pair-relativization,thm:tarski-vaught-test}
+There is an \(L_0\)-theory whose models are exactly the structures
+\((N,U)\) in which \(N\models T\), the predicate \(U\) is the universe
+of an \(L\)-substructure \(M\subseteq N\), and \(M\preceq N\).
+Consequently, an \(L_0\)-elementary substructure or elementary extension
+of an elementary pair is again an elementary pair on its \(U\)-part and
+ambient \(L\)-reduct.
+\end{lemma}
+
+\begin{proof}
+Include \(T\), axioms saying that \(U\) contains the constants and is
+closed under the \(L\)-functions, and for every \(L\)-formula
+\(\varphi(\bar x)\) the scheme
+\[
+  \forall \bar x\in U\,
+  \bigl(\varphi(\bar x)\leftrightarrow\varphi^U(\bar x)\bigr).
+\]
+A genuine elementary pair satisfies this scheme by relativization.
+Conversely, the closure axioms make the \(U\)-part a substructure and
+the scheme gives the Tarski--Vaught condition, hence elementarity.
+Since this is a first-order theory, elementary substructures and
+extensions of pair structures remain models of the same theory.
+\end{proof}
+
 \begin{definition}[Homogeneous models]
 \label{def:homogeneous-model}
 \uses{def:partial-elementary-embedding}
@@ -656,11 +684,13 @@ has a Vaughtian pair \((N_0,M_0)\) with \(N_0\) countable.
 \end{lemma}
 
 \begin{proof}
-\uses{lem:vaughtian-pair-inclusion-presentation,lem:pair-relativization,thm:downward-lowenheim-skolem}
+\uses{lem:vaughtian-pair-inclusion-presentation,lem:pair-relativization,lem:elementary-pair-axiomatization,thm:downward-lowenheim-skolem}
 Pass to the inclusion presentation and apply downward
 Loewenheim--Skolem in the pair language, retaining the parameters of the
-Vaughtian witness.  Pair elementarity preserves properness, infinitude,
-and the assertion that no witness lies outside the \(U\)-part.
+Vaughtian witness.  The pair axioms ensure that the resulting
+\(U\)-part is still elementary in the ambient reduct, while pair
+elementarity preserves properness, infinitude, and the assertion that no
+witness lies outside the \(U\)-part.
 \end{proof}
 
 \begin{lemma}[Realizing a type on the submodel side]
@@ -672,9 +702,11 @@ of the pair realizes that type on the \(M\)-side.
 \end{lemma}
 
 \begin{proof}
-\uses{lem:pair-relativization,thm:compactness,thm:downward-lowenheim-skolem}
+\uses{lem:pair-relativization,lem:elementary-pair-axiomatization,thm:compactness,thm:downward-lowenheim-skolem}
 Relativize the type to \(U\), add it to the elementary diagram of the
-pair, and use compactness followed by downward Loewenheim--Skolem.
+pair, and use compactness followed by downward Loewenheim--Skolem.  The
+pair axioms ensure that the resulting structure is again an elementary
+pair.
 \end{proof}
 
 \begin{lemma}[Realizing a type in an elementary extension of pairs]
@@ -685,9 +717,10 @@ pair is realized in some countable elementary extension of that pair.
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,thm:downward-lowenheim-skolem}
+\uses{lem:elementary-pair-axiomatization,thm:compactness,thm:downward-lowenheim-skolem}
 Add the type to the elementary diagram of the pair and apply compactness
-and downward Loewenheim--Skolem.
+and downward Loewenheim--Skolem; the pair axioms preserve the elementary
+pair structure.
 \end{proof}
 
 \begin{lemma}[Homogeneous countable Vaughtian pair]
@@ -770,23 +803,25 @@ Pass from the two-cardinal model to a Vaughtian pair and then to an
 \label{lem:omega-stable-large-definable-almost-minimal}
 \uses{def:omega-stability}
 If \(T\) is \(\omega\)-stable and \(|M|\geq\aleph_1\), then some
-parameter-definable unary set in \(M\) is uncountable and every
-definable split of it has at least one countable side.
+parameter-definable unary set \(D\subseteq M\) is uncountable and every
+subset of \(D\) definable with parameters from \(M\) is countable or
+co-countable in \(D\).
 \end{lemma}
 
 \begin{proof}
 \uses{lem:binary-splitting-obstruction}
-Otherwise recursively split every uncountable definable set into two
-uncountable definable subsets.
+Otherwise recursively split every uncountable \(M\)-parameter-definable
+set into two uncountable \(M\)-parameter-definable subsets.
 \end{proof}
 
 \begin{lemma}[The co-countable generic is realized outside the base]
 \label{lem:cocountable-generic-type}
-Let \(D\subseteq M\) be an uncountable definable set such that every
-definable subset of \(D\) is countable or co-countable.  The partial type
-over \(M\) consisting of the formulas whose traces on \(D\) are
-co-countable is finitely satisfiable in \(M\), and it has a realization
-\(c\) in an elementary extension of \(M\) with \(c\notin M\).
+Let \(D\subseteq M\) be uncountable and definable such that every subset
+of \(D\) definable with parameters from \(M\) is countable or
+co-countable.  The partial type over \(M\) consisting of the formulas
+whose traces on \(D\) are co-countable is finitely satisfiable in
+\(M\), and it has a realization \(c\) in an elementary extension of
+\(M\) with \(c\notin M\).
 \end{lemma}
 
 \begin{proof}
@@ -802,12 +837,13 @@ each \(m\in D(M)\) it contains \(x\neq m\), since
 \begin{lemma}[Specializing isolated types along a co-countable generic]
 \label{lem:cocountable-generic-specialization}
 \uses{def:isolated-and-omitted-types}
-Let \(D\subseteq M\) be uncountable and definable, with every definable
-subset of \(D\) countable or co-countable.  Let \(M\preceq N\), and let
-\(c\in N\) satisfy every formula over \(M\) whose trace on \(D\) is
-co-countable.  If a finite tuple \(\bar b\in N\) realizes an isolated
-type over \(M\cup\{c\}\), then every countable partial type over \(M\)
-realized by \(\bar b\) is already realized in \(M\).
+Let \(D\subseteq M\) be uncountable and definable, with every subset of
+\(D\) definable with parameters from \(M\) countable or co-countable.
+Let \(M\preceq N\), and let \(c\in N\) satisfy every formula over
+\(M\) whose trace on \(D\) is co-countable.  If a finite tuple
+\(\bar b\in N\) realizes an isolated type over \(M\cup\{c\}\), then
+every countable partial type over \(M\) realized by \(\bar b\) is
+already realized in \(M\).
 \end{lemma}
 
 \begin{proof}
@@ -853,6 +889,28 @@ partial type over \(M\) realized there, apply the specialization lemma
 to the realizing tuple to obtain a realization already in \(M\).
 \end{proof}
 
+\begin{lemma}[No-new-countable-types extensions preserve countable definable sets]
+\label{lem:no-new-countable-types-preserve-countable-definable-sets}
+Let \(M\preceq N\), and suppose every countable finite-arity partial type
+over \(M\) realized in \(N\) is already realized in \(M\).  If
+\(D=\varphi(M,\bar a)\) is countable for parameters \(\bar a\in M\),
+then
+\[
+  \varphi(N,\bar a)=D.
+\]
+\end{lemma}
+
+\begin{proof}
+If \(c\in\varphi(N,\bar a)\setminus M\), then \(c\) realizes the
+countable partial type over \(M\)
+\[
+  \{\varphi(x,\bar a)\}\cup\{x\neq d:d\in D\}.
+\]
+By hypothesis this type is realized by some element of \(M\), but every
+point of \(M\) satisfying \(\varphi(x,\bar a)\) already lies in \(D\),
+a contradiction.  Elementarity gives the reverse inclusion.
+\end{proof}
+
 \begin{theorem}[Two-cardinal transfer above \(\aleph_1\)]
 \label{thm:two-cardinal-transfer}
 \uses{def:omega-stability,def:kappa-lambda-model}
@@ -862,12 +920,14 @@ a \((\kappa,\aleph_0)\)-model.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:proper-extension-realizes-no-new-countable-types,thm:loewenheim-skolem-constructions}
+\uses{lem:proper-extension-realizes-no-new-countable-types,lem:no-new-countable-types-preserve-countable-definable-sets,thm:loewenheim-skolem-constructions}
 Iterate proper same-cardinality elementary extensions that realize no new
-countable partial types.  The countable definable set from the initial
-model remains countable at every stage and through elementary-chain
-limits, while proper successor stages force the final union to have size
-\(\kappa\).
+countable partial types.  At each successor stage the preceding lemma
+shows that the countable definable set from the initial model gains no
+new realizations at all.  At limit stages its realization set is the
+union of the unchanged realization sets, so it remains the original
+countable set.  Proper successor stages force the final union to have
+size \(\kappa\).
 \end{proof}
 
 \begin{theorem}[Uncountable categoricity rules out Vaughtian pairs]
@@ -930,21 +990,59 @@ These are the corresponding standard properties of algebraic closure,
 restricted to \(D\) after adjoining the fixed base \(A\).
 \end{proof}
 
+\begin{lemma}[Nonalgebraic types have arbitrarily many distinct conjugates]
+\label{lem:nonalgebraic-type-many-realizations}
+\uses{thm:compactness,def:counting-formulas}
+If \(b\notin\operatorname{acl}(B)\), then for every
+\(n\in\mathbb N\) there is an elementary extension containing distinct
+\(b_0,\ldots,b_n\), each realizing \(\operatorname{tp}(b/B)\).
+\end{lemma}
+
+\begin{proof}
+Add constants \(b_0,\ldots,b_n\), require each to satisfy the complete
+type of \(b\) over \(B\), and require them pairwise distinct.  Every
+finite fragment mentions only finitely many formulas from that type;
+their conjunction defines an infinite set, since a finite such set would
+make \(b\) algebraic over \(B\).  Hence every finite fragment has enough
+distinct realizations, and compactness gives the required extension.
+\end{proof}
+
 \begin{lemma}[Exchange on a strongly minimal set]
 \label{lem:strongly-minimal-exchange}
-\uses{def:minimality,def:strongly-minimal-pregeometry,lem:strongly-minimal-closure-laws,def:counting-formulas}
+\uses{def:minimality,def:strongly-minimal-pregeometry,lem:strongly-minimal-closure-laws,lem:nonalgebraic-type-many-realizations,def:counting-formulas}
 If \(b\in\operatorname{cl}_A(X\cup\{c\})\setminus\operatorname{cl}_A(X)\),
 then \(c\in\operatorname{cl}_A(X\cup\{b\})\).
 \end{lemma}
 
 \begin{proof}
-Reduce by finite character to finite \(X\).  Choose a definable relation
-witnessing that \(b\) is algebraic over \(A\cup X\cup\{c\}\), and use a
-counting formula to impose a uniform finite bound on the relevant
-fibers.  If \(c\) were not algebraic over \(A\cup X\cup\{b\}\), strong
-minimality would make the opposite fiber cofinite; intersecting finitely
-many such cofinite fibers would then violate the uniform bound, forcing
-\(b\) to be algebraic already over \(A\cup X\), a contradiction.
+Reduce by finite character to finite \(X\), and put
+\(B=A\cup X\).  Choose a relation \(R(x,y)\), with parameters from
+\(B\), such that \(R(b,c)\) and the fiber \(R(-,c)\) has at most
+\(n\) points for some \(n\).  Let
+\[
+  \chi(y):=(\exists^{\leq n}x)\,R(x,y).
+\]
+Suppose toward a contradiction that \(c\notin\operatorname{acl}(Bb)\).
+Then also \(c\notin\operatorname{acl}(B)\).  Since \(\chi(c)\), the set
+\(\chi(D)\) is not finite over \(B\), and strong minimality makes it
+cofinite in \(D\).  Likewise the fiber
+\(\{y\in D:R(b,y)\}\) contains the nonalgebraic point \(c\), so it is
+cofinite.
+
+Because \(b\notin\operatorname{acl}(B)\), choose distinct
+\(b_0,\ldots,b_n\) in an elementary extension, all realizing
+\(\operatorname{tp}(b/B)\).  The original fiber \(R(b,-)\cap D\) is
+infinite, so all counting formulas asserting arbitrarily many points in
+that fiber belong to \(\operatorname{tp}(b/B)\).  Hence each
+\(R(b_i,-)\cap D\) is infinite and therefore cofinite by strong
+minimality.  The finite intersection
+\[
+  \chi(D)\cap\bigcap_{i\leq n}R(b_i,D)
+\]
+is nonempty.  Any \(y\) in it satisfies \(\chi(y)\), so at most \(n\)
+points satisfy \(R(-,y)\), but the distinct
+\(b_0,\ldots,b_n\) all do, a contradiction.  Thus
+\(c\in\operatorname{acl}(Bb)\), which is the exchange conclusion.
 \end{proof}
 
 \begin{proposition}[Relative algebraic closure is a pregeometry]
@@ -1093,11 +1191,12 @@ There is \(n\in\mathbb N\) such that, for every \(\bar a\in M\), if
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,def:pair-language,lem:pair-relativization,def:counting-formulas}
+\uses{thm:compactness,def:pair-language,lem:pair-relativization,lem:elementary-pair-axiomatization,def:counting-formulas}
 Otherwise choose parameters defining arbitrarily large finite sets.
 Counting formulas and compactness in the pair language produce a proper
-elementary pair in which the limiting set is infinite but gains no new
-points, a Vaughtian pair.
+pair-model in which the limiting set is infinite but gains no new points.
+The elementary-pair axioms ensure that the \(U\)-part is an elementary
+submodel of the ambient reduct, so this pair-model is a Vaughtian pair.
 \end{proof}
 
 \begin{theorem}[Minimal formulas are strongly minimal without Vaughtian pairs]
@@ -1108,11 +1207,17 @@ minimal.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:finite-bound-without-vaughtian-pairs}
-If a minimal formula became non-minimal in an elementary extension, both
-sides of some definable split would be infinite there.  The uniform
-finite bound transfers infinitude back to the original model,
-contradicting minimality.
+\uses{lem:finite-bound-without-vaughtian-pairs,def:counting-formulas}
+Suppose a minimal formula \(D\) becomes non-minimal in an elementary
+extension.  Then for some parameter tuple \(\bar b\), a definable split
+of \(D\) has both sides infinite there.  Apply the uniform finite-bound
+lemma to the two formulas defining the two sides, obtaining bounds
+\(n_0,n_1\).  The extension therefore satisfies the first-order
+statement that some parameter tuple makes the first side have more than
+\(n_0\) points and the second side more than \(n_1\) points.  By
+elementarity the original model has such a parameter tuple.  The two
+uniform bounds then force both sides of that split to be infinite in the
+original model, contradicting minimality.
 \end{proof}
 
 \section{Baldwin--Lachlan and Morley's Theorem}
