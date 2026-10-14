@@ -64,50 +64,66 @@ relying on repository-default blueprint rules.
 
 ## Blueprint Progress
 
-`scripts/blueprint_status.py` answers "what can be formalized next, and which
-node first?" by parsing the dependency graph of `blueprint/src/content.tex`. It
-is read-only: it never writes to `blueprint/` and does not replace the blueprint
-validation build.
+`scripts/blueprint_status.py` is the read-only planning tool for the mathematical
+blueprint. It validates the dependency graph, reports the formalization frontier,
+and ranks next steps relative to a selected proof goal. It never writes to
+`blueprint/` and does not replace the blueprint validation build.
 
 ```bash
-python3 scripts/blueprint_status.py              # frontier, ranked by priority
-python3 scripts/blueprint_status.py --all        # every pending node, in order
-python3 scripts/blueprint_status.py --sort reach # rank by one metric
-python3 scripts/blueprint_status.py --json       # machine-readable output
+python3 scripts/blueprint_status.py                         # goal-aware frontier
+python3 scripts/blueprint_status.py --all                   # every pending node
+python3 scripts/blueprint_status.py --milestones            # milestone progress
+python3 scripts/blueprint_status.py --milestone omega_stability --top 5
+python3 scripts/blueprint_status.py --why thm:two-cardinal-transfer
+python3 scripts/blueprint_status.py --unlocks lem:pair-relativization
+python3 scripts/blueprint_status.py --plan morley
+python3 scripts/blueprint_status.py --sort reach
+python3 scripts/blueprint_status.py --json
 ```
 
-Conventions the report relies on:
+Conventions the planner relies on:
 
 - A node counts as formalized when its environment is marked `\leanok` (proved
   in this repository) or `\mathlibok` (supplied by Mathlib).
-- Dependencies are the labels of every `\uses{...}` command, both in the node's
-  statement and in the proof attached to it, because proof-level `\uses` list
-  the lemmas the proof actually invokes.
+- Dependencies are every `\uses{...}` command in the node statement and its
+  attached proof.
+- The planner treats duplicate labels, self-dependencies, dependency cycles,
+  and dangling `\uses` references as structural errors. Pass `--allow-dangling`
+  only when intentionally inspecting an incomplete graph.
 - The *frontier* is the pending nodes whose dependencies are all formalized.
-  Nodes held up only by a missing definition are listed separately, since the
-  definition is usually the immediate next step.
+  Nodes held up only by pending definitions are listed separately.
+- Named milestones and per-node planning metadata live in
+  `scripts/blueprint_status.toml`. Keep labels in that file synchronized with
+  the blueprint.
 
-Frontier nodes are ranked by how much formalizing them would advance the
-blueprint:
+The default ranking is lexicographic rather than a single composite score. It
+prefers nodes on a path to the selected goal, then nodes that make blocked work
+immediately ready, then nodes with larger goal-path reach, with estimated effort
+as a tiebreaker. The report also exposes:
 
-    score = (unlocks + reach + new_ready + critical) / effort
+- `new`: blocked nodes that become frontier-ready after completing the node;
+- `g-reach`: pending downstream nodes that lie on a path to the selected goal;
+- `dist`: shortest number of pending nodes to the goal;
+- `crit`: longest pending chain to the goal;
+- `eff`: effort estimate from `scripts/blueprint_status.toml`, falling back to
+  1 for definitions, 2 for lemmas/propositions/corollaries, and 3 for theorems;
+- `risk`: optional qualitative planning metadata from the TOML configuration.
 
-- `unlocks` counts the pending nodes that directly depend on the node, `reach`
-  those that depend on it transitively, and `new_ready` the currently blocked
-  nodes that become frontier as soon as it is done.
-- `critical` is the longest remaining chain of pending nodes from it to the goal
-  (default `cor:morley-categoricity`; `--goal` changes it and an empty string
-  disables critical paths). A node on no path to the goal is reported as
-  off-goal.
-- `effort` is a coarse cost proxy: 1 for a definition, 2 for a lemma,
-  proposition or corollary, 3 for a theorem. It is a heuristic, not a
-  measurement.
+`--sort` may rank by `plan`, `score`, `unlocks`, `reach`, `goal-reach`, `new`,
+`distance`, `critical`, or `effort`. The displayed `score` is only a secondary
+heuristic: `(new_ready + goal_reach + on_goal_path) / effort`; it intentionally
+does not add total reach and direct unlocks again, avoiding the previous
+double-counting of downstream benefit.
 
-The composite is a default, not a verdict: `--sort` ranks by any single metric
-(`score`, `unlocks`, `reach`, `new`, `critical`, `effort`) and the component
-columns are always printed. Prefer a definition with high `reach` when the goal
-is to unblock the largest part of the blueprint; prefer `critical` when the goal
-is the shortest route to Morley's theorem.
+Use `--milestone NAME` to restrict the frontier to work that can contribute to a
+named milestone, `--why LABEL` to recursively explain blockers, `--unlocks
+LABEL` to inspect downstream impact, and `--plan TARGET` for a dependency-safe
+topological worklist. Use `--goal LABEL` for an ad-hoc goal outside the named
+milestones.
+
+The parser remains intentionally lightweight and currently reads one TeX entry
+file. If the blueprint is physically split with `\input`, extend the parser and
+its tests before relying on the planner across files.
 
 Use the report to pick the next blueprint node; it is a planning aid, not a
 completion gate, so it does not replace `lake build MorleyCategoricityTheorem`,
@@ -130,6 +146,7 @@ Run the checks that match the files changed, from the repository root.
 |---|---|
 | Only `.lean` files, no new imports | `lake build MorleyCategoricityTheorem` |
 | `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
+| Blueprint planner files | `python3 -m unittest discover -s scripts/tests -v` + `python3 scripts/blueprint_status.py --milestones` |
 
 If no blueprint files were changed, do not run blueprint-related validation. If
 the user explicitly requested blueprint changes, use the validation workflow

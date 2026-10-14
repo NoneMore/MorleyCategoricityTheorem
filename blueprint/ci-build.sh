@@ -34,6 +34,9 @@ python -m pip install --no-cache-dir 'pygraphviz==2.0.3' \
 python -m pip install --no-cache-dir -r blueprint/requirements-ci.txt
 python -m pip check
 
+python3 -m unittest discover -s scripts/tests -v
+python3 scripts/blueprint_status.py --milestones
+
 leanblueprint pdf
 leanblueprint web
 

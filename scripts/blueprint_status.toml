@@ -1,0 +1,69 @@
+[milestones]
+omega_stability = "thm:uncountable-categoricity-implies-omega-stable"
+no_vaughtian_pairs = "thm:uncountable-categoricity-implies-omega-stable-no-vaughtian-pairs"
+reverse_direction = "thm:omega-stable-no-vaughtian-pairs-implies-uncountably-categorical"
+morley = "cor:morley-categoricity"
+
+[nodes."thm:skolem-expansion"]
+effort = 5
+risk = "medium"
+
+[nodes."thm:existence-of-order-indiscernibles"]
+effort = 8
+risk = "medium"
+
+[nodes."thm:few-types-model"]
+effort = 13
+risk = "high"
+
+[nodes."thm:prime-extension-over-set"]
+effort = 13
+risk = "high"
+
+[nodes."lem:pair-relativization"]
+effort = 5
+risk = "medium"
+
+[nodes."lem:homogeneous-vaughtian-pair"]
+effort = 13
+risk = "high"
+
+[nodes."lem:vaughtian-pair-copy-over-parameters"]
+effort = 5
+risk = "medium"
+
+[nodes."thm:vaughtian-pair-gives-aleph-one-aleph-zero-model"]
+effort = 13
+risk = "high"
+
+[nodes."lem:cocountable-generic-type"]
+effort = 5
+risk = "medium"
+
+[nodes."lem:proper-extension-realizes-no-new-countable-types"]
+effort = 21
+risk = "high"
+
+[nodes."thm:two-cardinal-transfer"]
+effort = 13
+risk = "high"
+
+[nodes."lem:strongly-minimal-exchange"]
+effort = 13
+risk = "high"
+
+[nodes."thm:strongly-minimal-dimension-classification"]
+effort = 13
+risk = "high"
+
+[nodes."thm:omega-stable-has-minimal-formula"]
+effort = 8
+risk = "medium"
+
+[nodes."lem:finite-bound-without-vaughtian-pairs"]
+effort = 13
+risk = "high"
+
+[nodes."thm:minimal-formula-strongly-minimal"]
+effort = 5
+risk = "medium"
