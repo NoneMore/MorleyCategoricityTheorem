@@ -31,6 +31,19 @@ Done.
         nodes = bs.parse_blueprint(tex)
         self.assertEqual(nodes[0].proof_uses, {"lem:b"})
 
+    def test_commented_proof_end_does_not_truncate_uses(self) -> None:
+        tex = r"""
+\begin{lemma}[A]\label{lem:a}\end{lemma}
+\begin{proof}
+% \end{proof}
+\uses{lem:b}
+Done.
+\end{proof}
+\begin{lemma}[B]\label{lem:b}\leanok\end{lemma}
+"""
+        nodes = bs.parse_blueprint(tex)
+        self.assertEqual(nodes[0].proof_uses, {"lem:b"})
+
     def test_dangling_dependency_is_not_frontier(self) -> None:
         tex = r"""
 \begin{lemma}\label{lem:a}\uses{lem:missing}\end{lemma}
@@ -114,6 +127,18 @@ Done.
         self.assertEqual([item["label"] for item in payload["frontier"]], ["lem:a"])
         self.assertEqual(payload["counts"]["frontier"], 1)
         self.assertEqual(payload["counts"]["frontier_candidates"], 2)
+
+    def test_custom_tex_does_not_require_repository_milestones(self) -> None:
+        tex = r"""
+\begin{theorem}\label{thm:goal}\end{theorem}
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "content.tex"
+            path.write_text(tex, encoding="utf-8")
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                result = bs.main(["--tex", str(path), "--goal", "thm:goal", "--all"])
+        self.assertEqual(result, 0)
 
     def test_allow_dangling_is_an_explicit_escape_hatch(self) -> None:
         tex = r"""
