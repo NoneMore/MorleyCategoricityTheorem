@@ -47,8 +47,7 @@ jobs:
           replace("MorleyCategoricityTheorem/ModelTheory/Semantics.lean",
                   "Set.mem_setOf_eq", "Set.mem_ofPred_eq")
           replace("MorleyCategoricityTheorem/ModelTheory/IsolatedTypes.lean",
-                  "FirstOrder.Language.Theory.CompleteType.setOf_mem_eq_univ_iff",
-                  "FirstOrder.Language.Theory.CompleteType.setOfPred_mem_eq_univ_iff")
+                  "setOf_mem_eq_univ_iff", "setOfPred_mem_eq_univ_iff")
           replace("MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean",
                   "Set.mem_setOf", "Set.mem_ofPred")
 
