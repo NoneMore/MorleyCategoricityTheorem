@@ -1156,22 +1156,6 @@ point defines a cofinite subset of the strongly minimal set over the
 previous independent tuple.
 \end{proof}
 
-\begin{lemma}[A bijection of bases is partial elementary]
-\label{lem:basis-bijection-partial-elementary}
-\uses{lem:independent-tuples-same-type,def:partial-elementary-embedding}
-Let \(\varphi(v)\) be strongly minimal over \(A\subseteq M_0\), with
-\(M_0\preceq M,N\).  If \(B\subseteq\varphi(M)\) and
-\(C\subseteq\varphi(N)\) are independent over \(A\), then every
-bijection \(g:B\to C\) makes \(\operatorname{id}_A\cup g\) a partial
-elementary map from \(A\cup B\) to \(A\cup C\).
-\end{lemma}
-
-\begin{proof}
-Every finite tuple from \(B\) and its image in \(C\) have the same type
-over \(A\), which is exactly the finite-parameter criterion for
-\(\operatorname{id}_A\cup g\) to be partial elementary.
-\end{proof}
-
 \begin{theorem}[Dimension classification for strongly minimal theories]
 \label{thm:strongly-minimal-dimension-classification}
 \uses{def:minimality,def:strongly-minimal-independence,def:partial-elementary-embedding}
@@ -1187,12 +1171,14 @@ they have the same dimension.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:basis-bijection-partial-elementary,prop:algebraic-implies-isolated,lem:extend-partial-elementary-by-isolated-type}
-Choose bases and a bijection between them.  By the preceding lemma this
-extends the identity on \(A\) to a partial elementary map.  Extend that
-map maximally inside the two strongly minimal sets.  Every remaining
-point is algebraic over the base together with a finite part of a basis,
-hence algebraic over the current domain, so its type over that domain is
+\uses{lem:independent-tuples-same-type,prop:algebraic-implies-isolated,lem:extend-partial-elementary-by-isolated-type}
+Choose bases \(B\) and \(C\) and a bijection between them.  Every finite
+tuple from \(B\) and its image in \(C\) have the same type over \(A\) by
+the preceding lemma, so this bijection together with
+\(\operatorname{id}_A\) is partial elementary.  Extend that map maximally
+inside the two strongly minimal sets.  Every remaining point is
+algebraic over the base together with a finite part of a basis, hence
+algebraic over the current domain, so its type over that domain is
 isolated.  The isolated-type extension lemma then adds it with a fresh
 image point, contradicting maximality unless the map is total.  Apply
 the same argument to the inverse map to obtain surjectivity.  For a
