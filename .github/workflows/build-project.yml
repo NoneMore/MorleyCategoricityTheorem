@@ -79,24 +79,17 @@ jobs:
         with:
           docker_image: ghcr.io/xu-cheng/texlive-small:20250401
           run: |
-            tlmgr install \
-              latexmk \
-              xetex \
-              geometry \
-              amsfonts \
-              amsmath \
-              mathtools \
-              hyperref \
-              fontspec \
-              unicode-math \
-              lm-math
             apk add --no-cache py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
             git config --global --add safe.directory "$GITHUB_WORKSPACE"
             git config --global --add safe.directory "$(pwd)"
             python3 -m venv env
             source env/bin/activate
             pip install --no-cache-dir --upgrade pip wheel
-            pip install --no-cache-dir pygraphviz leanblueprint
+            pip install --no-cache-dir pygraphviz \
+              --config-settings="--global-option=build_ext" \
+              --config-settings="--global-option=-L/usr/lib/graphviz/" \
+              --config-settings="--global-option=-R/usr/lib/graphviz/"
+            pip install --no-cache-dir leanblueprint
             leanblueprint pdf
             mkdir -p home_page
             cp blueprint/print/print.pdf home_page/blueprint.pdf
