@@ -41,7 +41,7 @@ jobs:
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .lake/packages
-          key: lake-packages-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+          key: lake-packages-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
 
       # One-way migration path from lean-action's former monolithic .lake cache.
       # Once a split dependency cache exists, this step is skipped.
@@ -70,16 +70,18 @@ jobs:
           auto-config: false
           build: true
           build-args: MorleyCategoricityTheorem checkdecls
-          mk_all-check: true
           use-github-cache: false
           use-mathlib-cache: ${{ steps.dependency-cache.outputs.cache-hit != 'true' && steps.legacy-cache.outputs.cache-matched-key == '' }}
+
+      - name: Check root import file
+        run: ~/.elan/bin/lake exe mk_all --check
 
       - name: Save Lean dependency cache
         if: steps.dependency-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .lake/packages
-          key: lake-packages-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+          key: lake-packages-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
 
       - name: Save project build cache
         if: steps.project-cache.outputs.cache-hit != 'true'
