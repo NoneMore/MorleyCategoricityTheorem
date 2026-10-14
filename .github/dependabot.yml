@@ -10,3 +10,12 @@ updates:
     directory: "/home_page"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "/blueprint"
+    schedule:
+      interval: "weekly"
+    groups:
+      blueprint-ci:
+        patterns:
+          - "*"

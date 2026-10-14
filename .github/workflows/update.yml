@@ -5,9 +5,17 @@ on:
   #   - cron: "0 8 * * *" # Every day at 08:00 AM UTC (see https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)
   workflow_dispatch:    # Allows the workflow to be triggered manually via the GitHub interface
 
+concurrency:
+  group: update-dependencies
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   check-for-updates: # Determines which updates to apply.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       is-update-available: ${{ steps.check-for-updates.outputs.is-update-available }}
       new-tags: ${{ steps.check-for-updates.outputs.new-tags }}
@@ -20,6 +28,7 @@ jobs:
         # END CONFIGURATION BLOCK 1
   do-update: # Runs the upgrade, tests it, and makes a PR/issue/commit.
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write      # Grants permission to push changes to the repository
       issues: write        # Grants permission to create or update issues
