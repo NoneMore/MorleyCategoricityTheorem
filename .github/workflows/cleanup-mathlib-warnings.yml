@@ -1,0 +1,125 @@
+name: Cleanup Mathlib 4.34 warnings
+
+on:
+  push:
+    branches:
+      - chore/upgrade-mathlib-v4.34.1
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.head_commit.message != 'chore: clean Mathlib 4.34 warnings'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout upgrade branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: chore/upgrade-mathlib-v4.34.1
+
+      - name: Apply Mathlib 4.34 migrations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"expected text not found in {path}: {old!r}")
+              p.write_text(text.replace(old, new))
+
+          replace(
+              "MorleyCategoricityTheorem/BinaryTree.lean",
+              "import Mathlib.Data.Set.Lattice\n",
+              "import Mathlib.Data.Set.Lattice.Bounded\n"
+              "import Mathlib.Data.Set.Lattice.Disjoint\n"
+              "import Mathlib.Data.Set.Lattice.Image\n"
+              "import Mathlib.Data.Set.Lattice.Indexed\n"
+              "import Mathlib.Data.Set.Lattice.Order\n",
+          )
+
+          replace("MorleyCategoricityTheorem/ModelTheory/Semantics.lean",
+                  "ENat.coe_inj", "ENat.natCast_inj")
+          replace("MorleyCategoricityTheorem/ModelTheory/Semantics.lean",
+                  "ENat.lt_coe_add_one_iff", "ENat.lt_natCast_add_one_iff")
+          replace("MorleyCategoricityTheorem/ModelTheory/Semantics.lean",
+                  "Set.mem_setOf_eq", "Set.mem_ofPred_eq")
+          replace("MorleyCategoricityTheorem/ModelTheory/IsolatedTypes.lean",
+                  "FirstOrder.Language.Theory.CompleteType.setOf_mem_eq_univ_iff",
+                  "FirstOrder.Language.Theory.CompleteType.setOfPred_mem_eq_univ_iff")
+          replace("MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean",
+                  "Set.mem_setOf", "Set.mem_ofPred")
+
+          # Mathlib 4.34's haveI/letI style linter: these are tactic-proof
+          # occurrences whose enclosing goals are propositions.
+          fixes = {
+              "MorleyCategoricityTheorem/ModelTheory/ElementaryChain.lean": {
+                  74: ("haveI", "have"),
+              },
+              "MorleyCategoricityTheorem/ModelTheory/Semantics.lean": {
+                  101: ("letI", "let"),
+                  412: ("letI", "let"),
+                  413: ("haveI", "have"),
+                  414: ("haveI", "have"),
+              },
+              "MorleyCategoricityTheorem/ModelTheory/Types.lean": {
+                  69: ("haveI", "have"),
+              },
+              "MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean": {
+                  154: ("letI", "let"),
+                  157: ("letI", "let"),
+                  175: ("haveI", "have"),
+                  218: ("letI", "let"),
+                  219: ("letI", "let"),
+                  220: ("haveI", "have"),
+                  228: ("letI", "let"),
+                  229: ("letI", "let"),
+                  230: ("haveI", "have"),
+                  231: ("haveI", "have"),
+                  232: ("haveI", "have"),
+                  233: ("haveI", "have"),
+                  236: ("haveI", "have"),
+                  237: ("haveI", "have"),
+                  287: ("letI", "let"),
+                  288: ("haveI", "have"),
+                  321: ("letI", "let"),
+                  326: ("haveI", "have"),
+              },
+              "MorleyCategoricityTheorem/ModelTheory/OmegaStable.lean": {
+                  56: ("letI", "let"),
+                  159: ("letI", "let"),
+              },
+          }
+
+          for path, line_fixes in fixes.items():
+              p = Path(path)
+              lines = p.read_text().splitlines(keepends=True)
+              for n, (old, new) in line_fixes.items():
+                  line = lines[n - 1]
+                  if old not in line:
+                      raise SystemExit(f"expected {old!r} at {path}:{n}, got {line!r}")
+                  lines[n - 1] = line.replace(old, new, 1)
+              p.write_text("".join(lines))
+
+          Path(".github/workflows/cleanup-mathlib-warnings.yml").unlink()
+          PY
+
+      - name: Build project
+        uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
+        with:
+          auto-config: false
+          build: true
+          build-args: MorleyCategoricityTheorem
+          use-github-cache: true
+          use-mathlib-cache: true
+
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "chore: clean Mathlib 4.34 warnings"
+          git push origin HEAD:chore/upgrade-mathlib-v4.34.1
