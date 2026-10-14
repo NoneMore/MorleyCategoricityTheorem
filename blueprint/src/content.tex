@@ -1,8 +1,25 @@
-\section{Preliminaries}
+\section{Proof Architecture}
 
 Throughout, \(T\) is a complete first-order theory in a countable
 language \(L\), and \(T\) has infinite models unless explicitly stated
 otherwise.
+
+The proof is organized around three milestones.  First, uncountable
+categoricity implies \(\omega\)-stability.  Second, uncountable
+categoricity rules out Vaughtian pairs.  Third, \(\omega\)-stability
+together with the absence of Vaughtian pairs yields uncountable
+categoricity through a strongly minimal set and its dimension theory.
+The Baldwin--Lachlan characterization packages these three steps, and
+Morley's theorem follows immediately.
+
+The blueprint distinguishes reusable model-theoretic infrastructure from
+results specialized to one of these milestones.  In particular, the
+definably-full construction belongs to the Vaughtian-pair argument,
+Skolemization and indiscernibles belong to the \(\omega\)-stability
+argument, and strong-minimal pregeometry belongs to the reverse
+implication.
+
+\section{Core Model-Theoretic Infrastructure}
 
 \begin{definition}[Categoricity in a cardinal]
 \label{def:categoricity}
@@ -21,11 +38,9 @@ all function, relation, and constant symbols of \(L\).  An isomorphism
 is a bijective \(L\)-embedding.  If \(A\subseteq M\) and \(B\subseteq N\),
 a map \(f:A\to B\) is a partial embedding when it preserves all
 quantifier-free \(L\)-formulas with parameters from its domain.
-\emph{Formalization note.}  The subset version of partial embeddings is
-formalized as \texttt{FirstOrder.Language.PartialEmbedding}, with
-scoped notation \(A\hookrightarrow_{\!p}[L] B\).  It stores a surjective map
-between arbitrary subsets and preservation of quantifier-free formulas;
-injectivity is recovered from the equality formula.
+\emph{Formalization note.}  The subset version is
+\texttt{FirstOrder.Language.PartialEmbedding}, with scoped notation
+\(A\hookrightarrow_{\!p}[L] B\).
 \end{definition}
 
 \begin{definition}[Partial elementary embeddings]
@@ -33,19 +48,10 @@ injectivity is recovered from the equality formula.
 \lean{FirstOrder.Language.PartialElementaryEmbedding}
 \leanok
 \uses{def:embeddings}
-A partial embedding \(f:A\to B\), where \(A\subseteq M\) and
-\(B\subseteq N\), is partial elementary if, for every first-order
-formula \(\varphi(\bar v)\) and every tuple \(\bar a\) from \(A\),
-\[
-  M\models\varphi(\bar a)
-  \Longleftrightarrow
-  N\models\varphi(f(\bar a)).
-\]
-\emph{Formalization note.}  The Lean declaration is the one listed
-above, with scoped notation \(A\hookrightarrow_{\!pe}[L] B\).  It
-stores a surjective map between arbitrary subsets and preservation of
-all first-order formulas; its underlying partial embedding is obtained
-by \texttt{toPartialEmbedding}.
+A partial embedding \(f:A\to B\) is partial elementary if every
+first-order formula with parameters from its domain is preserved in
+both directions.  We write the corresponding bundled map as
+\(A\hookrightarrow_{\!pe}[L] B\).
 \end{definition}
 
 \begin{definition}[Elementary embeddings and substructures]
@@ -53,14 +59,9 @@ by \texttt{toPartialEmbedding}.
 \lean{FirstOrder.Language.ElementaryEmbedding, FirstOrder.Language.Substructure.IsElementary, FirstOrder.Language.ElementarySubstructure}
 \mathlibok
 \uses{def:embeddings}
-An embedding \(j:M\to N\) is elementary if, for every formula
-\(\varphi(\bar v)\) and every tuple \(\bar a\) from \(M\),
-\[
-  M\models\varphi(\bar a)
-  \Longleftrightarrow
-  N\models\varphi(j(\bar a)).
-\]
-If the inclusion \(M\hookrightarrow N\) is elementary, then \(M\preceq N\).
+An embedding \(j:M\to N\) is elementary if it preserves every
+first-order formula.  If the inclusion \(M\hookrightarrow N\) is
+elementary, we write \(M\preceq N\).
 \end{definition}
 
 \begin{theorem}[Tarski--Vaught test]
@@ -71,45 +72,21 @@ If the inclusion \(M\hookrightarrow N\) is elementary, then \(M\preceq N\).
 Let \(M\) be a substructure of \(N\).  Then \(M\preceq N\) if and only
 if every existential formula over parameters from \(M\) that has a
 witness in \(N\) already has a witness in \(M\).
-\emph{Formalization note.}  Mathlib records the witness criterion as a
-sufficient condition for elementarity and as a bundled construction of
-an elementary substructure.  The converse is immediate from the
-definition of elementarity.
 \end{theorem}
 
 \begin{definition}[Counting formulas for definable sets]
 \label{def:counting-formulas}
 \lean{FirstOrder.Language.Formula.iExsAtLeast, FirstOrder.Language.Formula.iExsAtMost, FirstOrder.Language.Formula.iExsExactly, FirstOrder.Language.Formula.existsExactlyLeft, FirstOrder.Language.Formula.realize_iExsAtLeast, FirstOrder.Language.Formula.realize_iExsAtMost, FirstOrder.Language.Formula.realize_iExsExactly, FirstOrder.Language.Formula.realize_existsExactlyLeft}
 \leanok
-Let \(\varphi(\bar x,\bar y)\) be a formula, where \(\bar x\) is a
-finite tuple of object variables, and let \(n\in\mathbb N\).  There are
-formulas in the parameter variables \(\bar y\), denoted
+For a formula \(\varphi(\bar x,\bar y)\) and \(n\in\mathbb N\), there
+are formulas
 \[
   (\exists^{\geq n}\bar x)\,\varphi,\qquad
   (\exists^{\leq n}\bar x)\,\varphi,\qquad
-  (\exists^{=n}\bar x)\,\varphi,
+  (\exists^{=n}\bar x)\,\varphi
 \]
-asserting respectively that the set defined by
-\(\varphi(\bar x,\bar y)\) has at least \(n\), at most \(n\), or
+asserting that the corresponding definable set has at least, at most, or
 exactly \(n\) elements.
-Thus, for every \(L\)-structure \(M\) and parameter tuple \(\bar b\),
-\[
-\begin{aligned}
-M\models(\exists^{\geq n}\bar x)\,\varphi(\bar x,\bar b)
-  &\Longleftrightarrow
-  \bigl|\{\bar a:M\models\varphi(\bar a,\bar b)\}\bigr|\geq n,\\
-M\models(\exists^{\leq n}\bar x)\,\varphi(\bar x,\bar b)
-  &\Longleftrightarrow
-  \bigl|\{\bar a:M\models\varphi(\bar a,\bar b)\}\bigr|\leq n,\\
-M\models(\exists^{=n}\bar x)\,\varphi(\bar x,\bar b)
-  &\Longleftrightarrow
-  \bigl|\{\bar a:M\models\varphi(\bar a,\bar b)\}\bigr|=n.
-\end{aligned}
-\]
-The first formula existentially quantifies \(n\) pairwise distinct
-realizations.  The second is the negation of the existence of
-\(n+1\) pairwise distinct realizations, and the third is the
-conjunction of the first two.
 \end{definition}
 
 \begin{lemma}[Definable-set cardinalities under elementary embeddings]
@@ -117,24 +94,18 @@ conjunction of the first two.
 \lean{FirstOrder.Language.ElementaryEmbedding.realizations_embedding, FirstOrder.Language.ElementaryEmbedding.mk_realizations_le, FirstOrder.Language.ElementaryEmbedding.encard_realizations_eq_coe_iff, FirstOrder.Language.ElementaryEmbedding.infinite_realizations_iff}
 \leanok
 \uses{def:elementary-maps}
-Let \(e:M\to N\) be an elementary embedding, and let
-\[
-  X_M=\{\bar a\in M^n:M\models\varphi(\bar a,\bar b)\},\qquad
-  X_N=\{\bar c\in N^n:N\models\varphi(\bar c,e\bar b)\}.
-\]
-Then coordinatewise application of \(e\) embeds \(X_M\) into \(X_N\),
-so \(|X_M|\leq |X_N|\).  Moreover, \(X_M\) is finite if and only if
-\(X_N\) is finite, and in that case \(|X_M|=|X_N|\).
+Let \(e:M\to N\) be an elementary embedding and let \(X_M\) and \(X_N\)
+be the realization sets of the same formula with parameters transported
+along \(e\).  Then \(e\) induces an embedding \(X_M\hookrightarrow X_N\).
+Moreover \(X_M\) is finite if and only if \(X_N\) is finite, and in the
+finite case they have the same cardinality.
 \end{lemma}
 
 \begin{proof}
 \leanok
 \uses{def:counting-formulas}
-Elementarity preserves every counting formula with the transported
-parameters.  Hence the two definable sets have the same exact finite
-cardinality whenever either is finite.  The coordinatewise map induced
-by \(e\) gives the cardinal inequality without any finiteness
-assumption.
+Elementarity preserves the counting formulas, while coordinatewise
+application of \(e\) gives the cardinal inequality.
 \end{proof}
 
 \begin{theorem}[Compactness]
@@ -160,12 +131,8 @@ bounded by \(|X|+|L|+\aleph_0\).
 \lean{FirstOrder.Language.ElementaryChain}
 \leanok
 \uses{def:elementary-maps}
-An (increasing) elementary chain is a family
-\((M_i)_{i<\alpha}\) of models of \(T\), indexed by an ordinal
-\(\alpha\), whose underlying sets are increasing by inclusion and such
-that \(M_i\preceq M_j\) whenever \(i\le j<\alpha\), with
-\(M_\lambda=\bigcup_{i<\lambda}M_i\) at each limit ordinal
-\(\lambda<\alpha\).
+An elementary chain is an increasing family \((M_i)_{i<\alpha}\) with
+\(M_i\preceq M_j\) for \(i\leq j\), taking unions at limit stages.
 \end{definition}
 
 \begin{theorem}[Tarski's elementary chain theorem]
@@ -173,23 +140,15 @@ that \(M_i\preceq M_j\) whenever \(i\le j<\alpha\), with
 \lean{FirstOrder.Language.ElementaryChain.Limit, FirstOrder.Language.ElementaryChain.toLimitElementary, FirstOrder.Language.ElementaryChain.limit_models}
 \leanok
 \uses{def:elementary-chain}
-Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  Then the
-union \(M = \bigcup_{i<\alpha} M_i\) carries a natural
-\(L\)-structure, and \(M_i\preceq M\) for every \(i<\alpha\).
-\emph{Formalization note.}  The Lean formalization represents the union
-as the direct limit of the elementary chain; the canonical maps into this
-limit are elementary, and the limit is a model of any theory modeled by
-some stage.
+The union of an elementary chain carries a natural \(L\)-structure, is a
+model of every theory modeled by the stages, and every stage embeds
+elementarily into the union.
 \end{theorem}
 
 \begin{proof}
 \uses{thm:tarski-vaught-test}
-An increasing chain of inclusions ensures that the interpretations of
-the symbols of \(L\) cohere, so \(M\) is an \(L\)-structure.  For
-elementarity, let \(\exists v\,\varphi(v,\bar a)\) be a formula over
-parameters \(\bar a\) from \(M_i\) that holds in \(M\).  A witness
-lies in some \(M_j\) with \(j\ge i\); since \(M_i\preceq M_j\),
-the Tarski--Vaught test yields a witness already in \(M_i\).
+Apply Tarski--Vaught: every finite tuple of parameters and every witness
+appears at some common stage.
 \end{proof}
 
 \begin{lemma}[Cardinality of elementary chain unions]
@@ -197,16 +156,14 @@ the Tarski--Vaught test yields a witness already in \(M_i\).
 \lean{FirstOrder.Language.ElementaryChain.mk_limit_le_of_lift_mk_le, FirstOrder.Language.ElementaryChain.mk_limit_eq_of_forall_lift_mk_eq}
 \leanok
 \uses{def:elementary-chain}
-Let \((M_i)_{i<\alpha}\) be an increasing elementary chain.  If
-\(\kappa\) is an infinite cardinal, each \(|M_i|\le\kappa\), and
-\(|\alpha|\le\kappa\), then the union has cardinality at most
-\(\kappa\).  If instead every \(|M_i|=\kappa\), then the union has
-cardinality exactly \(\kappa\).
+Let \((M_i)_{i<\alpha}\) be an elementary chain.  If \(\kappa\) is
+infinite, each \(|M_i|\leq\kappa\), and \(|\alpha|\leq\kappa\), then the
+union has cardinality at most \(\kappa\).  If every stage has cardinality
+\(\kappa\), then the union has cardinality exactly \(\kappa\).
 \end{lemma}
 
 \begin{proof}
-The union is a surjective image of the disjoint union
-\(\biguplus_{i<\alpha} M_i\).
+The union is a surjective image of the disjoint union of the stages.
 \end{proof}
 
 \begin{theorem}[Elementary-chain construction principle]
@@ -214,81 +171,18 @@ The union is a surjective image of the disjoint union
 \lean{FirstOrder.Language.ElementaryChain.toLimitElementary, FirstOrder.Language.ElementaryChain.limit_models, FirstOrder.Language.ElementaryChain.mk_limit_le_of_lift_mk_le, FirstOrder.Language.ElementaryChain.mk_limit_eq_of_forall_lift_mk_eq}
 \leanok
 \uses{def:elementary-chain}
-Any inductive construction that builds an increasing elementary chain
-of models of \(T\), with cardinality constraints at successor stages,
-yields at limit stages a model of \(T\) whose cardinality is controlled
-by the chain length and the stage bounds.
-\emph{Formalization note.}  The general existence of models in all
-sufficiently large cardinalities is supplied by Mathlib's
-\texttt{FirstOrder.Language.Theory.exists\_model\_card\_eq}; this node
-records only the elementary-chain limit principle used by later
-constructions.
+Any inductive construction by elementary extensions, with cardinality
+bounds at successor stages, yields controlled limit models by taking the
+elementary-chain limit.
 \end{theorem}
 
 \begin{proof}
 \leanok
 \uses{thm:elementary-chain-union,lem:elementary-chain-cardinality}
-At a limit stage, take the elementary union of the preceding chain.
-Tarski's elementary chain theorem makes this union a model of \(T\),
-and the cardinality lemma bounds its size by the cardinality of the
-indexing ordinal times the supremum of the stage cardinalities.
+Combine the elementary-chain theorem with the cardinality bound.
 \end{proof}
 
-\begin{lemma}[One-step enlargement of parameter-definable sets]
-\label{lem:one-step-full-definable-sets}
-\lean{FirstOrder.Language.Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations}
-\leanok
-\uses{def:elementary-maps}
-Let \(M\models T\) have infinite cardinality \(\kappa\), with
-\(|L|\leq\kappa\).  There are a model \(N\models T\) of cardinality
-\(\kappa\) and an elementary embedding \(e:M\to N\) such that every
-infinite unary set definable with parameters from \(M\) has
-\(\kappa\) realizations in \(N\) after its parameters are transported
-along \(e\).
-\end{lemma}
-
-\begin{proof}
-\leanok
-\uses{thm:compactness,thm:downward-lowenheim-skolem}
-Add the elementary diagram of \(M\).  For every formula over \(M\)
-defining an infinite set, add \(\kappa\) distinct constants satisfying
-that formula.  Every finite fragment is realized because the original
-set is infinite.  Compactness gives an elementary extension, and
-Loewenheim--Skolem gives one of cardinality \(\kappa\).
-\end{proof}
-
-\begin{proposition}[Large models with no small infinite definable sets]
-\label{prop:large-model-no-small-infinite-definable-sets}
-\lean{FirstOrder.Language.Theory.exists_model_of_card_definably_full}
-\leanok
-Let \(T\) be a theory in a countable language with infinite models, and
-let \(\kappa\geq\aleph_1\).  Then \(T\) has a model \(M\) of
-cardinality \(\kappa\) such that every parameter-definable subset of
-\(M\) is either finite or has cardinality \(\kappa\).
-\end{proposition}
-
-\begin{proof}
-\leanok
-\uses{lem:one-step-full-definable-sets,lem:elementary-embedding-definable-set-cardinality,thm:loewenheim-skolem-constructions}
-Start with a model of cardinality \(\kappa\) and iterate the one-step
-enlargement along a countable elementary chain.  In the limit, the
-finite tuple of parameters defining a unary set comes from some stage.
-If the set is infinite in the limit, elementarity and the counting
-formulas show that it was already infinite at that stage.  At the next
-stage it therefore has \(\kappa\) realizations, which remain distinct in
-the limit.  The elementary-chain cardinality bound keeps the limit at
-cardinality \(\kappa\).
-\end{proof}
-
-\begin{theorem}[Skolem expansion]
-\label{thm:skolem-expansion}
-For every \(L\)-theory \(T\), there is an expanded language \(L^*\) and
-an expanded theory \(T^*\) with built-in Skolem functions.  Each model
-of \(T\) admits an expansion to a model of \(T^*\), and
-\(|L^*|=|L|+\aleph_0\) may be arranged.
-\end{theorem}
-
-\section{Types, Prime Models, and Homogeneity}
+\section{Types, Isolation, and Prime Constructions}
 
 \begin{definition}[Types over parameters]
 \label{def:types-over-parameters}
@@ -297,12 +191,8 @@ of \(T\) admits an expansion to a model of \(T^*\), and
 \uses{def:elementary-maps}
 For \(A\subseteq M\models T\), an \(n\)-type over \(A\) is a set of
 \(L_A\)-formulas in \(n\) free variables consistent with
-\(\operatorname{Th}_A(M)\).  A complete type decides every such formula,
-and \(S_n^M(A)\) denotes the space of complete \(n\)-types over \(A\).
-For an \(L_A\)-formula \(\varphi(\bar v)\), write
-\[
-  [\varphi]=\{p\in S_n^M(A):\varphi\in p\}.
-\]
+\(\operatorname{Th}_A(M)\).  A complete type decides every such formula;
+write \(S_n^M(A)\) for the space of complete \(n\)-types over \(A\).
 \end{definition}
 
 \begin{definition}[Realization, omission, and isolation]
@@ -310,10 +200,9 @@ For an \(L_A\)-formula \(\varphi(\bar v)\), write
 \lean{FirstOrder.Language.Theory.CompleteType.RealizedBy, FirstOrder.Language.Theory.CompleteType.IsRealizedIn, FirstOrder.Language.Theory.CompleteType.IsOmittedIn, FirstOrder.Language.Theory.CompleteType.IsIsolated, FirstOrder.Language.Theory.CompleteType.IsolatedBy}
 \leanok
 \uses{def:types-over-parameters}
-A tuple realizes a type if it satisfies every formula in that type.  A
-model omits a type if no tuple in the model realizes it.  A complete
-type \(p\in S_n^M(A)\) is isolated if there is a formula
-\(\varphi\in p\) with \([\varphi]=\{p\}\).
+A tuple realizes a type if it satisfies every formula in the type.  A
+model omits a type if no tuple realizes it.  A complete type is isolated
+if some formula in it determines that type uniquely.
 \end{definition}
 
 \begin{definition}[Omega-stability]
@@ -321,9 +210,8 @@ type \(p\in S_n^M(A)\) is isolated if there is a formula
 \lean{FirstOrder.Language.Theory.IsOmegaStable}
 \leanok
 \uses{def:types-over-parameters}
-The theory \(T\) is \(\omega\)-stable if, for every model \(M\models T\),
-every countable parameter set \(A\subseteq M\), and every \(n\geq 1\),
-the space \(S_n^M(A)\) is countable.
+The theory \(T\) is \(\omega\)-stable if every finite-arity type space
+over every countable parameter set is countable.
 \end{definition}
 
 \begin{lemma}[Splitting a non-isolated basic open set]
@@ -331,16 +219,15 @@ the space \(S_n^M(A)\) is countable.
 \lean{FirstOrder.Language.Theory.CompleteType.exists_isolated_splitting}
 \leanok
 \uses{def:isolated-and-omitted-types}
-Suppose \([\varphi]\subseteq S_n^M(A)\) is nonempty and contains no
-isolated type.  Then there is a formula \(\psi\) such that both
-\([\varphi\wedge\psi]\) and \([\varphi\wedge\neg\psi]\) are nonempty and
-contain no isolated type.
+If a nonempty basic open set in a type space contains no isolated type,
+then it can be split by a formula into two nonempty basic open subsets,
+neither of which contains an isolated type.
 \end{lemma}
 
 \begin{proof}
 \leanok
-If no such split existed, membership in \([\varphi]\) would determine a
-unique complete type, making that type isolated by \(\varphi\).
+Otherwise the original basic open set would determine a unique complete
+type and isolate it.
 \end{proof}
 
 \begin{lemma}[Projection of an isolated type]
@@ -354,10 +241,7 @@ If \((\bar a,\bar b)\) realizes an isolated type over \(A\), then
 
 \begin{proof}
 \leanok
-An isolating formula \(\theta(\bar v,\bar w)\) for
-\(\operatorname{tp}(\bar a,\bar b/A)\) projects to
-\(\exists\bar w\,\theta(\bar v,\bar w)\), which isolates the type of
-\(\bar a\).
+Existentially quantify the \(\bar b\)-variables in an isolating formula.
 \end{proof}
 
 \begin{lemma}[Transitivity of isolation]
@@ -365,18 +249,16 @@ An isolating formula \(\theta(\bar v,\bar w)\) for
 \lean{FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_trans}
 \leanok
 \uses{def:isolated-and-omitted-types}
-Let \(M\models T\) and \(A\subseteq B\subseteq M\).  If every finite
-tuple from \(B\) realizes an isolated type over \(A\), and \(\bar a\)
-realizes an isolated type over \(B\), then \(\bar a\) realizes an
-isolated type over \(A\).
+Let \(A\subseteq B\subseteq M\).  If every finite tuple from \(B\)
+realizes an isolated type over \(A\), and \(\bar a\) realizes an isolated
+type over \(B\), then \(\bar a\) realizes an isolated type over \(A\).
 \end{lemma}
 
 \begin{proof}
 \leanok
 \uses{lem:isolated-projection}
-Combine an isolating formula for \(\bar a\) over \(B\) with an isolating
-formula over \(A\) for the finite tuple of parameters from \(B\) that
-occurs in it.  The projected joint type is isolated over \(A\).
+Combine the isolating formula over \(B\) with an isolating formula over
+\(A\) for the finitely many parameters it uses, then project.
 \end{proof}
 
 \begin{lemma}[Binary splitting obstruction]
@@ -384,25 +266,16 @@ occurs in it.  The projected joint type is isolated over \(A\).
 \lean{FirstOrder.Language.Theory.IsOmegaStable.false_of_formula_splitting}
 \leanok
 \uses{def:omega-stability}
-Let \(T\) be \(\omega\)-stable and \(M\models T\).  Let \(P\) be a property
-of formulas over parameters in \(M\).  Suppose \(P\) holds of a root
-formula \(\varphi_0\), every formula \(\varphi\) satisfying \(P\) admits
-some formula \(\psi\) such that both \(\varphi\wedge\psi\) and
-\(\varphi\wedge\neg\psi\) again satisfy \(P\), and every formula
-satisfying \(P\) is realizable in \(M\).  Then these assumptions are
-inconsistent.
+In an \(\omega\)-stable theory there is no realizable property of
+formulas that starts at a root and can be preserved under both sides of
+a binary split at every node.
 \end{lemma}
 
 \begin{proof}
 \leanok
-Recursively splitting the root formula gives a binary tree of formulas
-satisfying \(P\).  Only countably many parameters occur in this tree, so
-it lives over a countable parameter set.  Its nodes define nonempty basic
-open sets, each child is contained in its parent, and the two children of
-a node are disjoint.  Compactness then gives a point in every branch
-intersection, and the \(2^{\aleph_0}\) branches determine pairwise distinct
-complete types over the countable parameter set, contradicting
-\(\omega\)-stability.
+A full binary tree of such formulas uses only countably many parameters,
+and compactness yields distinct complete types along its
+\(2^{\aleph_0}\) branches.
 \end{proof}
 
 \begin{theorem}[Density of isolated types in omega-stable theories]
@@ -410,18 +283,15 @@ complete types over the countable parameter set, contradicting
 \lean{FirstOrder.Language.Theory.CompleteType.exists_isolated_mem_typesWith}
 \leanok
 \uses{def:omega-stability,def:isolated-and-omitted-types}
-If \(T\) is \(\omega\)-stable, then for every \(M\models T\) and every
-parameter set \(A\subseteq M\), the isolated types are dense in
-\(S_n^M(A)\).
+If \(T\) is \(\omega\)-stable, isolated types are dense in every
+finite-arity type space over parameters.
 \end{theorem}
 
 \begin{proof}
 \leanok
 \uses{lem:isolated-splitting,lem:binary-splitting-obstruction}
-If some nonempty basic open set had no isolated type, repeated splitting
-would give a full binary tree of formulas using only countably many
-parameters.  Its branches determine \(2^{\aleph_0}\) distinct complete
-types over a countable parameter set, contradicting \(\omega\)-stability.
+Otherwise repeatedly split a nonempty basic open set containing no
+isolated type.
 \end{proof}
 
 \begin{lemma}[Type spaces and partial elementary maps]
@@ -429,104 +299,52 @@ types over a countable parameter set, contradicting \(\omega\)-stability.
 \lean{FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph}
 \leanok
 \uses{def:types-over-parameters,def:partial-elementary-embedding}
-If \(A\subseteq M\) and \(f:A\to N\) is partial elementary, then
-\(S_n^M(A)\) is homeomorphic to \(S_n^N(f(A))\).
-\emph{Formalization note.}  The Lean declaration listed above is a
-bundled homeomorphism of complete type spaces for an arbitrary type
-\(\alpha\) of free variables.  Its codomain is the subset
-\(B\subseteq N\) onto which the surjective partial elementary map
-\(f:A\hookrightarrow_{\!pe}[L] B\) maps, so \(B\) represents the image
-\(f(A)\); the transport acts by renaming the parameter constants along
-the equivalence \(A\simeq B\) induced by \(f\).
+A partial elementary map \(f:A\to B\) induces a homeomorphism between
+the complete type spaces over \(A\) and \(B\).
 \end{lemma}
 
 \begin{proof}
 \leanok
 \uses{thm:compactness}
-Apply \(f\) to the parameters occurring in formulas of a type.  Partial
-elementarity preserves finite satisfiability, compactness gives a
-complete image type, and applying \(f^{-1}\) gives the inverse.  Basic
-open sets are carried to basic open sets.
+Transport parameters along \(f\); partial elementarity preserves finite
+satisfiability, and compactness produces the transported complete type.
 \end{proof}
 
 \begin{definition}[Prime models over parameter sets]
 \label{def:prime-over}
 \uses{def:elementary-maps,def:partial-elementary-embedding}
-A model \(M\models T\) is prime if it elementarily embeds into every
-model of \(T\).  If \(A\subseteq M\), then \(M\) is prime over \(A\) if
-every partial elementary map from \(A\) into a model of \(T\) extends to
-an elementary embedding of \(M\).
+A model is prime over \(A\) if every partial elementary map from \(A\)
+into a model of \(T\) extends to an elementary embedding of the whole
+model.
 \end{definition}
 
 \begin{theorem}[Prime extension over a set]
 \label{thm:prime-extension-over-set}
 \uses{def:omega-stability,def:prime-over,def:isolated-and-omitted-types}
-Let \(T\) be \(\omega\)-stable, let \(M\models T\), and let
-\(A\subseteq M\).  There is an elementary submodel \(M_0\preceq M\)
-which is prime over \(A\), and \(M_0\) may be chosen so that every
-finite tuple from \(M_0\) realizes an isolated type over \(A\).
+Let \(T\) be \(\omega\)-stable, \(M\models T\), and \(A\subseteq M\).
+There is an elementary submodel \(M_0\preceq M\) prime over \(A\), and
+\(M_0\) may be chosen so that every finite tuple from \(M_0\) realizes
+an isolated type over \(A\).
 \end{theorem}
 
 \begin{proof}
 \uses{thm:tarski-vaught-test,thm:isolated-types-dense,lem:type-space-homeomorphism,lem:isolated-transitivity}
-Build a maximal set \(S\supseteq A\) by repeatedly adjoining elements
-whose type over the current set is isolated.  At the stopping stage,
-\(S\) is closed under \(L\)-terms: otherwise \(t(\bar s)\notin S\)
-would realize the isolated type given by \(x=t(\bar s)\).  Thus \(S\)
-is the universe of a substructure.  Density of isolated types and the
-Tarski--Vaught test show that this substructure is elementary.  Primeness
-is proved by extending a partial elementary map stage by stage; the
-homeomorphism of type spaces transports isolating formulas to the image
-side, and isolation transitivity keeps the chosen construction isolated
-over the original parameter set.
-\end{proof}
-
-\begin{definition}[Homogeneous models]
-\label{def:homogeneous-model}
-\uses{def:partial-elementary-embedding}
-Let \(\kappa\) be infinite.  A model \(M\models T\) is
-\(\kappa\)-homogeneous if every partial elementary map \(f:A\to M\)
-with \(|A|<\kappa\) can be extended over any additional element of
-\(M\).  A model is homogeneous if it is \(|M|\)-homogeneous.
-\end{definition}
-
-\begin{theorem}[Back-and-forth for countable homogeneous models]
-\label{thm:homogeneous-back-and-forth}
-\uses{def:homogeneous-model,def:types-over-parameters}
-If \(M\) and \(N\) are countable homogeneous models of \(T\) realizing
-the same complete \(n\)-types over \(\emptyset\) for every \(n\geq 1\),
-then every finite partial elementary map \(f_0:M\rightharpoonup N\)
-extends to an isomorphism \(f:M\cong N\).  In particular,
-\(M\cong N\).
-\end{theorem}
-
-\begin{proof}
-Enumerate the two models and start the usual back-and-forth construction
-from \(f_0\).  For a forth step, the joint finite tuple consisting of the
-current domain and the new element realizes some complete type over
-\(\emptyset\) in \(M\); the same type is realized by a tuple in \(N\).
-The current image tuple has the same type as the base part of that target
-tuple, so homogeneity of \(N\) moves the extra coordinate to a point
-extending the current partial elementary map.  The back step is
-symmetric.  The union is a bijective elementary map extending \(f_0\).
+Construct the model by adjoining witnesses whose types over the current
+stage are isolated.  Density supplies the witnesses, Tarski--Vaught
+proves elementarity, and the construction order lets any partial
+elementary map on \(A\) extend through the construction.  Isolation
+transitivity records atomicity over the original base.
 \end{proof}
 
 \begin{lemma}[Isomorphisms preserve definable set cardinalities]
 \label{lem:isomorphism-preserves-definable-set-cardinality}
 \uses{def:elementary-maps}
-Let \(f:M\cong N\), let \(\varphi(x,\bar y)\) be a formula, and let
-\(\bar a\) be a parameter tuple from \(M\).  Then \(f\) restricts to a
-bijection
-\[
-  \varphi(M,\bar a)\cong \varphi(N,f(\bar a)).
-\]
+An isomorphism restricts to a bijection between corresponding
+parameter-definable sets.
 \end{lemma}
 
 \begin{proof}
-Elementarity gives
-\(M\models\varphi(m,\bar a)\) if and only if
-\(N\models\varphi(f(m),f(\bar a))\).  Restrict \(f\) and use \(f^{-1}\)
-for the inverse.
+Use elementarity in both directions and restrict the isomorphism.
 \end{proof}
 
 \begin{lemma}[Isomorphisms preserve realized type counts]
@@ -538,19 +356,32 @@ types over \(f(A)\) realized in \(N\).
 \end{lemma}
 
 \begin{proof}
-Send \(\operatorname{tp}^M(\bar a/A)\) to
-\(\operatorname{tp}^N(f(\bar a)/f(A))\).  Elementarity makes this
-well-defined, and \(f^{-1}\) gives the inverse.
+Send the type of \(\bar a\) over \(A\) to the type of \(f\bar a\) over
+\(f(A)\), and use \(f^{-1}\) for the inverse.
 \end{proof}
 
-\section{Few-Type Models and the Forward Direction}
+\section{Categoricity Implies Omega-Stability}
+
+\begin{theorem}[Skolem expansion]
+\label{thm:skolem-expansion}
+For every \(L\)-theory \(T\), there is an expanded language \(L^*\) and
+theory \(T^*\) with Skolem functions such that every model of \(T\)
+admits an expansion to a model of \(T^*\), and
+\(|L^*|=|L|+\aleph_0\) may be arranged.
+\end{theorem}
+
+\begin{theorem}[Infinite Ramsey theorem]
+\label{thm:infinite-ramsey}
+For every finite coloring of the \(n\)-element subsets of a countably
+infinite set, there is an infinite homogeneous subset.
+\end{theorem}
 
 \begin{definition}[Order indiscernibles]
 \label{def:order-indiscernibles}
 Let \((I,<)\) be a linear order.  An injective sequence
-\((x_i)_{i\in I}\) in a model \(M\) is a sequence of order
-indiscernibles if any two increasing finite subsequences of the same
-length satisfy the same \(L\)-formulas.
+\((x_i)_{i\in I}\) in a model is a sequence of order indiscernibles if
+any two increasing finite subsequences of the same length satisfy the
+same formulas.
 \end{definition}
 
 \begin{theorem}[Existence of order indiscernibles]
@@ -562,99 +393,134 @@ indiscernibles indexed by \(I\).
 \end{theorem}
 
 \begin{proof}
-\uses{thm:compactness}
-Use the Ehrenfeucht--Mostowski compactness construction: prescribe the
-finite ordered patterns together with the inequalities \(x_i\neq x_j\)
-for distinct indices, and apply compactness to obtain an injective
-\(I\)-indexed indiscernible sequence.
+\uses{thm:compactness,thm:infinite-ramsey}
+For each finite fragment of the Ehrenfeucht--Mostowski diagram, use
+Ramsey's theorem inside an infinite model to find a sufficiently
+homogeneous finite sequence.  Compactness realizes all prescribed
+finite ordered patterns simultaneously.
 \end{proof}
 
 \begin{definition}[Skolem hull]
 \label{def:skolem-hull}
 \uses{thm:skolem-expansion}
-If \(M\models T^*\) and \(X\subseteq M\), then \(H(X)\) is the
-\(L^*\)-substructure of \(M\) generated by \(X\).  This is the Skolem
-hull of \(X\).
+If \(M\models T^*\) and \(X\subseteq M\), the \(L^*\)-substructure
+generated by \(X\) is the Skolem hull \(H(X)\).
 \end{definition}
+
+\begin{theorem}[Skolem hulls are elementary]
+\label{thm:skolem-hull-elementary}
+\uses{def:skolem-hull}
+If \(M\models T^*\), then \(H(X)\preceq M\) in the Skolem language; in
+particular, its reduct to \(L\) is a model of \(T\) elementary in the
+reduct of \(M\).
+\end{theorem}
+
+\begin{proof}
+\uses{thm:tarski-vaught-test}
+A witness to an existential formula over the hull is supplied by the
+corresponding Skolem function, hence already belongs to the hull.
+\end{proof}
 
 \begin{theorem}[Models realizing few types]
 \label{thm:few-types-model}
 \uses{def:types-over-parameters}
-Let \(L\) be countable and let \(T\) be an \(L\)-theory with infinite
-models.  For every \(\kappa\geq\aleph_0\), there is a model
-\(M\models T\) of cardinality \(\kappa\) such that, for every
-\(A\subseteq M\) and every finite \(n\geq 1\), the model \(M\)
-realizes at most \(|A|+\aleph_0\) complete \(n\)-types over \(A\).
+Let \(L\) be countable and \(T\) have infinite models.  For every
+\(\kappa\geq\aleph_0\), there is a model \(M\models T\) of cardinality
+\(\kappa\) such that for every \(A\subseteq M\) and finite \(n\geq1\),
+\(M\) realizes at most \(|A|+\aleph_0\) complete \(n\)-types over \(A\).
 \end{theorem}
 
 \begin{proof}
-\uses{thm:skolem-expansion,thm:existence-of-order-indiscernibles,def:skolem-hull}
-Pass to a countable Skolem expansion.  Index the indiscernibles by the
-initial ordinal of cardinality \(\kappa\), with its well-order, and take
-their Skolem hull.  Injectivity gives at least \(\kappa\) distinct
-generators in the hull, while countability of the Skolem language and
-finiteness of terms give at most \(\kappa\) elements; hence the hull has
-cardinality exactly \(\kappa\).  A parameter set \(A\) involves only
-\(|A|+\aleph_0\) many indices in its Skolem terms; let \(I_A\) be this
-set of indices.  For a fixed finite tuple of indices, record its full
-quantifier-free order type over \(I_A\): the order and equality relations
-among tuple coordinates, and for each coordinate and each \(a\in I_A\),
-whether the coordinate is below, equal to, or above \(a\).  Because the
-index order is a well-order, the set of elements of \(I_A\) below a
-coordinate is an initial segment of \(I_A\), with equality to an element
-of \(I_A\) recorded separately.  Hence there are at most
-\(|A|+\aleph_0\) such relative order types for any fixed finite tuple.
-For a fixed finite tuple of Skolem terms, order indiscernibility then
-shows that the relative order type of all indices occurring in those
-terms determines the complete type they realize.  Since there are only
-countably many Skolem terms, the required bound follows in every finite
-arity.
+\uses{thm:skolem-expansion,thm:existence-of-order-indiscernibles,thm:skolem-hull-elementary}
+Take a countable Skolem expansion, index indiscernibles by the initial
+ordinal of size \(\kappa\), and take their Skolem hull.  The hull has
+size exactly \(\kappa\).  A parameter set \(A\) uses only
+\(|A|+\aleph_0\) indices in its Skolem terms; relative order type over
+those indices determines the type of any fixed finite tuple of Skolem
+terms.  There are only \(|A|+\aleph_0\) such order types and countably
+many finite tuples of terms.
 \end{proof}
 
 \begin{lemma}[Non-omega-stability produces a large model realizing many types]
 \label{lem:non-omega-stable-large-model-realizing-many-types}
 \uses{def:omega-stability,def:types-over-parameters}
 If \(T\) is not \(\omega\)-stable and \(\kappa\geq\aleph_1\), then
-there is a model \(M\models T\) of cardinality \(\kappa\) and a
-countable parameter set \(A\subseteq M\) over which \(M\) realizes
-uncountably many complete types.
+there is a model of cardinality \(\kappa\) realizing uncountably many
+complete types over some countable parameter set.
 \end{lemma}
 
 \begin{proof}
 \uses{thm:compactness,thm:downward-lowenheim-skolem,thm:loewenheim-skolem-constructions}
-Choose uncountably many complete types over a countable parameter set.
-Add constants asking for realizations of \(\aleph_1\) of them; finite
-satisfiability and compactness give a model realizing them.  Enlarge or
-shrink by elementary-chain and Loewenheim--Skolem arguments to obtain
-cardinality \(\kappa\).
+Choose uncountably many types over a countable set, add constants
+requesting realizations of \(\aleph_1\) of them, use compactness, and
+then adjust the model to cardinality \(\kappa\) by Loewenheim--Skolem
+and elementary-chain constructions.
 \end{proof}
 
 \begin{theorem}[Uncountable categoricity implies omega-stability]
 \label{thm:uncountable-categoricity-implies-omega-stable}
 \uses{def:categoricity,def:omega-stability}
-Let \(T\) be a complete theory in a countable language with infinite
-models.  If \(T\) is \(\kappa\)-categorical for some
-\(\kappa\geq\aleph_1\), then \(T\) is \(\omega\)-stable.
+If \(T\) is \(\kappa\)-categorical for some uncountable \(\kappa\), then
+\(T\) is \(\omega\)-stable.
 \end{theorem}
 
 \begin{proof}
 \uses{lem:non-omega-stable-large-model-realizing-many-types,thm:few-types-model,lem:isomorphism-preserves-realized-type-counts}
-If \(T\) were not \(\omega\)-stable, the preceding lemma would give a
-model of size \(\kappa\) realizing uncountably many types over a
-countable set, while the few-type construction gives a model of size
-\(\kappa\) realizing only countably many types over each countable set.
-Categoricity and preservation of realized type counts under isomorphism
-contradict this.
+Otherwise one model of size \(\kappa\) realizes uncountably many types
+over a countable set while a few-type model of the same size realizes
+only countably many over every countable set, contradicting categoricity.
 \end{proof}
 
-\section{Vaughtian Pairs and Two-Cardinal Transfer}
+\section{Vaughtian Pairs and the Second Forward Milestone}
+
+\subsection{Definably full comparison models}
+
+\begin{lemma}[One-step enlargement of parameter-definable sets]
+\label{lem:one-step-full-definable-sets}
+\lean{FirstOrder.Language.Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations}
+\leanok
+\uses{def:elementary-maps}
+Let \(M\models T\) have infinite cardinality \(\kappa\), with
+\(|L|\leq\kappa\).  There are a model \(N\models T\) of cardinality
+\(\kappa\) and an elementary embedding \(e:M\to N\) such that every
+infinite unary set definable with parameters from \(M\) has
+\(\kappa\) realizations in \(N\) after transporting its parameters.
+\end{lemma}
+
+\begin{proof}
+\leanok
+\uses{thm:compactness,thm:downward-lowenheim-skolem}
+Add the elementary diagram of \(M\), together with \(\kappa\) distinct
+constants in each infinite unary definable set.  Compactness gives an
+elementary extension and Loewenheim--Skolem returns to size \(\kappa\).
+\end{proof}
+
+\begin{proposition}[Large models with no small infinite definable sets]
+\label{prop:large-model-no-small-infinite-definable-sets}
+\lean{FirstOrder.Language.Theory.exists_model_of_card_definably_full}
+\leanok
+Let \(T\) be in a countable language with infinite models and let
+\(\kappa\geq\aleph_1\).  Then \(T\) has a model of cardinality
+\(\kappa\) in which every parameter-definable unary set is finite or has
+cardinality \(\kappa\).
+\end{proposition}
+
+\begin{proof}
+\leanok
+\uses{lem:one-step-full-definable-sets,lem:elementary-embedding-definable-set-cardinality,thm:loewenheim-skolem-constructions}
+Iterate the one-step enlargement along a countable elementary chain.
+Every finite parameter tuple appears at a stage; if its definable set is
+infinite in the limit, elementarity shows that it was already infinite
+at that stage and the next stage gives it \(\kappa\) realizations.
+\end{proof}
+
+\subsection{Two-cardinal models and Vaughtian pairs}
 
 \begin{definition}[\((\kappa,\lambda)\)-models]
 \label{def:kappa-lambda-model}
-For cardinals \(\kappa>\lambda\geq\aleph_0\), the theory \(T\) has a
-\((\kappa,\lambda)\)-model if some model \(M\models T\) has cardinality
-\(\kappa\) and some one-variable parameter-definable subset of \(M\) has
-cardinality \(\lambda\).
+For \(\kappa>\lambda\geq\aleph_0\), a \((\kappa,\lambda)\)-model is a
+model of size \(\kappa\) with a one-variable parameter-definable subset
+of size \(\lambda\).
 \end{definition}
 
 \begin{definition}[Vaughtian pairs]
@@ -662,15 +528,29 @@ cardinality \(\lambda\).
 \lean{FirstOrder.Language.Theory.IsVaughtianPair, FirstOrder.Language.Theory.HasVaughtianPair}
 \leanok
 \uses{def:elementary-maps}
-A Vaughtian pair for \(T\) is a pair \((N,M)\) of models of \(T\) with
-\(M\preceq N\), \(M\neq N\), and a one-variable formula over parameters
-from \(M\) whose set of realizations is infinite in \(M\) and unchanged
-in \(N\).
-\emph{Formalization note.}  Lean represents \(M\preceq N\) by an
-elementary embedding \(e:M\hookrightarrow N\), properness by failure of
-surjectivity of \(e\), and the unchanged realization set by equality
-with the image of the realization set in \(M\).
+A Vaughtian pair is a proper elementary pair \(M\preceq N\) together
+with an infinite unary set definable over \(M\) whose realization set
+does not grow in \(N\).
+\emph{Formalization note.}  Lean presents the pair by an elementary
+embedding \(e:M\hookrightarrow N\), properness by non-surjectivity, and
+unchanged realizations by equality with the image of the realization set
+in \(M\).
 \end{definition}
+
+\begin{lemma}[Embedding and inclusion presentations of Vaughtian pairs]
+\label{lem:vaughtian-pair-inclusion-presentation}
+\uses{def:vaughtian-pair,def:elementary-maps}
+Every Vaughtian pair presented by a non-surjective elementary embedding
+is isomorphic to one presented by a literal inclusion \(M'\preceq N\),
+with the witnessing formula and realization set transported to the image
+substructure.
+\end{lemma}
+
+\begin{proof}
+Replace the source model by the image substructure of the elementary
+embedding.  The embedding is an isomorphism onto that image, and the
+Vaughtian witness transports along this isomorphism.
+\end{proof}
 
 \begin{lemma}[\((\kappa,\lambda)\)-models give Vaughtian pairs]
 \label{lem:kappa-lambda-model-gives-vaughtian-pair}
@@ -681,135 +561,161 @@ If \(T\) has a \((\kappa,\lambda)\)-model with
 
 \begin{proof}
 \uses{thm:downward-lowenheim-skolem}
-Let \(N\models T\) have size \(\kappa\), and let \(X=\varphi(N,\bar a)\)
-have size \(\lambda\).  Choose \(M\preceq N\) of size \(\lambda\)
-containing \(X\) and \(\bar a\).  Then
-\(\varphi(M,\bar a)=\varphi(N,\bar a)\), so \((N,M)\) is Vaughtian.
+Take an elementary submodel of size \(\lambda\) containing the whole
+small definable set and its parameters.
 \end{proof}
 
 \begin{corollary}[No small infinite definable sets without Vaughtian pairs]
 \label{cor:no-small-infinite-definable-sets-without-vaughtian-pairs}
 \uses{def:vaughtian-pair}
-Suppose \(T\) has no Vaughtian pairs, \(M\models T\) has cardinality
-\(\kappa\), and \(X\subseteq M\) is an infinite parameter-definable set.
-Then \(X\) has cardinality \(\kappa\).
+If \(T\) has no Vaughtian pairs and \(M\models T\) has size \(\kappa\),
+then every infinite parameter-definable unary subset of \(M\) has size
+\(\kappa\).
 \end{corollary}
 
 \begin{proof}
 \uses{lem:kappa-lambda-model-gives-vaughtian-pair}
-If \(X\) had cardinality \(\lambda\) with
-\(\aleph_0\leq\lambda<\kappa\), then \(M\) would be a
-\((\kappa,\lambda)\)-model, hence would yield a Vaughtian pair.
+Any intermediate infinite cardinality would give a two-cardinal model
+and hence a Vaughtian pair.
 \end{proof}
+
+\subsection{Pair language and homogeneous copies}
 
 \begin{definition}[The pair language]
 \label{def:pair-language}
 \uses{def:elementary-maps}
-For an elementary pair \(M\preceq N\), let \(L_0=L\cup\{U\}\), where
-\(U\) is a unary predicate interpreted as \(M\).  The pair \((N,M)\) is
-then treated as a single \(L_0\)-structure.  For each \(L\)-formula
-\(\varphi\), the relativization \(\varphi^U\) restricts all quantifiers
+For an inclusion \(M\preceq N\), let \(L_0=L\cup\{U\}\), where the new
+unary predicate \(U\) is interpreted as \(M\).  For each \(L\)-formula
+\(\varphi\), its relativization \(\varphi^U\) restricts all quantifiers
 to \(U\).
 \end{definition}
+
+\begin{lemma}[Relativization in an elementary pair]
+\label{lem:pair-relativization}
+\uses{def:pair-language}
+If \(M\preceq N\), then for every \(L\)-formula \(\varphi\) and tuple
+\(\bar a\) from \(M\), the pair structure \((N,M)\) satisfies
+\(\varphi^U(\bar a)\) if and only if \(M\models\varphi(\bar a)\).
+\end{lemma}
+
+\begin{proof}
+Induct on formulas.  Atomic formulas are unchanged, Boolean connectives
+are immediate, and the quantified step uses that \(U\) is interpreted
+as exactly \(M\).
+\end{proof}
+
+\begin{definition}[Homogeneous models]
+\label{def:homogeneous-model}
+\uses{def:partial-elementary-embedding}
+For infinite \(\kappa\), a model is \(\kappa\)-homogeneous if every
+partial elementary map with domain of size below \(\kappa\) can be
+extended over any one additional element.  A model is homogeneous if it
+is \(|M|\)-homogeneous.
+\end{definition}
+
+\begin{theorem}[Back-and-forth for countable homogeneous models]
+\label{thm:homogeneous-back-and-forth}
+\uses{def:homogeneous-model,def:types-over-parameters}
+If \(M\) and \(N\) are countable homogeneous models realizing the same
+complete finite-arity types over \(\emptyset\), then every finite
+partial elementary map between them extends to an isomorphism.
+\end{theorem}
+
+\begin{proof}
+Enumerate both models and alternate forth and back extension steps.
+Homogeneity moves a realization of the relevant joint type so that it
+extends the current partial elementary map.
+\end{proof}
 
 \begin{lemma}[Countable Vaughtian pair]
 \label{lem:countable-vaughtian-pair}
 \uses{def:vaughtian-pair,def:pair-language}
-If \(T\) is in a countable language and \(T\) has a Vaughtian pair, then
-it has a Vaughtian pair \((N_0,M_0)\) with \(N_0\) countable.
+If \(T\) is in a countable language and has a Vaughtian pair, then it
+has a Vaughtian pair \((N_0,M_0)\) with \(N_0\) countable.
 \end{lemma}
 
 \begin{proof}
-\uses{thm:downward-lowenheim-skolem}
-Apply downward Loewenheim--Skolem in the pair language, keeping the
-parameters witnessing the Vaughtian pair.  Elementarity of the pair
-preserves \(M_0\preceq N_0\), properness, infinitude of the witnessing
-definable set, and the assertion that it has no realizations outside
-the \(U\)-part.
+\uses{lem:vaughtian-pair-inclusion-presentation,lem:pair-relativization,thm:downward-lowenheim-skolem}
+Pass to the inclusion presentation and apply downward
+Loewenheim--Skolem in the pair language, retaining the parameters of the
+Vaughtian witness.  Pair elementarity preserves properness, infinitude,
+and the assertion that no witness lies outside the \(U\)-part.
 \end{proof}
 
 \begin{lemma}[Realizing a type on the submodel side]
 \label{lem:realize-type-in-submodel-side}
 \uses{def:pair-language,def:isolated-and-omitted-types}
-Let \(M_0\preceq N_0\) be countable models of \(T\).  If a type over
-parameters from \(M_0\) is realized in \(N_0\), then some countable
-elementary extension of the pair \((N_0,M_0)\) realizes that type on the
-\(M\)-side.
+Let \(M_0\preceq N_0\) be countable.  If a type over parameters from
+\(M_0\) is realized in \(N_0\), then some countable elementary extension
+of the pair realizes that type on the \(M\)-side.
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,thm:downward-lowenheim-skolem}
-Relativize the type to the predicate \(U\) and add it to the elementary
-diagram of the pair.  Finite satisfiability follows from
-\(M_0\preceq N_0\).  Compactness and Loewenheim--Skolem give a countable
-elementary pair extension.  Iterating realizes all countably many
-relevant types.
+\uses{lem:pair-relativization,thm:compactness,thm:downward-lowenheim-skolem}
+Relativize the type to \(U\), add it to the elementary diagram of the
+pair, and use compactness followed by downward Loewenheim--Skolem.
 \end{proof}
 
 \begin{lemma}[Realizing a type in an elementary extension of pairs]
 \label{lem:realize-type-in-extension-pair}
 \uses{def:pair-language,def:isolated-and-omitted-types}
-Let \(M_0\preceq N_0\) be countable models of \(T\).  Any type over
-parameters from \(N_0\) is realized in some countable elementary
-extension of the pair \((N_0,M_0)\).
+Any type over parameters from the larger side of a countable elementary
+pair is realized in some countable elementary extension of that pair.
 \end{lemma}
 
 \begin{proof}
 \uses{thm:compactness,thm:downward-lowenheim-skolem}
-Add the type to the elementary diagram of the pair.  Finite
-satisfiability is witnessed in elementary extensions, and compactness
-plus Loewenheim--Skolem gives a countable elementary pair extension.
+Add the type to the elementary diagram of the pair and apply compactness
+and downward Loewenheim--Skolem.
 \end{proof}
 
 \begin{lemma}[Homogeneous countable Vaughtian pair]
 \label{lem:homogeneous-vaughtian-pair}
 \uses{def:vaughtian-pair,def:pair-language,def:homogeneous-model}
-Given countable \(M_0\preceq N_0\models T\), there is a countable
-elementary extension pair \(M\preceq N\) such that \(M\) and \(N\) are
-homogeneous and realize the same complete types over \(\emptyset\).
+Every countable elementary pair has a countable elementary extension
+pair whose two sides are homogeneous and realize the same complete
+finite-arity types over \(\emptyset\).  Applied to a Vaughtian pair, the
+Vaughtian witness persists.
 \end{lemma}
 
 \begin{proof}
 \uses{lem:realize-type-in-submodel-side,lem:realize-type-in-extension-pair,thm:loewenheim-skolem-constructions}
-Build an elementary chain of pairs.  Repeatedly arrange that types
-realized on the larger side are realized on the smaller side, and
-arrange the one-point extension requirements for homogeneity on both
-sides.  The union is countable and has the stated properties.
+Iterate the requirements that types seen on the larger side appear on
+the smaller side and that every one-point homogeneity request is
+realized.  A countable elementary-chain limit satisfies all requests.
+\end{proof}
+
+\begin{lemma}[Copying a Vaughtian successor over its parameters]
+\label{lem:vaughtian-pair-copy-over-parameters}
+\uses{def:vaughtian-pair,thm:homogeneous-back-and-forth}
+Let \((N,M)\) be a countable homogeneous Vaughtian pair whose two sides
+realize the same finite-arity types, witnessed by parameters \(\bar a\)
+from \(M\).  If \(P\) is another countable homogeneous model realizing
+the same types and the identity on \(\bar a\) is partial elementary from
+\(M\) to \(P\), then there is an isomorphism \(h:M\cong P\) fixing
+\(\bar a\).  Transporting \(M\preceq N\) along \(h\) gives a proper
+elementary extension of \(P\) adding no new realization of the witness.
+\end{lemma}
+
+\begin{proof}
+Extend the finite map on \(\bar a\) by homogeneous back-and-forth and
+transport the larger side of the pair across the resulting isomorphism.
 \end{proof}
 
 \begin{theorem}[Vaughtian pairs produce an \((\aleph_1,\aleph_0)\)-model]
 \label{thm:vaughtian-pair-gives-aleph-one-aleph-zero-model}
 \uses{def:vaughtian-pair,def:kappa-lambda-model}
-If \(T\) is in a countable language and \(T\) has a Vaughtian pair, then
-\(T\) has an \((\aleph_1,\aleph_0)\)-model.
+If \(T\) is in a countable language and has a Vaughtian pair, then it
+has an \((\aleph_1,\aleph_0)\)-model.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:countable-vaughtian-pair,lem:homogeneous-vaughtian-pair,thm:homogeneous-back-and-forth,thm:loewenheim-skolem-constructions}
-Start with a countable homogeneous Vaughtian pair \((N,M)\) whose sides
-realize the same complete types, and fix a witnessing formula
-\(\varphi(x,\bar a)\) with \(\bar a\in M\).  Build an elementary chain
-\((N_\alpha)_{\alpha<\omega_1}\), beginning with \(N_0=N\), such that
-each successor pair is isomorphic to \((N,M)\) by an isomorphism whose
-restriction to \(M\) fixes \(\bar a\).
-
-At a successor stage, \(M\preceq N_0\preceq N_\alpha\), so the identity
-map on the finite tuple \(\bar a\) is partial elementary from \(M\) to
-\(N_\alpha\).  The strengthened homogeneous back-and-forth theorem
-extends it to an isomorphism \(h_\alpha:M\cong N_\alpha\) fixing
-\(\bar a\).  Transporting the extension \(M\preceq N\) along
-\(h_\alpha\) gives \(N_{\alpha+1}\succeq N_\alpha\) with
-\((N_{\alpha+1},N_\alpha)\cong(N,M)\) over \(\bar a\).  Therefore no
-new element of \(N_{\alpha+1}\setminus N_\alpha\) satisfies
-\(\varphi(x,\bar a)\).  At a countable limit stage take the elementary
-union; it is again countable, homogeneous, and realizes the same
-complete types as \(N\), so the construction continues.
-
-The union has size \(\aleph_1\) because every successor extension is
-proper, while the fixed definable set
-\(\varphi(-,\bar a)\) never grows and hence remains the original
-countably infinite set \(\varphi(N_0,\bar a)\).  Thus the union is an
-\((\aleph_1,\aleph_0)\)-model.
+\uses{lem:countable-vaughtian-pair,lem:homogeneous-vaughtian-pair,lem:vaughtian-pair-copy-over-parameters,thm:loewenheim-skolem-constructions}
+Start with a countable homogeneous Vaughtian pair.  Build a chain of
+length \(\omega_1\), using the copying lemma at each successor stage and
+elementary unions at limits.  Every successor is proper, so the union
+has size \(\aleph_1\), while the witnessing definable set never grows
+and remains countably infinite.
 \end{proof}
 
 \begin{theorem}[Vaught's two-cardinal theorem]
@@ -822,51 +728,59 @@ for some \(\kappa>\lambda\geq\aleph_0\), then \(T\) has an
 
 \begin{proof}
 \uses{lem:kappa-lambda-model-gives-vaughtian-pair,thm:vaughtian-pair-gives-aleph-one-aleph-zero-model}
-The given two-cardinal model yields a Vaughtian pair, and a Vaughtian
-pair yields an \((\aleph_1,\aleph_0)\)-model.
+Pass from the two-cardinal model to a Vaughtian pair and then to an
+\((\aleph_1,\aleph_0)\)-model.
 \end{proof}
+
+\subsection{Omega-stable upward transfer}
 
 \begin{lemma}[Large definable set with no uncountable definable split]
 \label{lem:omega-stable-large-definable-almost-minimal}
 \uses{def:omega-stability}
-Suppose \(T\) is \(\omega\)-stable, \(M\models T\), and
-\(|M|\geq\aleph_1\).  Then there is a formula \(\varphi(v)\) over
-parameters from \(M\) such that \(|\varphi(M)|\geq\aleph_1\), and every
-parameter-definable split of \(\varphi(M)\) has at least one countable
-side.
+If \(T\) is \(\omega\)-stable and \(|M|\geq\aleph_1\), then some
+parameter-definable unary set in \(M\) is uncountable and every
+definable split of it has at least one countable side.
 \end{lemma}
 
 \begin{proof}
 \uses{lem:binary-splitting-obstruction}
-If every uncountable definable set had an uncountable definable split,
-then recursively splitting would produce a binary tree of formulas over
-a countable parameter set, hence \(2^{\aleph_0}\) many complete
-one-types, contradicting \(\omega\)-stability.
+Otherwise recursively split every uncountable definable set into two
+uncountable definable subsets.
+\end{proof}
+
+\begin{lemma}[The co-countable generic is realizable]
+\label{lem:cocountable-generic-type}
+\uses{lem:omega-stable-large-definable-almost-minimal}
+Let \(D\subseteq M\) be an uncountable definable set such that every
+definable subset of \(D\) is countable or co-countable.  The partial type
+consisting of the formulas whose traces on \(D\) are co-countable is
+finitely satisfiable in \(M\), and hence is realized by some element in
+an elementary extension of \(M\).
+\end{lemma}
+
+\begin{proof}
+\uses{thm:compactness}
+A finite intersection of co-countable subsets of an uncountable set is
+nonempty.  Compactness realizes the resulting partial type in an
+elementary extension.
 \end{proof}
 
 \begin{lemma}[Proper extension realizing no new countable finite-arity types]
 \label{lem:proper-extension-realizes-no-new-countable-types}
 \uses{def:omega-stability,def:isolated-and-omitted-types}
-Suppose \(T\) is \(\omega\)-stable, \(M\models T\), and
-\(|M|\geq\aleph_1\).  Then there is a proper elementary extension
-\(N\succeq M\) with \(|N|=|M|\) such that every countable partial type
-over \(M\) in a finite tuple of variables that is realized in \(N\) is
-already realized in \(M\).
+Suppose \(T\) is \(\omega\)-stable and \(|M|\geq\aleph_1\).  Then there
+is a proper elementary extension \(N\succeq M\) of the same cardinality
+such that every countable finite-arity partial type over \(M\) realized
+in \(N\) is already realized in \(M\).
 \end{lemma}
 
 \begin{proof}
-\uses{lem:omega-stable-large-definable-almost-minimal,thm:prime-extension-over-set,thm:downward-lowenheim-skolem}
-Choose the large definable set with no uncountable definable split and
-let \(\Gamma\) be the type of its co-countable definable subsets.
-Realize \(\Gamma\) by an element \(c\) in an elementary extension of
-\(M\).  Downward Loewenheim--Skolem gives an elementary submodel of
-cardinality \(|M|\) containing \(M\cup\{c\}\); inside it take a model
-prime over \(M\cup\{c\}\).  This prime model is proper over \(M\) and
-still has cardinality \(|M|\).  If a countable partial type in a finite
-tuple of variables is realized there, isolation of the realizing finite
-tuple over \(M\cup\{c\}\) reduces the type to a countable intersection
-of co-countable subsets of the large definable set, hence to a
-realization already in \(M\).
+\uses{lem:cocountable-generic-type,thm:prime-extension-over-set,thm:downward-lowenheim-skolem}
+Realize the co-countable generic by \(c\), take an elementary extension
+of size \(|M|\) containing \(M\cup\{c\}\), and inside it take a model
+prime over \(M\cup\{c\}\).  Isolation over the prime base turns any
+countable partial type realized there into countably many co-countable
+conditions on \(c\), yielding a realization already in \(M\).
 \end{proof}
 
 \begin{theorem}[Two-cardinal transfer above \(\aleph_1\)]
@@ -879,70 +793,54 @@ a \((\kappa,\aleph_0)\)-model.
 
 \begin{proof}
 \uses{lem:proper-extension-realizes-no-new-countable-types,thm:loewenheim-skolem-constructions}
-Start from the \((\aleph_1,\aleph_0)\)-model and repeatedly take proper
-elementary extensions of the same cardinality as the previous stage,
-realizing no new countable finite-arity partial types over that stage.
-The one-variable type saying that a new element belongs to the old
-countable definable set is countable and therefore remains omitted.  At
-limit stages take elementary unions.  The resulting chain of length
-\(\kappa\) has union of size \(\kappa\) and keeps that definable set
-countable.
+Iterate proper same-cardinality elementary extensions that realize no new
+countable partial types.  The countable definable set from the initial
+model remains countable at every stage and through elementary-chain
+limits, while proper successor stages force the final union to have size
+\(\kappa\).
 \end{proof}
 
 \begin{theorem}[Uncountable categoricity rules out Vaughtian pairs]
 \label{thm:uncountable-categoricity-no-vaughtian-pairs}
 \uses{def:categoricity,def:omega-stability,def:vaughtian-pair}
-Let \(T\) be a complete theory in a countable language with infinite
-models.  Suppose \(T\) is \(\omega\)-stable and \(T\) is
-\(\kappa\)-categorical for some \(\kappa\geq\aleph_1\).  Then \(T\) has
-no Vaughtian pairs.
+Suppose \(T\) is \(\omega\)-stable and \(\kappa\)-categorical for some
+uncountable \(\kappa\).  Then \(T\) has no Vaughtian pairs.
 \end{theorem}
 
 \begin{proof}
 \uses{thm:vaughtian-pair-gives-aleph-one-aleph-zero-model,thm:two-cardinal-transfer,prop:large-model-no-small-infinite-definable-sets,lem:isomorphism-preserves-definable-set-cardinality}
-A Vaughtian pair gives an \((\aleph_1,\aleph_0)\)-model, and
-two-cardinal transfer gives a \((\kappa,\aleph_0)\)-model when
-\(\kappa>\aleph_1\).  Thus there is a model of size \(\kappa\) with an
-infinite countable definable set.  The large-model construction gives
-another model of size \(\kappa\) in which every infinite definable set
-has size \(\kappa\).  Categoricity and preservation of definable set
-cardinalities under isomorphism give a contradiction.
+A Vaughtian pair gives a model of size \(\kappa\) with an infinite
+countable definable set (directly if \(\kappa=\aleph_1\), by transfer
+otherwise).  The definably-full construction gives another model of
+size \(\kappa\) in which every infinite definable set has size
+\(\kappa\), contradicting categoricity.
 \end{proof}
 
 \begin{theorem}[Uncountable categoricity implies omega-stability and no Vaughtian pairs]
 \label{thm:uncountable-categoricity-implies-omega-stable-no-vaughtian-pairs}
 \uses{def:categoricity,def:omega-stability,def:vaughtian-pair}
-Let \(T\) be a complete theory in a countable language with infinite
-models.  If \(T\) is \(\kappa\)-categorical for some
-\(\kappa\geq\aleph_1\), then \(T\) is \(\omega\)-stable and has no
-Vaughtian pairs.
+If \(T\) is categorical in some uncountable cardinal, then it is
+\(\omega\)-stable and has no Vaughtian pairs.
 \end{theorem}
 
 \begin{proof}
 \uses{thm:uncountable-categoricity-implies-omega-stable,thm:uncountable-categoricity-no-vaughtian-pairs}
-The first theorem gives \(\omega\)-stability.  Applying the second
-theorem with this \(\omega\)-stability rules out Vaughtian pairs.
+Apply the two forward milestones in order.
 \end{proof}
 
 \section{Strong Minimality and Dimension}
 
 \begin{definition}[Minimal and strongly minimal formulas]
 \label{def:minimality}
-Let \(M\) be an \(L\)-structure and let \(D\subseteq M\) be an infinite
-one-variable definable set.  The set \(D\) is minimal in \(M\) if every
-definable subset of \(D\) is finite or cofinite in \(D\).  A formula
-defining \(D\) is minimal.  The set or formula is strongly minimal if it
-is minimal in every elementary extension.
+Let \(D\) be an infinite unary definable set.  It is minimal in \(M\)
+if every definable subset of \(D\) is finite or cofinite in \(D\), and
+strongly minimal if this remains true in every elementary extension.
 \end{definition}
 
 \begin{definition}[Algebraic closure on a strongly minimal set over a base]
 \label{def:strongly-minimal-pregeometry}
 \uses{def:minimality}
-An element \(b\in M\) is algebraic over \(B\subseteq M\) if it belongs
-to a finite set definable with parameters from \(B\); write
-\(\operatorname{acl}(B)\) for the set of all such elements.  Let
-\(D\subseteq M\) be a strongly minimal set definable over a parameter
-set \(A\subseteq M\).  For \(X\subseteq D\), define
+For a strongly minimal set \(D\) definable over \(A\), define
 \[
   \operatorname{cl}_A(X)=D\cap\operatorname{acl}(A\cup X).
 \]
@@ -950,171 +848,167 @@ Thus \(b\in\operatorname{cl}_A(X)\) exactly when \(b\in D\) is
 algebraic over \(A\cup X\).
 \end{definition}
 
+\begin{lemma}[Closure laws for relative algebraic closure]
+\label{lem:strongly-minimal-closure-laws}
+\uses{def:strongly-minimal-pregeometry}
+The operator \(\operatorname{cl}_A\) is reflexive, monotone, idempotent,
+and has finite character.
+\end{lemma}
+
+\begin{proof}
+These are the corresponding standard properties of algebraic closure,
+restricted to \(D\) after adjoining the fixed base \(A\).
+\end{proof}
+
+\begin{lemma}[Exchange on a strongly minimal set]
+\label{lem:strongly-minimal-exchange}
+\uses{def:minimality,def:strongly-minimal-pregeometry}
+If \(b\in\operatorname{cl}_A(X\cup\{c\})\setminus\operatorname{cl}_A(X)\),
+then \(c\in\operatorname{cl}_A(X\cup\{b\})\).
+\end{lemma}
+
+\begin{proof}
+Reduce by finite character to finite \(X\).  If exchange failed, a
+definable relation witnessing algebraicity of \(b\) over \(c\) would
+produce a definable family with uniformly finite fibers whose opposite
+fibers cut the strongly minimal set into an infinite coinfinite subset.
+\end{proof}
+
 \begin{proposition}[Relative algebraic closure is a pregeometry]
 \label{prop:strongly-minimal-pregeometry}
 \uses{def:strongly-minimal-pregeometry}
-Let \(D\) be strongly minimal and definable over \(A\).  Then
-\(\operatorname{cl}_A\) is a pregeometry on \(D\): it satisfies
-reflexivity, monotonicity, idempotence, finite character, and exchange.
+For a strongly minimal set \(D\) definable over \(A\),
+\(\operatorname{cl}_A\) is a pregeometry on \(D\).
 \end{proposition}
 
 \begin{proof}
-Reflexivity, monotonicity, idempotence, and finite character follow from
-the corresponding elementary facts about algebraicity after adjoining
-the fixed base \(A\).  Exchange is the standard strongly-minimal
-exchange argument over parameters \(A\): if exchange failed, a definable
-family of finite fibers would cut \(D\) into an infinite coinfinite
-subset definable over parameters, contradicting strong minimality.
+\uses{lem:strongly-minimal-closure-laws,lem:strongly-minimal-exchange}
+Combine the closure laws with exchange.
 \end{proof}
 
 \begin{definition}[Independence, bases, and dimension]
 \label{def:strongly-minimal-independence}
 \uses{def:strongly-minimal-pregeometry,prop:strongly-minimal-pregeometry}
-Let \(D\) be a strongly minimal set in a model \(M\), definable over
-\(A\subseteq M\).  A set \(X\subseteq D\) is independent over \(A\) if
-no \(x\in X\) lies in
-\(\operatorname{cl}_A(X\setminus\{x\})\).  A basis of
-\(Y\subseteq D\) over \(A\) is an independent set \(B\subseteq Y\)
-such that \(Y\subseteq\operatorname{cl}_A(B)\).  Its cardinality is the
-relative dimension \(\dim_A^M(Y)\).  When the ambient model is clear we
-write \(\dim_A(Y)\), and when \(A=\emptyset\) simply \(\dim(Y)\).
+Independence, bases, and dimension are those of the pregeometry
+\(\operatorname{cl}_A\).  Write \(\dim_A^M(Y)\) for the cardinality of
+a basis of \(Y\subseteq D\) over \(A\).
 \end{definition}
 
 \begin{proposition}[Algebraic types are isolated]
 \label{prop:algebraic-implies-isolated}
 \uses{def:types-over-parameters,def:strongly-minimal-pregeometry}
-If \(b\in\operatorname{acl}(A)\), then
-\(\operatorname{tp}(b/A)\) is isolated.
+If \(b\in\operatorname{acl}(A)\), then \(\operatorname{tp}(b/A)\) is
+isolated.
 \end{proposition}
 
 \begin{proof}
-Choose an \(A\)-definable finite set containing \(b\).  Conjoin its
-defining formula with formulas distinguishing \(b\) from the finitely
-many elements in that set that have different type over \(A\).  The
-resulting formula isolates \(\operatorname{tp}(b/A)\).
+Choose a finite \(A\)-definable set containing \(b\) and refine its
+defining formula to distinguish the finitely many possible types.
 \end{proof}
 
 \begin{lemma}[Independent tuples in a strongly minimal set have the same type]
 \label{lem:independent-tuples-same-type}
 \uses{def:minimality,def:strongly-minimal-independence}
-Let \(\varphi(v)\) be a strongly minimal formula over parameters
-\(A\subseteq M_0\), where \(M_0\models T\) and
-\(M_0\preceq M,N\).  If
-\(\bar a\in\varphi(M)^n\) and \(\bar b\in\varphi(N)^n\) are
-independent over \(A\), then
-\[
-  \operatorname{tp}^M(\bar a/A)=\operatorname{tp}^N(\bar b/A).
-\]
+Let \(\varphi(v)\) be strongly minimal over \(A\subseteq M_0\), with
+\(M_0\preceq M,N\).  Any two finite tuples from \(\varphi(M)\) and
+\(\varphi(N)\) that are independent over \(A\) have the same type over
+\(A\).
 \end{lemma}
 
 \begin{proof}
-Induct on \(n\).  In the one-element case, any formula true of one
-independent point cuts the strongly minimal set in a cofinite subset,
-so it is true of every independent point in any elementary extension
-over the base.  The induction step applies the same finite/cofinite
-argument over the previous independent tuple.
+Induct on tuple length.  At each step a formula true of a new independent
+point defines a cofinite subset of the strongly minimal set over the
+previous independent tuple.
+\end{proof}
+
+\begin{lemma}[A bijection of bases is partial elementary]
+\label{lem:basis-bijection-partial-elementary}
+\uses{lem:independent-tuples-same-type,def:partial-elementary-embedding}
+Let \(B\) and \(C\) be independent subsets of corresponding strongly
+minimal sets over the same base \(A\).  Every bijection \(B\to C\)
+fixing \(A\) induces a partial elementary map over \(A\).
+\end{lemma}
+
+\begin{proof}
+Every finite tuple from \(B\) and its image in \(C\) have the same type
+over \(A\).
 \end{proof}
 
 \begin{theorem}[Dimension classification for strongly minimal theories]
 \label{thm:strongly-minimal-dimension-classification}
 \uses{def:minimality,def:strongly-minimal-independence,def:partial-elementary-embedding}
-Suppose \(T\) is a strongly minimal theory.  If \(M,N\models T\), then
-\(M\cong N\) if and only if \(\dim(M)=\dim(N)\).  More generally, let
-\(\varphi(v)\) be a strongly minimal formula over parameters
-\(A\subseteq M_0\), where \(M_0\models T\) and \(M_0\preceq M,N\).
-If
-\[
-  \dim_A^M(\varphi(M))=\dim_A^N(\varphi(N)),
-\]
-then there is a bijective partial elementary map
-\(\varphi(M)\to\varphi(N)\) over \(A\).
+If two strongly minimal sets over a common base have the same relative
+dimension, then there is a bijective partial elementary map between
+them over that base.  In particular, two models of a strongly minimal
+theory are isomorphic exactly when they have the same dimension.
 \end{theorem}
 
 \begin{proof}
-\uses{lem:independent-tuples-same-type,prop:algebraic-implies-isolated}
-Choose bases \(B\subseteq\varphi(M)\) and
-\(C\subseteq\varphi(N)\) over \(A\), and a bijection between them.
-Finite tuples from these bases are independent over \(A\), so the
-preceding lemma makes this bijection partial elementary over \(A\).
-Extend it by maximality.  Since \(B\) and \(C\) are bases over \(A\),
-any point outside the current domain or range is algebraic over \(A\)
-together with that domain or range.  Its type is therefore isolated and
-can be transported across the current partial elementary map and
-realized on the other side, contradicting maximality.  Thus the maximal
-map is bijective on the strongly minimal sets; in the theory case take
-\(A=\emptyset\) to obtain an isomorphism.
+\uses{lem:basis-bijection-partial-elementary,prop:algebraic-implies-isolated,lem:type-space-homeomorphism}
+Choose bases and a bijection between them.  Extend the induced partial
+elementary map maximally.  Every remaining point is algebraic over the
+base together with a finite part of the basis, hence has an isolated
+type; transport that isolated type across the current map and realize it
+on the other side, contradicting maximality unless the map is already
+bijective.
 \end{proof}
 
 \begin{lemma}[Uncountable subsets of a strongly minimal set have full relative dimension]
 \label{lem:strongly-minimal-uncountable-subset-full-dimension}
 \uses{def:strongly-minimal-independence}
-Let \(D\) be a strongly minimal set definable over a countable parameter
-set \(A\) in a model of a countable language, and let
-\(Y\subseteq D\) be uncountable.  Then
-\[
-  \dim_A(Y)=|Y|.
-\]
+Let \(D\) be strongly minimal over a countable parameter set \(A\) in a
+countable language.  Every uncountable \(Y\subseteq D\) satisfies
+\(\dim_A(Y)=|Y|\).
 \end{lemma}
 
 \begin{proof}
-Let \(B\) be a basis of \(Y\) over \(A\).  By finite character and
-countability of the language,
-\[
-  |\operatorname{acl}(A\cup B)\cap D|\leq |A\cup B|+\aleph_0.
-\]
-Because \(A\) is countable and
-\(Y\subseteq\operatorname{acl}(A\cup B)\cap D\), we get
-\(|Y|\leq |B|+\aleph_0\).  Since \(Y\) is uncountable and
-\(B\subseteq Y\), this forces \(|B|=|Y|\).
+If \(B\) is a basis of \(Y\), finite character and countability give
+\(|\operatorname{acl}(A\cup B)\cap D|\leq|A\cup B|+\aleph_0\).  Since
+\(Y\) is uncountable and lies in this closure, \(|B|=|Y|\).
 \end{proof}
 
 \begin{theorem}[Omega-stable theories have minimal formulas]
 \label{thm:omega-stable-has-minimal-formula}
 \uses{def:omega-stability,def:minimality}
-Let \(T\) be \(\omega\)-stable.  If \(M\models T\), then there is a
-minimal formula in \(M\).
+Every \(\omega\)-stable theory has a minimal formula in each model.
 \end{theorem}
 
 \begin{proof}
 \uses{lem:binary-splitting-obstruction}
-If no minimal formula existed, recursively split each infinite
-definable set into two infinite definable subsets.  The resulting
-binary tree gives \(2^{\aleph_0}\) complete one-types over a countable
-parameter set, contradicting \(\omega\)-stability.
+If no minimal formula existed, every infinite definable set could be
+split into two infinite definable subsets, contradicting the binary
+splitting obstruction.
 \end{proof}
 
 \begin{lemma}[Uniform finite bound without Vaughtian pairs]
 \label{lem:finite-bound-without-vaughtian-pairs}
 \uses{def:vaughtian-pair}
-Suppose \(T\) has no Vaughtian pairs, \(M\models T\), and
-\(\varphi(v,\bar w)\) has parameters from \(M\).  Then there is
-\(n\in\mathbb{N}\) such that, whenever \(\bar a\in M\) and
-\(|\varphi(M,\bar a)|>n\), the set \(\varphi(M,\bar a)\) is infinite.
+Suppose \(T\) has no Vaughtian pairs and \(\varphi(v,\bar w)\) is fixed.
+There is \(n\in\mathbb N\) such that every instance with more than \(n\)
+realizations is infinite.
 \end{lemma}
 
 \begin{proof}
-\uses{thm:compactness,def:pair-language,def:counting-formulas}
-If no uniform bound existed, choose parameters defining arbitrarily
-large finite sets.  Counting formulas express these lower bounds in
-first-order logic.  In the pair language, compactness then produces a
-proper elementary pair in which the limiting definable set is infinite
-but has no new points outside the smaller model.  This is a Vaughtian
-pair.
+\uses{thm:compactness,def:pair-language,lem:pair-relativization,def:counting-formulas}
+Otherwise choose parameters defining arbitrarily large finite sets.
+Counting formulas and compactness in the pair language produce a proper
+elementary pair in which the limiting set is infinite but gains no new
+points, a Vaughtian pair.
 \end{proof}
 
 \begin{theorem}[Minimal formulas are strongly minimal without Vaughtian pairs]
 \label{thm:minimal-formula-strongly-minimal}
 \uses{def:vaughtian-pair,def:minimality}
-If \(T\) has no Vaughtian pairs, then every minimal formula is strongly
+If \(T\) has no Vaughtian pairs, every minimal formula is strongly
 minimal.
 \end{theorem}
 
 \begin{proof}
 \uses{lem:finite-bound-without-vaughtian-pairs}
-If a minimal formula became non-minimal in an elementary extension, some
-definable subset and its complement would both be infinite there.  The
-uniform finite bound transfers this infinitude back to the original
-model by elementarity, contradicting minimality.
+If a minimal formula became non-minimal in an elementary extension, both
+sides of some definable split would be infinite there.  The uniform
+finite bound transfers infinitude back to the original model,
+contradicting minimality.
 \end{proof}
 
 \section{Baldwin--Lachlan and Morley's Theorem}
@@ -1123,90 +1017,63 @@ model by elementarity, contradicting minimality.
 \label{lem:prime-over-infinite-definable-set}
 \uses{def:omega-stability,def:vaughtian-pair,def:prime-over}
 If \(T\) is \(\omega\)-stable with no Vaughtian pairs, \(M\models T\),
-\(A\subseteq M\), and \(X\subseteq M\) is infinite and definable with
-parameters from \(A\), then \(M\) is prime over \(A\cup X\), and no
-proper elementary submodel of \(M\) contains \(A\cup X\).
+\(A\subseteq M\), and \(X\subseteq M\) is infinite and definable over
+\(A\), then \(M\) is prime over \(A\cup X\), and no proper elementary
+submodel of \(M\) contains \(A\cup X\).
 \end{lemma}
 
 \begin{proof}
 \uses{thm:prime-extension-over-set}
-Write \(X=\varphi(M,\bar a)\) with \(\bar a\) from \(A\).  If a proper
-elementary submodel \(N\preceq M\) contained \(A\cup X\), then
-\(\bar a\in N\) and elementarity would give
-\(\varphi(N,\bar a)=\varphi(M,\bar a)\cap N=X\).  Thus \((M,N)\)
-would be a Vaughtian pair, a contradiction.  Hence no such proper
-submodel exists.  The prime-extension theorem gives an elementary
-submodel of \(M\) prime over \(A\cup X\); since it contains
-\(A\cup X\), it cannot be proper, so it is all of \(M\).
+A proper elementary submodel containing \(A\cup X\) would form a
+Vaughtian pair with \(M\).  The prime-extension theorem gives a prime
+submodel over \(A\cup X\), which therefore cannot be proper.
 \end{proof}
 
 \begin{theorem}[Omega-stability and no Vaughtian pairs imply uncountable categoricity]
 \label{thm:omega-stable-no-vaughtian-pairs-implies-uncountably-categorical}
 \uses{def:categoricity,def:omega-stability,def:vaughtian-pair}
-Let \(T\) be a complete theory in a countable language with infinite
-models, and let \(\kappa\geq\aleph_1\).  If \(T\) is
-\(\omega\)-stable and has no Vaughtian pairs, then \(T\) is
-\(\kappa\)-categorical.
+Let \(\kappa\geq\aleph_1\).  If \(T\) is \(\omega\)-stable and has no
+Vaughtian pairs, then \(T\) is \(\kappa\)-categorical.
 \end{theorem}
 
 \begin{proof}
 \uses{thm:prime-extension-over-set,thm:downward-lowenheim-skolem,thm:omega-stable-has-minimal-formula,thm:minimal-formula-strongly-minimal,cor:no-small-infinite-definable-sets-without-vaughtian-pairs,lem:strongly-minimal-uncountable-subset-full-dimension,thm:strongly-minimal-dimension-classification,lem:prime-over-infinite-definable-set}
-Let \(M,N\models T\) have cardinality \(\kappa\).  By downward
-Loewenheim--Skolem choose a countable model of \(T\), and apply the prime
-extension theorem over \(\emptyset\) inside it to obtain a countable
-prime model \(M_0\).  After identifying its elementary images, regard
-\(M_0\preceq M,N\).  Omega-stability gives a minimal formula
-\(\varphi(x)\) over \(M_0\), and the absence of Vaughtian pairs makes it
-strongly minimal.  The sets \(\varphi(M)\) and \(\varphi(N)\) are
-infinite; the no-small-definable-set corollary gives both cardinality
-\(\kappa\).  Since \(M_0\) is countable, the full-relative-dimension
-lemma gives
-\[
-  \dim_{M_0}^M(\varphi(M))=\kappa=
-  \dim_{M_0}^N(\varphi(N)).
-\]
-Strongly minimal dimension classification therefore produces a
-bijective partial elementary map
-\(f:\varphi(M)\to\varphi(N)\) over \(M_0\).
-
-By the preceding lemma, \(M\) is prime over
-\(M_0\cup\varphi(M)\), so the partial elementary map consisting of the
-identity on \(M_0\) together with \(f\) extends to an elementary
-embedding \(F:M\to N\).  Its image \(F(M)\preceq N\) contains
-\(M_0\cup\varphi(N)\).  Applying the no-proper-submodel part of the same
-lemma inside \(N\) shows \(F(M)=N\).  Thus \(F\) is surjective and
-\(M\cong N\).
+Let \(M,N\models T\) have size \(\kappa\).  Choose a countable prime
+model \(M_0\) and identify elementary copies of it in \(M\) and \(N\).
+Choose a minimal formula over parameters from \(M_0\); it is strongly
+minimal.  Its realization sets in \(M\) and \(N\) both have size
+\(\kappa\), hence both have relative dimension \(\kappa\) over the
+whole base \(M_0\).  Apply the relative dimension-classification theorem
+with base \(M_0\) to obtain a bijective partial elementary map between
+those realization sets fixing \(M_0\).  Since each ambient model is
+prime over \(M_0\) together with the infinite definable set, the map
+extends to an elementary embedding \(M\to N\); its image contains the
+whole corresponding definable set, so it cannot be a proper elementary
+submodel of \(N\).  Thus the embedding is surjective.
 \end{proof}
 
 \begin{theorem}[Baldwin--Lachlan characterization]
 \label{thm:baldwin-lachlan-characterization}
 \uses{def:categoricity,def:omega-stability,def:vaughtian-pair}
-Let \(T\) be a complete theory in a countable language with infinite
-models, and let \(\kappa\geq\aleph_1\).  Then \(T\) is
-\(\kappa\)-categorical if and only if \(T\) is \(\omega\)-stable and
-has no Vaughtian pairs.
+For every uncountable \(\kappa\), \(T\) is \(\kappa\)-categorical if and
+only if \(T\) is \(\omega\)-stable and has no Vaughtian pairs.
 \end{theorem}
 
 \begin{proof}
 \uses{thm:uncountable-categoricity-implies-omega-stable-no-vaughtian-pairs,thm:omega-stable-no-vaughtian-pairs-implies-uncountably-categorical}
-The forward implication is the uncountable-categoricity theorem above.
-The reverse implication is the fixed-cardinal Baldwin--Lachlan theorem.
+Combine the two forward milestones with the reverse implication.
 \end{proof}
 
 \begin{corollary}[Morley's Categoricity Theorem]
 \label{cor:morley-categoricity}
 \uses{def:categoricity}
-Let \(T\) be a complete theory in a countable language with infinite
-models.  Then \(T\) is \(\kappa\)-categorical for some uncountable
-\(\kappa\) if and only if \(T\) is \(\lambda\)-categorical for every
-uncountable \(\lambda\).
+The theory \(T\) is categorical in some uncountable cardinal if and only
+if it is categorical in every uncountable cardinal.
 \end{corollary}
 
 \begin{proof}
 \uses{thm:baldwin-lachlan-characterization}
-If \(T\) is categorical in one uncountable cardinal, the
-Baldwin--Lachlan characterization gives \(\omega\)-stability and no
-Vaughtian pairs, so the same characterization gives categoricity in
-every uncountable cardinal.  The converse is immediate by taking
-\(\lambda=\aleph_1\).
+Categoricity in one uncountable cardinal yields \(\omega\)-stability and
+no Vaughtian pairs, and the same characterization then yields
+categoricity in every uncountable cardinal.  The converse is immediate.
 \end{proof}
