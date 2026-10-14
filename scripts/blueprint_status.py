@@ -138,9 +138,9 @@ def parse_blueprint(tex: str, include_proof_uses: bool = True) -> list[Node]:
             continue
         proof_uses: set[str] = set()
         if include_proof_uses:
-            proof_match = _PROOF_RE.match(tex[match.end():])
+            proof_match = _PROOF_RE.match(masked[match.end():])
             if proof_match is not None:
-                proof_uses = _labels(_mask_comments(proof_match.group(1)))
+                proof_uses = _labels(proof_match.group(1))
         nodes.append(
             Node(
                 label=label_match.group(1).strip(),
@@ -659,17 +659,18 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     known = {node.label for node in nodes}
-    bad_milestones = {
-        name: label for name, label in MILESTONES.items() if label not in known
-    }
-    if bad_milestones:
-        print("Milestone validation failed:", file=sys.stderr)
-        for name, label in sorted(bad_milestones.items()):
-            print(f"  {name}: unknown goal {label}", file=sys.stderr)
-        return 2
     if args.milestone and args.milestone not in MILESTONES:
         print(f"error: unknown milestone: {args.milestone}", file=sys.stderr)
         return 2
+    if args.milestones:
+        bad_milestones = {
+            name: label for name, label in MILESTONES.items() if label not in known
+        }
+        if bad_milestones:
+            print("Milestone validation failed:", file=sys.stderr)
+            for name, label in sorted(bad_milestones.items()):
+                print(f"  {name}: unknown goal {label}", file=sys.stderr)
+            return 2
 
     goal = args.goal
     restrict = False
