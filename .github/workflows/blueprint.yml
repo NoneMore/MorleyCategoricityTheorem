@@ -50,18 +50,6 @@ jobs:
             echo "required=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Cleanup to free disk space
-        if: steps.docs-changes.outputs.required == 'true'
-        uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
-        with:
-          preinstalled-runtimes: false
-          android: true
-          dotnet: false
-          haskell: false
-          large-packages: false
-          docker-images: false
-          swap-storage: false
-
       - name: Build project
         if: steps.docs-changes.outputs.required == 'true'
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
@@ -90,17 +78,6 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Cleanup to free disk space
-        uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
-        with:
-          preinstalled-runtimes: false
-          android: true
-          dotnet: false
-          haskell: false
-          large-packages: false
-          docker-images: false
-          swap-storage: false
-
       - name: Checkout project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
