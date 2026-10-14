@@ -1,20 +1,28 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
+name: Repository or tooling improvement
+about: Suggest an improvement to documentation, automation, CI, or project infrastructure
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Problem
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+What problem or maintenance burden would this change address?
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+## Proposed change
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+Describe the improvement you would like to make or see implemented.
+
+## Scope
+
+Which part of the repository would be affected (for example CI, documentation, scripts, or the
+project website)?
+
+## Alternatives
+
+Describe any alternatives you considered, if relevant.
+
+## Additional context
+
+Add links, examples, prior art, or other context that would help evaluate the proposal.

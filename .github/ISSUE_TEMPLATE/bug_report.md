@@ -1,38 +1,42 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Build or tooling problem
+about: Report a reproducible problem with the project build, CI, documentation, or repository tooling
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Summary
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Describe the problem clearly and concisely.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Environment
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+- Operating system:
+- Repository commit:
+- Lean toolchain (`cat lean-toolchain`):
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+## Command or action
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+What command or action triggered the problem?
 
-**Additional context**
-Add any other context about the problem here.
+```text
+paste the command here
+```
+
+## Actual result
+
+Paste the relevant error output or describe what happened.
+
+```text
+paste relevant output here
+```
+
+## Expected result
+
+Describe what you expected to happen instead.
+
+## Additional context
+
+Add any other information that may help reproduce or diagnose the problem, such as the affected
+file, workflow run, or a minimal reproduction.
