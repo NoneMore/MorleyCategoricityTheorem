@@ -62,74 +62,12 @@ If the user explicitly requests blueprint work, follow the user-invoked skill or
 instructions for both blueprint editing and blueprint validation instead of
 relying on repository-default blueprint rules.
 
-## Blueprint Progress
+## Blueprint Planner
 
-`scripts/blueprint_status.py` is the read-only planning tool for the mathematical
-blueprint. It validates the dependency graph, reports the formalization frontier,
-and ranks next steps relative to a selected proof goal. It never writes to
-`blueprint/` and does not replace the blueprint validation build.
-
-```bash
-python3 scripts/blueprint_status.py                         # goal-aware frontier
-python3 scripts/blueprint_status.py --all                   # every pending node
-python3 scripts/blueprint_status.py --milestones            # milestone progress
-python3 scripts/blueprint_status.py --milestone omega_stability --top 5
-python3 scripts/blueprint_status.py --why thm:two-cardinal-transfer
-python3 scripts/blueprint_status.py --unlocks lem:pair-relativization
-python3 scripts/blueprint_status.py --plan morley
-python3 scripts/blueprint_status.py --sort reach
-python3 scripts/blueprint_status.py --json
-```
-
-Conventions the planner relies on:
-
-- A node counts as formalized when its environment is marked `\leanok` (proved
-  in this repository) or `\mathlibok` (supplied by Mathlib).
-- Dependencies are every `\uses{...}` command in the node statement and its
-  attached proof.
-- The planner treats duplicate labels, self-dependencies, dependency cycles,
-  and dangling `\uses` references as structural errors. Pass `--allow-dangling`
-  only when intentionally inspecting an incomplete graph.
-- The *frontier* is the pending nodes whose dependencies are all formalized.
-  Nodes held up only by pending definitions are listed separately.
-- Named milestones and per-node planning metadata live in
-  `scripts/blueprint_status.toml`. Keep labels in that file synchronized with
-  the blueprint.
-
-The default ranking is lexicographic rather than a single composite score. It
-prefers nodes on a path to the selected goal, then nodes that make blocked work
-immediately ready, then nodes with larger goal-path reach, with estimated effort
-as a tiebreaker. The report also exposes:
-
-- `new`: blocked nodes that become frontier-ready after completing the node;
-- `g-reach`: pending downstream nodes that lie on a path to the selected goal;
-- `dist`: shortest number of pending nodes to the goal;
-- `crit`: longest pending chain to the goal;
-- `eff`: effort estimate from `scripts/blueprint_status.toml`, falling back to
-  1 for definitions, 2 for lemmas/propositions/corollaries, and 3 for theorems;
-- `risk`: optional qualitative planning metadata from the TOML configuration.
-
-`--sort` may rank by `plan`, `score`, `unlocks`, `reach`, `goal-reach`, `new`,
-`distance`, `critical`, or `effort`. The displayed `score` is only a secondary
-heuristic: `(new_ready + goal_reach + on_goal_path) / effort`; it intentionally
-does not add total reach and direct unlocks again, avoiding the previous
-double-counting of downstream benefit.
-
-Use `--milestone NAME` to restrict the frontier to work that can contribute to a
-named milestone, `--why LABEL` to recursively explain blockers, `--unlocks
-LABEL` to inspect downstream impact, and `--plan TARGET` for a dependency-safe
-topological worklist. Use `--goal LABEL` for an ad-hoc goal outside the named
-milestones.
-
-The parser remains intentionally lightweight and currently reads one TeX entry
-file. If the blueprint is physically split with `\input`, extend the parser and
-its tests before relying on the planner across files.
-
-Use the report to pick the next blueprint node; it is a planning aid, not a
-completion gate, so it does not replace `lake build MorleyCategoricityTheorem`,
-`lake exe mk_all --check`, or a blueprint build. The script locates the
-repository from its own path, so it may be invoked from any working directory;
-pass `--tex PATH` to analyse a different document.
+`scripts/blueprint_status.py` is a read-only planning and validation tool. Use
+`python3 scripts/blueprint_status.py --help` for CLI usage instead of duplicating
+its option reference here. When editing planner metadata, keep labels in
+`scripts/blueprint_status.toml` synchronized with the blueprint graph.
 
 ## Generated Files
 
