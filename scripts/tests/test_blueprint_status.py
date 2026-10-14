@@ -67,17 +67,14 @@ Done.
         self.assertEqual([node.label for node in nodes], ["lem:real", "lem:user"])
         self.assertEqual(nodes[1].statement_uses, {"lem:real"})
 
-    def test_effort_override_and_goal_metrics(self) -> None:
+    def test_goal_metrics_are_structural_only(self) -> None:
         tex = r"""
 \begin{lemma}\label{lem:done}\leanok\end{lemma}
 \begin{lemma}\label{lem:a}\uses{lem:done}\end{lemma}
 \begin{theorem}\label{thm:goal}\uses{lem:a}\end{theorem}
 """
-        nodes = bs.parse_blueprint(tex)
-        analysis = bs.analyse(nodes)
-        config = bs.PlannerConfig(effort={"lem:a": 8})
-        metrics = bs.compute_metrics(analysis, "thm:goal", config)
-        self.assertEqual(metrics["lem:a"].effort, 8)
+        analysis = bs.analyse(bs.parse_blueprint(tex))
+        metrics = bs.compute_metrics(analysis, "thm:goal")
         self.assertTrue(metrics["lem:a"].on_goal_path)
         self.assertEqual(metrics["lem:a"].distance, 1)
         self.assertEqual(metrics["lem:a"].goal_reach, 1)
@@ -89,13 +86,11 @@ Done.
 \begin{theorem}\label{thm:goal}\uses{lem:a}\end{theorem}
 \begin{lemma}\label{lem:off-goal}\end{lemma}
 """
-        nodes = bs.parse_blueprint(tex)
-        analysis = bs.analyse(nodes)
-        config = bs.PlannerConfig(milestones={"demo": "thm:goal"})
-        rows = bs.milestone_rows(analysis, config)
-        self.assertEqual(rows[0][:5], ("demo", "thm:goal", "1", "2", "1"))
+        analysis = bs.analyse(bs.parse_blueprint(tex))
+        rows = bs.milestone_rows(analysis, {"demo": "thm:goal"})
+        self.assertEqual(rows[0], ("demo", "thm:goal", "1", "2", "1"))
 
-    def test_json_respects_milestone_sort_and_top(self) -> None:
+    def test_json_respects_goal_restriction_and_top(self) -> None:
         tex = r"""
 \begin{lemma}\label{lem:a}\end{lemma}
 \begin{lemma}\label{lem:b}\end{lemma}
@@ -103,18 +98,14 @@ Done.
 \begin{lemma}\label{lem:a-child}\uses{lem:a}\end{lemma}
 \begin{theorem}\label{thm:goal}\uses{lem:a-child,lem:b}\end{theorem}
 """
-        nodes = bs.parse_blueprint(tex)
-        analysis = bs.analyse(nodes)
-        config = bs.PlannerConfig(milestones={"demo": "thm:goal"})
-        metrics = bs.compute_metrics(analysis, "thm:goal", config)
+        analysis = bs.analyse(bs.parse_blueprint(tex))
+        metrics = bs.compute_metrics(analysis, "thm:goal")
         payload = json.loads(
             bs.format_json(
                 analysis,
                 metrics,
                 Path("demo.tex"),
                 "thm:goal",
-                config,
-                sort_name="reach",
                 top=1,
                 restrict_to_goal=True,
             )
@@ -123,43 +114,32 @@ Done.
         self.assertEqual([item["label"] for item in payload["frontier"]], ["lem:a"])
         self.assertEqual(payload["counts"]["frontier"], 1)
         self.assertEqual(payload["counts"]["frontier_candidates"], 2)
-        self.assertEqual(payload["selection"]["sort"], "reach")
 
-    def test_plan_is_blocked_by_dangling_dependency(self) -> None:
-        tex = r"""
-\begin{theorem}\label{thm:goal}\uses{lem:missing}\end{theorem}
-"""
-        analysis = bs.analyse(bs.parse_blueprint(tex))
-        output = bs.format_plan("thm:goal", analysis, bs.PlannerConfig())
-        self.assertIn("blocked by missing dependency labels", output)
-        self.assertIn("lem:missing", output)
-        self.assertEqual(bs.plan_dangling("thm:goal", analysis, bs.PlannerConfig()), {"lem:missing"})
-
-    def test_allow_dangling_plan_returns_error_and_prints_warning(self) -> None:
+    def test_allow_dangling_is_an_explicit_escape_hatch(self) -> None:
         tex = r"""
 \begin{theorem}\label{thm:goal}\uses{lem:missing}\end{theorem}
 """
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "content.tex"
             path.write_text(tex, encoding="utf-8")
-            stdout = io.StringIO()
             stderr = io.StringIO()
-            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                result = bs.main(
-                    [
-                        "--tex",
-                        str(path),
-                        "--config",
-                        str(Path(tmp) / "missing.toml"),
-                        "--allow-dangling",
-                        "--goal",
-                        "",
-                        "--plan",
-                        "thm:goal",
-                    ]
-                )
-        self.assertEqual(result, 2)
-        self.assertIn("blocked by missing dependency labels", stdout.getvalue())
+            with contextlib.redirect_stderr(stderr):
+                original = bs.MILESTONES
+                bs.MILESTONES = {"morley": "thm:goal"}
+                try:
+                    result = bs.main(
+                        [
+                            "--tex",
+                            str(path),
+                            "--allow-dangling",
+                            "--goal",
+                            "",
+                            "--all",
+                        ]
+                    )
+                finally:
+                    bs.MILESTONES = original
+        self.assertEqual(result, 0)
         self.assertIn("dangling-use", stderr.getvalue())
 
 

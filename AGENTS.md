@@ -62,12 +62,12 @@ If the user explicitly requests blueprint work, follow the user-invoked skill or
 instructions for both blueprint editing and blueprint validation instead of
 relying on repository-default blueprint rules.
 
-## Blueprint Planner
+## Blueprint Status
 
-`scripts/blueprint_status.py` is a read-only planning and validation tool. Use
-`python3 scripts/blueprint_status.py --help` for CLI usage instead of duplicating
-its option reference here. When editing planner metadata, keep labels in
-`scripts/blueprint_status.toml` synchronized with the blueprint graph.
+`scripts/blueprint_status.py` is a read-only dependency-graph validator and
+goal-aware frontier reporter. Use `python3 scripts/blueprint_status.py --help`
+for CLI usage. Keep the small `MILESTONES` mapping synchronized with blueprint
+labels when milestone theorem names change.
 
 ## Generated Files
 
@@ -84,7 +84,7 @@ Run the checks that match the files changed, from the repository root.
 |---|---|
 | Only `.lean` files, no new imports | `lake build MorleyCategoricityTheorem` |
 | `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
-| Blueprint planner files | `python3 -m unittest discover -s scripts/tests -v` + `python3 scripts/blueprint_status.py --milestones` |
+| Blueprint status files | `python3 -m unittest discover -s scripts/tests -v` + `python3 scripts/blueprint_status.py --milestones` |
 
 If no blueprint files were changed, do not run blueprint-related validation. If
 the user explicitly requested blueprint changes, use the validation workflow
