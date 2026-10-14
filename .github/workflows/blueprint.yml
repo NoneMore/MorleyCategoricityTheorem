@@ -1,4 +1,4 @@
-name: Build blueprint and documentation
+name: Build and deploy documentation
 
 on:
   push:
@@ -13,87 +13,17 @@ on:
       - 'lakefile.toml'
       - 'lake-manifest.json'
       - '.github/workflows/blueprint.yml'
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: documentation-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  validate_documentation:
-    if: github.event_name != 'push'
-    runs-on: ubuntu-latest
-    name: Validate project and documentation
-    steps:
-      - name: Checkout project
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Classify documentation changes
-        id: docs-changes
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "full=true" >> "$GITHUB_OUTPUT"
-            echo "homepage=false" >> "$GITHUB_OUTPUT"
-          else
-            if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
-              blueprint .github/workflows/blueprint.yml; then
-              echo "full=false" >> "$GITHUB_OUTPUT"
-            else
-              echo "full=true" >> "$GITHUB_OUTPUT"
-            fi
-
-            if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- home_page; then
-              echo "homepage=false" >> "$GITHUB_OUTPUT"
-            else
-              echo "homepage=true" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-
-      - name: Build project for full documentation validation
-        if: steps.docs-changes.outputs.full == 'true'
-        uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
-        with:
-          auto-config: false
-          build: true
-          build-args: MorleyCategoricityTheorem
-          use-github-cache: true
-          use-mathlib-cache: true
-
-      - name: Compile blueprint and documentation
-        if: steps.docs-changes.outputs.full == 'true'
-        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
-        with:
-          blueprint: true
-          homepage: home_page
-          ruby-version: default
-          deploy: false
-
-      - name: Set up Ruby for homepage-only validation
-        if: steps.docs-changes.outputs.full != 'true' && steps.docs-changes.outputs.homepage == 'true'
-        uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c # v1.237.0
-        with:
-          working-directory: home_page
-          ruby-version: default
-          bundler-cache: true
-
-      - name: Build homepage
-        if: steps.docs-changes.outputs.full != 'true' && steps.docs-changes.outputs.homepage == 'true'
-        working-directory: home_page
-        env:
-          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
-        run: JEKYLL_ENV=production bundle exec jekyll build --trace
-
   publish_documentation:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Build and deploy documentation
     permissions:
