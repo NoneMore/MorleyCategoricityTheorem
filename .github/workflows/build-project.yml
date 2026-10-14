@@ -9,6 +9,7 @@ on:
       - 'lean-toolchain'
       - 'lakefile.toml'
       - 'lake-manifest.json'
+      - '.github/workflows/build-project.yml'
   pull_request:
     branches:
       - main
@@ -17,18 +18,16 @@ on:
       - 'lean-toolchain'
       - 'lakefile.toml'
       - 'lake-manifest.json'
+      - '.github/workflows/build-project.yml'
   workflow_dispatch: # Allow manual triggering of the workflow from the GitHub Actions interface
 
-# Cancel previous runs if a new commit is pushed to the same PR or branch
+# Cancel previous runs if a new commit is pushed to the same PR or branch.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}  # Group runs by workflow and ref
-  cancel-in-progress: true  # Cancel any ongoing runs in the same group
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages and modify PR labels
 permissions:
-  contents: read          # Read access to repository contents
-  pages: write            # Write access to GitHub Pages
-  id-token: write         # Write access to ID tokens
+  contents: read
 
 jobs:
   build_project:
@@ -37,26 +36,13 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0 # Fetch all history for all branches and tags
 
-      - name: Install and configure Lean, and get mathlib cache
+      - name: Build and check project
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
-          use-github-cache: false
+          build: true
+          build-args: MorleyCategoricityTheorem
+          mk_all-check: true
+          use-github-cache: true
           use-mathlib-cache: true
-
-      - name: "Check that MorleyCategoricityTheorem.lean is up to date"
-        run: |
-          ~/.elan/bin/lake exe mk_all --check || echo "ERROR: please ensure that MorleyCategoricityTheorem.lean is up to date, for instance by running lake exe mk_all"
-
-      - name: Cache build artifacts
-        uses: actions/cache@v6
-        with:
-          path: .lake/build
-          key: LakeBuild-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
-          restore-keys: LakeBuild-
-
-      - name: Build project
-        run: ~/.elan/bin/lake build MorleyCategoricityTheorem
