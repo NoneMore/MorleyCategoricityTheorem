@@ -422,6 +422,22 @@ Skolem function added for that \(L\)-formula supplies a witness that is
 again in the hull.  Apply Tarski--Vaught to the reducts.
 \end{proof}
 
+\begin{lemma}[Few relative order types over a well-order]
+\label{lem:few-relative-order-types}
+Let \(I\) be a well-order, let \(J\subseteq I\), and let \(r<\omega\).
+Then the quantifier-free order types over \(J\) of \(r\)-tuples from
+\(I\) form a set of cardinality at most \(|J|+\aleph_0\).
+\end{lemma}
+
+\begin{proof}
+For one coordinate, its order relations to \(J\) are determined by the
+initial segment of \(J\) below it together with whether it equals an
+element of \(J\).  The inherited well-order on \(J\) has at most
+\(|J|+1\) initial segments.  For a fixed finite tuple, also record the
+finitely many order and equality relations among its coordinates; finite
+products preserve the bound \(|J|+\aleph_0\).
+\end{proof}
+
 \begin{theorem}[Models realizing few types]
 \label{thm:few-types-model}
 \uses{def:types-over-parameters}
@@ -432,14 +448,18 @@ Let \(L\) be countable and \(T\) have infinite models.  For every
 \end{theorem}
 
 \begin{proof}
-\uses{thm:skolem-expansion,thm:existence-of-order-indiscernibles,thm:skolem-hull-elementary}
+\uses{thm:skolem-expansion,thm:existence-of-order-indiscernibles,thm:skolem-hull-elementary,lem:few-relative-order-types}
 Take a countable Skolem expansion, index indiscernibles by the initial
 ordinal of size \(\kappa\), and take their Skolem hull.  The hull has
-size exactly \(\kappa\).  A parameter set \(A\) uses only
-\(|A|+\aleph_0\) indices in its Skolem terms; relative order type over
-those indices determines the type of any fixed finite tuple of Skolem
-terms.  There are only \(|A|+\aleph_0\) such order types and countably
-many finite tuples of terms.
+size exactly \(\kappa\).  A parameter set \(A\) involves only
+\(|A|+\aleph_0\) indices in its Skolem terms; call their set \(I_A\).
+For any fixed finite tuple of Skolem terms, order indiscernibility shows
+that the complete type of its value over \(A\) is determined by the
+relative order type over \(I_A\) of the finitely many indices occurring
+in the terms.  Because the index order is a well-order, the preceding
+lemma bounds the number of such relative order types by
+\(|A|+\aleph_0\).  There are only countably many finite tuples of Skolem
+terms, so the same bound holds for the realized finite-arity types.
 \end{proof}
 
 \begin{lemma}[Non-omega-stability produces a large model realizing many types]
@@ -691,16 +711,19 @@ realized.  A countable elementary-chain limit satisfies all requests.
 \uses{def:vaughtian-pair,thm:homogeneous-back-and-forth}
 Let \((N,M)\) be a countable homogeneous Vaughtian pair whose two sides
 realize the same finite-arity types, witnessed by parameters \(\bar a\)
-from \(M\).  If \(P\) is another countable homogeneous model realizing
-the same types and the identity on \(\bar a\) is partial elementary from
-\(M\) to \(P\), then there is an isomorphism \(h:M\cong P\) fixing
-\(\bar a\).  Transporting \(M\preceq N\) along \(h\) gives a proper
-elementary extension of \(P\) adding no new realization of the witness.
+from \(M\).  Let \(P\) be another countable homogeneous model realizing
+the same types, let \(\bar a_P\) be a tuple from \(P\), and suppose the
+map \(\bar a\mapsto\bar a_P\) is partial elementary from \(M\) to \(P\).
+Then there is an isomorphism \(h:M\cong P\) carrying \(\bar a\) to
+\(\bar a_P\).  Transporting \(M\preceq N\) along \(h\) gives a proper
+elementary extension of \(P\) adding no new realization of the
+transported Vaughtian witness.
 \end{lemma}
 
 \begin{proof}
-Extend the finite map on \(\bar a\) by homogeneous back-and-forth and
-transport the larger side of the pair across the resulting isomorphism.
+Extend the specified finite partial elementary map by homogeneous
+back-and-forth, then transport the larger side of the pair across the
+resulting isomorphism.
 \end{proof}
 
 \begin{theorem}[Vaughtian pairs produce an \((\aleph_1,\aleph_0)\)-model]
@@ -714,7 +737,10 @@ has an \((\aleph_1,\aleph_0)\)-model.
 \uses{lem:countable-vaughtian-pair,lem:homogeneous-vaughtian-pair,lem:vaughtian-pair-copy-over-parameters,thm:loewenheim-skolem-constructions}
 Start with a countable homogeneous Vaughtian pair and fix its witnessing
 parameters.  Build an elementary chain of length \(\omega_1\), using the
-copying lemma at each successor stage.  At a countable limit stage the
+copying lemma at each successor stage.  There the distinguished tuple is
+already contained in the current model, so use that same tuple on both
+sides of the finite partial elementary map; the copied successor
+therefore preserves the fixed witness.  At a countable limit stage the
 union is countable; every finite tuple and every finite partial
 elementary map is contained in some earlier stage, so homogeneity is
 inherited, and every finite tuple realizes one of the same
@@ -754,21 +780,55 @@ Otherwise recursively split every uncountable definable set into two
 uncountable definable subsets.
 \end{proof}
 
-\begin{lemma}[The co-countable generic is realizable]
+\begin{lemma}[The co-countable generic is realized outside the base]
 \label{lem:cocountable-generic-type}
-\uses{lem:omega-stable-large-definable-almost-minimal}
 Let \(D\subseteq M\) be an uncountable definable set such that every
 definable subset of \(D\) is countable or co-countable.  The partial type
-consisting of the formulas whose traces on \(D\) are co-countable is
-finitely satisfiable in \(M\), and hence is realized by some element in
-an elementary extension of \(M\).
+over \(M\) consisting of the formulas whose traces on \(D\) are
+co-countable is finitely satisfiable in \(M\), and it has a realization
+\(c\) in an elementary extension of \(M\) with \(c\notin M\).
 \end{lemma}
 
 \begin{proof}
 \uses{thm:compactness}
 A finite intersection of co-countable subsets of an uncountable set is
-nonempty.  Compactness realizes the resulting partial type in an
-elementary extension.
+nonempty, so compactness realizes the partial type in an elementary
+extension.  The type contains the formula defining \(D\), while for
+each \(m\in D(M)\) it contains \(x\neq m\), since
+\(D\setminus\{m\}\) is co-countable in \(D\).  Hence no element of
+\(M\) realizes the type.
+\end{proof}
+
+\begin{lemma}[Specializing isolated types along a co-countable generic]
+\label{lem:cocountable-generic-specialization}
+\uses{def:isolated-and-omitted-types}
+Let \(D\subseteq M\) be uncountable and definable, with every definable
+subset of \(D\) countable or co-countable.  Let \(M\preceq N\), and let
+\(c\in N\) satisfy every formula over \(M\) whose trace on \(D\) is
+co-countable.  If a finite tuple \(\bar b\in N\) realizes an isolated
+type over \(M\cup\{c\}\), then every countable partial type over \(M\)
+realized by \(\bar b\) is already realized in \(M\).
+\end{lemma}
+
+\begin{proof}
+Let \(\theta(\bar x,c,\bar m)\) isolate the type of \(\bar b\) over
+\(M\cup\{c\}\), and enumerate a countable partial type realized by
+\(\bar b\) as \(\{\psi_i(\bar x):i<\omega\}\), allowing parameters
+from \(M\) in the \(\psi_i\).  For each \(i\), isolation makes
+\[
+  E_i(y):=\forall\bar x\,
+  (\theta(\bar x,y,\bar m)\to\psi_i(\bar x))
+\]
+true of \(c\); likewise
+\(E_*(y):=\exists\bar x\,\theta(\bar x,y,\bar m)\) is true of \(c\).
+Any formula over \(M\) true of \(c\) must have co-countable trace on
+\(D\): otherwise its complement would be co-countable and would also
+belong to the generic realized by \(c\).  Thus every \(E_i\) and
+\(E_*\) has co-countable trace.  The intersection of countably many
+co-countable subsets of the uncountable set \(D\) is nonempty.  Choose
+\(d\in D(M)\) in that intersection.  Then \(M\models E_*(d)\), so a
+tuple in \(M\) realizes \(\theta(\bar x,d,\bar m)\), and the formulas
+\(E_i(d)\) force that tuple to realize every \(\psi_i\).
 \end{proof}
 
 \begin{lemma}[Proper extension realizing no new countable finite-arity types]
@@ -781,12 +841,16 @@ in \(N\) is already realized in \(M\).
 \end{lemma}
 
 \begin{proof}
-\uses{lem:cocountable-generic-type,thm:prime-extension-over-set,thm:downward-lowenheim-skolem}
-Realize the co-countable generic by \(c\), take an elementary extension
-of size \(|M|\) containing \(M\cup\{c\}\), and inside it take a model
-prime over \(M\cup\{c\}\).  Isolation over the prime base turns any
-countable partial type realized there into countably many co-countable
-conditions on \(c\), yielding a realization already in \(M\).
+\uses{lem:omega-stable-large-definable-almost-minimal,lem:cocountable-generic-type,lem:cocountable-generic-specialization,thm:prime-extension-over-set,thm:downward-lowenheim-skolem}
+Choose \(D\) by the almost-minimal definable-set lemma and realize its
+co-countable generic by \(c\notin M\).  Downward Loewenheim--Skolem gives
+an elementary extension of cardinality \(|M|\) containing
+\(M\cup\{c\}\).  Inside it take the prime extension over
+\(M\cup\{c\}\), chosen so that every finite tuple realizes an isolated
+type over that base.  This model still has size \(|M|\) and is proper
+over \(M\) because it contains \(c\).  For any countable finite-arity
+partial type over \(M\) realized there, apply the specialization lemma
+to the realizing tuple to obtain a realization already in \(M\).
 \end{proof}
 
 \begin{theorem}[Two-cardinal transfer above \(\aleph_1\)]
@@ -1022,9 +1086,10 @@ splitting obstruction.
 \begin{lemma}[Uniform finite bound without Vaughtian pairs]
 \label{lem:finite-bound-without-vaughtian-pairs}
 \uses{def:vaughtian-pair}
-Suppose \(T\) has no Vaughtian pairs and \(\varphi(v,\bar w)\) is fixed.
-There is \(n\in\mathbb N\) such that every instance with more than \(n\)
-realizations is infinite.
+Suppose \(T\) has no Vaughtian pairs, \(M\models T\), and
+\(\varphi(v,\bar w)\) is a formula with fixed parameters from \(M\).
+There is \(n\in\mathbb N\) such that, for every \(\bar a\in M\), if
+\(|\varphi(M,\bar a)|>n\), then \(\varphi(M,\bar a)\) is infinite.
 \end{lemma}
 
 \begin{proof}
