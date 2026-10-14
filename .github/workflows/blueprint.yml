@@ -8,6 +8,7 @@ on:
       - '**/*.lean'
       - 'blueprint/**'
       - 'home_page/**'
+      - 'references.bib'
       - 'lean-toolchain'
       - 'lakefile.toml'
       - 'lake-manifest.json'
@@ -15,13 +16,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'blueprint/**'
-      - 'home_page/**'
-      - 'lean-toolchain'
-      - 'lakefile.toml'
-      - 'lake-manifest.json'
-      - '.github/workflows/blueprint.yml'
   workflow_dispatch:
 
 concurrency:
@@ -37,7 +31,27 @@ jobs:
     runs-on: ubuntu-latest
     name: Validate project and documentation
     steps:
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check whether documentation validation is needed
+        id: docs-changes
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
+            blueprint home_page references.bib lean-toolchain lakefile.toml lake-manifest.json \
+            .github/workflows/blueprint.yml; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Cleanup to free disk space
+        if: steps.docs-changes.outputs.required == 'true'
         uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
         with:
           preinstalled-runtimes: false
@@ -48,12 +62,8 @@ jobs:
           docker-images: false
           swap-storage: false
 
-      - name: Checkout project
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
       - name: Build project
+        if: steps.docs-changes.outputs.required == 'true'
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
@@ -64,6 +74,7 @@ jobs:
           use-mathlib-cache: true
 
       - name: Compile blueprint and documentation
+        if: steps.docs-changes.outputs.required == 'true'
         uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
         with:
           blueprint: true
