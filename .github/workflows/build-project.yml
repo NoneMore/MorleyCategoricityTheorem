@@ -1,18 +1,11 @@
-name: Build MorleyCategoricityTheorem
+name: Validate pull request
 
 on:
   pull_request:
     branches:
       - main
-    paths:
-      - '**/*.lean'
-      - 'lean-toolchain'
-      - 'lakefile.toml'
-      - 'lake-manifest.json'
-      - '.github/workflows/build-project.yml'
-  workflow_dispatch: # Allow manual triggering of the workflow from the GitHub Actions interface
+  workflow_dispatch:
 
-# Cancel previous runs if a new commit is pushed to the same PR or branch.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,14 +14,49 @@ permissions:
   contents: read
 
 jobs:
-  build_project:
+  validate:
     runs-on: ubuntu-latest
-    name: Build project
+    name: Validate repository
     steps:
       - name: Checkout project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Classify changes
+        id: changes
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "lean=true" >> "$GITHUB_OUTPUT"
+            echo "full_docs=true" >> "$GITHUB_OUTPUT"
+            echo "homepage=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
+            ':(glob)**/*.lean' lean-toolchain lakefile.toml lake-manifest.json blueprint \
+            .github/workflows/build-project.yml .github/workflows/blueprint.yml; then
+            echo "lean=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "lean=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- \
+            blueprint .github/workflows/build-project.yml .github/workflows/blueprint.yml; then
+            echo "full_docs=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "full_docs=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- home_page; then
+            echo "homepage=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "homepage=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build project
+        if: steps.changes.outputs.lean == 'true'
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
@@ -36,3 +64,35 @@ jobs:
           build-args: MorleyCategoricityTheorem
           use-github-cache: true
           use-mathlib-cache: true
+
+      - name: Check root import file
+        if: steps.changes.outputs.lean == 'true'
+        run: ~/.elan/bin/lake exe mk_all --check
+
+      - name: Check blueprint declaration references
+        if: steps.changes.outputs.lean == 'true'
+        run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
+
+      - name: Compile blueprint and documentation
+        if: steps.changes.outputs.full_docs == 'true'
+        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
+        with:
+          blueprint: true
+          homepage: home_page
+          ruby-version: default
+          deploy: false
+
+      - name: Set up Ruby for homepage-only validation
+        if: steps.changes.outputs.full_docs != 'true' && steps.changes.outputs.homepage == 'true'
+        uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c # v1.237.0
+        with:
+          working-directory: home_page
+          ruby-version: default
+          bundler-cache: true
+
+      - name: Build homepage
+        if: steps.changes.outputs.full_docs != 'true' && steps.changes.outputs.homepage == 'true'
+        working-directory: home_page
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
+        run: JEKYLL_ENV=production bundle exec jekyll build --trace

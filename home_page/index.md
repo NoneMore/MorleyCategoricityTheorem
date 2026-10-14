@@ -1,15 +1,18 @@
 ---
-# Feel free to add content and custom Front Matter to this file.
-# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
-
-# layout: home
-usemathjax: true
+layout: default
+title: Morley's Categoricity Theorem
 ---
 
-Useful links:
+This site collects the generated documentation for the Lean 4 formalization project.
 
-* [Zulip chat for Lean](https://leanprover.zulipchat.com/) for coordination
-* [Blueprint]({{ site.url }}/blueprint/)
-* [Blueprint as pdf]({{ site.url }}/blueprint.pdf)
-* [Dependency graph]({{ site.url }}/blueprint/dep_graph_document.html)
-* [Doc pages for this repository]({{ site.url }}/docs/)
+## Project resources
+
+- [Blueprint]({{ '/blueprint/' | relative_url }}) — web version of the formalization blueprint.
+- [Blueprint PDF]({{ '/blueprint.pdf' | relative_url }}) — printable version of the blueprint.
+- [Dependency graph]({{ '/blueprint/dep_graph_document.html' | relative_url }}) — dependency graph for blueprint statements.
+- [API documentation]({{ '/docs/' | relative_url }}) — generated documentation for the Lean declarations.
+- [GitHub repository](https://github.com/NoneMore/MorleyCategoricityTheorem) — source, issues, and pull requests.
+
+The generated site is built from the repository's `main` branch. Pull requests that change the
+blueprint or this homepage are built in CI before merge, without deploying the preview to GitHub
+Pages.
