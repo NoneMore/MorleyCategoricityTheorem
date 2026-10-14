@@ -79,20 +79,52 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Bump the v2 prefix only when the dependency-side build artifacts required
+      # by CI change. Project source changes belong in the project build cache key.
+      - name: Restore Lean dependency cache
+        id: dependency-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .lake/packages
+          key: lake-packages-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+
+      - name: Restore project build cache
+        id: project-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ hashFiles('MorleyCategoricityTheorem.lean', 'MorleyCategoricityTheorem/**/*.lean', 'lakefile.toml') }}
+          restore-keys: |
+            lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-
+
       - name: Build project
         uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           auto-config: false
           build: true
           build-args: MorleyCategoricityTheorem checkdecls
-          use-github-cache: true
-          use-mathlib-cache: true
+          use-github-cache: false
+          use-mathlib-cache: ${{ steps.dependency-cache.outputs.cache-hit != 'true' }}
 
       - name: Check root import file
         run: ~/.elan/bin/lake exe mk_all --check
 
       - name: Check blueprint declaration references
         run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
+
+      - name: Save Lean dependency cache
+        if: steps.dependency-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .lake/packages
+          key: lake-packages-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
+
+      - name: Save project build cache
+        if: steps.project-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ hashFiles('MorleyCategoricityTheorem.lean', 'MorleyCategoricityTheorem/**/*.lean', 'lakefile.toml') }}
 
   blueprint:
     needs: classify
