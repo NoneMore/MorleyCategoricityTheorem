@@ -64,7 +64,7 @@ jobs:
           use-mathlib-cache: true
 
       - name: Compile blueprint and documentation
-        uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
+        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
         with:
           blueprint: true
           homepage: home_page
@@ -107,7 +107,7 @@ jobs:
           use-mathlib-cache: true
 
       - name: Compile and deploy blueprint and documentation
-        uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
+        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
         with:
           blueprint: true
           homepage: home_page
