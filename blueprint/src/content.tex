@@ -582,11 +582,20 @@ realizes at most \(|A|+\aleph_0\) complete \(n\)-types over \(A\).
 Pass to a countable Skolem expansion.  Index the indiscernibles by the
 initial ordinal of cardinality \(\kappa\), with its well-order, and take
 their Skolem hull.  A parameter set \(A\) involves only
-\(|A|+\aleph_0\) many indices in its Skolem terms.  Because the index
-order is a well-order, there are at most \(|A|+\aleph_0\) relative order
-types of any fixed finite tuple over those indices.  The relative order
-type determines the type realized by a Skolem term, and the countable
-set of Skolem terms gives the required bound in every finite arity.
+\(|A|+\aleph_0\) many indices in its Skolem terms; let \(I_A\) be this
+set of indices.  For a fixed finite tuple of indices, record its full
+quantifier-free order type over \(I_A\): the order and equality relations
+among tuple coordinates, and for each coordinate and each \(a\in I_A\),
+whether the coordinate is below, equal to, or above \(a\).  Because the
+index order is a well-order, the set of elements of \(I_A\) below a
+coordinate is an initial segment of \(I_A\), with equality to an element
+of \(I_A\) recorded separately.  Hence there are at most
+\(|A|+\aleph_0\) such relative order types for any fixed finite tuple.
+For a fixed finite tuple of Skolem terms, order indiscernibility then
+shows that the relative order type of all indices occurring in those
+terms determines the complete type they realize.  Since there are only
+countably many Skolem terms, the required bound follows in every finite
+arity.
 \end{proof}
 
 \begin{lemma}[Non-omega-stability produces a large model realizing many types]
@@ -923,11 +932,21 @@ definable subset.
 \begin{definition}[Independence, bases, and dimension]
 \label{def:strongly-minimal-independence}
 \uses{def:strongly-minimal-pregeometry,prop:strongly-minimal-pregeometry}
-A subset of a strongly minimal set is independent if no element lies in
-the algebraic closure of the others.  A basis of \(Y\subseteq D\) is an
-independent subset \(B\subseteq Y\) such that
-\(\operatorname{acl}_D(B)=\operatorname{acl}_D(Y)\).  The dimension
-\(\dim(Y)\) is the cardinality of any basis of \(Y\).
+Let \(D\) be a strongly minimal set in a model \(M\), and let
+\(A\subseteq M\) contain parameters over which \(D\) is defined.  For
+\(X\subseteq D\), set
+\[
+  \operatorname{cl}_A(X)=D\cap\operatorname{acl}(A\cup X).
+\]
+The exchange property makes \(\operatorname{cl}_A\) a pregeometry on
+\(D\).  A set \(X\subseteq D\) is independent over \(A\) if no
+\(x\in X\) lies in
+\(\operatorname{acl}(A\cup(X\setminus\{x\}))\).  A basis of
+\(Y\subseteq D\) over \(A\) is an independent set \(B\subseteq Y\)
+such that \(Y\subseteq\operatorname{acl}(A\cup B)\).  Its cardinality
+is the relative dimension \(\dim_A^M(Y)\).  When the ambient model is
+clear we write \(\dim_A(Y)\), and for \(A=\emptyset\) simply
+\(\dim(Y)\).
 \end{definition}
 
 \begin{proposition}[Algebraic types are isolated]
@@ -972,36 +991,48 @@ Suppose \(T\) is a strongly minimal theory.  If \(M,N\models T\), then
 \(M\cong N\) if and only if \(\dim(M)=\dim(N)\).  More generally, let
 \(\varphi(v)\) be a strongly minimal formula over parameters
 \(A\subseteq M_0\), where \(M_0\models T\) and \(M_0\preceq M,N\).
-If \(\dim(\varphi(M))=\dim(\varphi(N))\), then there is a bijective
-partial elementary map \(\varphi(M)\to\varphi(N)\) over \(A\).
+If
+\[
+  \dim_A^M(\varphi(M))=\dim_A^N(\varphi(N)),
+\]
+then there is a bijective partial elementary map
+\(\varphi(M)\to\varphi(N)\) over \(A\).
 \end{theorem}
 
 \begin{proof}
 \uses{lem:independent-tuples-same-type,prop:algebraic-implies-isolated}
-Choose bases and a bijection between them.  Independent tuples have the
-same type, so this bijection is partial elementary.  Extend it by
-maximality.  Any point outside the domain or range is algebraic over the
-base and the current map, hence has an isolated type and can be added,
-contradicting maximality.  Thus the maximal partial elementary map is
-bijective on the strongly minimal sets; in the theory case this is an
-isomorphism.
+Choose bases \(B\subseteq\varphi(M)\) and
+\(C\subseteq\varphi(N)\) over \(A\), and a bijection between them.
+Finite tuples from these bases are independent over \(A\), so the
+preceding lemma makes this bijection partial elementary over \(A\).
+Extend it by maximality.  Since \(B\) and \(C\) are bases over \(A\),
+any point outside the current domain or range is algebraic over \(A\)
+together with that domain or range.  Its type is therefore isolated and
+can be transported across the current partial elementary map and
+realized on the other side, contradicting maximality.  Thus the maximal
+map is bijective on the strongly minimal sets; in the theory case take
+\(A=\emptyset\) to obtain an isomorphism.
 \end{proof}
 
-\begin{lemma}[Uncountable subsets of a strongly minimal set have full dimension]
+\begin{lemma}[Uncountable subsets of a strongly minimal set have full relative dimension]
 \label{lem:strongly-minimal-uncountable-subset-full-dimension}
 \uses{def:strongly-minimal-independence}
-Let \(D\) be a strongly minimal definable set in a countable language.
-If \(Y\subseteq D\) is uncountable, then \(\dim(Y)=|Y|\).
+Let \(D\) be a strongly minimal set definable over a countable parameter
+set \(A\) in a model of a countable language, and let
+\(Y\subseteq D\) be uncountable.  Then
+\[
+  \dim_A(Y)=|Y|.
+\]
 \end{lemma}
 
 \begin{proof}
-For any \(A\subseteq D\), finite character and countability of the
-language give
+Let \(B\) be a basis of \(Y\) over \(A\).  By finite character and
+countability of the language,
 \[
-  |\operatorname{acl}_D(A)\cap Y|\leq |A|+\aleph_0.
+  |\operatorname{acl}(A\cup B)\cap D|\leq |A\cup B|+\aleph_0.
 \]
-If \(B\) is a basis of \(Y\), then
-\(Y\subseteq\operatorname{acl}_D(B)\), so
+Because \(A\) is countable and
+\(Y\subseteq\operatorname{acl}(A\cup B)\cap D\), we get
 \(|Y|\leq |B|+\aleph_0\).  Since \(Y\) is uncountable and
 \(B\subseteq Y\), this forces \(|B|=|Y|\).
 \end{proof}
@@ -1088,16 +1119,24 @@ models, and let \(\kappa\geq\aleph_1\).  If \(T\) is
 \end{theorem}
 
 \begin{proof}
-\uses{thm:prime-extension-over-set,thm:omega-stable-has-minimal-formula,thm:minimal-formula-strongly-minimal,cor:no-small-infinite-definable-sets-without-vaughtian-pairs,lem:strongly-minimal-uncountable-subset-full-dimension,thm:strongly-minimal-dimension-classification,lem:prime-over-infinite-definable-set}
-Let \(M,N\models T\) have cardinality \(\kappa\).  Choose a prime model
-\(M_0\) and, after identifying its elementary images, regard
+\uses{thm:prime-extension-over-set,thm:downward-lowenheim-skolem,thm:omega-stable-has-minimal-formula,thm:minimal-formula-strongly-minimal,cor:no-small-infinite-definable-sets-without-vaughtian-pairs,lem:strongly-minimal-uncountable-subset-full-dimension,thm:strongly-minimal-dimension-classification,lem:prime-over-infinite-definable-set}
+Let \(M,N\models T\) have cardinality \(\kappa\).  By downward
+Loewenheim--Skolem choose a countable model of \(T\), and apply the prime
+extension theorem over \(\emptyset\) inside it to obtain a countable
+prime model \(M_0\).  After identifying its elementary images, regard
 \(M_0\preceq M,N\).  Omega-stability gives a minimal formula
 \(\varphi(x)\) over \(M_0\), and the absence of Vaughtian pairs makes it
 strongly minimal.  The sets \(\varphi(M)\) and \(\varphi(N)\) are
 infinite; the no-small-definable-set corollary gives both cardinality
-\(\kappa\), hence the full-dimension lemma gives equal dimension.
-Strongly minimal dimension classification produces a bijective partial
-elementary map \(f:\varphi(M)\to\varphi(N)\) over \(M_0\).
+\(\kappa\).  Since \(M_0\) is countable, the full-relative-dimension
+lemma gives
+\[
+  \dim_{M_0}^M(\varphi(M))=\kappa=
+  \dim_{M_0}^N(\varphi(N)).
+\]
+Strongly minimal dimension classification therefore produces a
+bijective partial elementary map
+\(f:\varphi(M)\to\varphi(N)\) over \(M_0\).
 
 By the preceding lemma, \(M\) is prime over
 \(M_0\cup\varphi(M)\), so the partial elementary map consisting of the
