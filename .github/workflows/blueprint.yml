@@ -30,13 +30,12 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  build_project:
+  validate_documentation:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
-    name: Build project and documentation
+    name: Validate project and documentation
     steps:
       - name: Cleanup to free disk space
         uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
@@ -65,6 +64,49 @@ jobs:
           use-mathlib-cache: true
 
       - name: Compile blueprint and documentation
+        uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
+        with:
+          blueprint: true
+          homepage: home_page
+          ruby-version: default
+          deploy: false
+
+  publish_documentation:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Build and deploy documentation
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
+        with:
+          preinstalled-runtimes: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Build project
+        uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
+        with:
+          auto-config: false
+          build: true
+          build-args: MorleyCategoricityTheorem
+          mk_all-check: true
+          use-github-cache: true
+          use-mathlib-cache: true
+
+      - name: Compile and deploy blueprint and documentation
         uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
         with:
           blueprint: true
