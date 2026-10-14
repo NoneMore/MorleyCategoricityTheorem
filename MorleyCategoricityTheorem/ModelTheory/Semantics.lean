@@ -98,8 +98,8 @@ theorem le_encard_iff_exists_injection_fin {α : Type*} (s : Set α) (n : ℕ) :
   constructor
   · intro h
     obtain ⟨t, hts, hte⟩ := exists_subset_encard_eq h
-    letI := (finite_of_encard_eq_coe hte).fintype
-    let e := Fintype.equivFinOfCardEq <| ENat.coe_inj.mp <| (coe_fintypeCard t).trans hte
+    let := (finite_of_encard_eq_coe hte).fintype
+    let e := Fintype.equivFinOfCardEq <| ENat.natCast_inj.mp <| (coe_fintypeCard t).trans hte
     exact ⟨Subtype.val ∘ e.symm, fun i ↦ hts (e.symm i).2,
       (Equiv.injective_comp e.symm Subtype.val).mpr Subtype.val_injective⟩
   · rintro ⟨f, hf, hfi⟩
@@ -148,7 +148,7 @@ theorem realize_iExsAtLeast [Finite β] (φ : L.Formula (α ⊕ β)) (v : α →
 theorem realize_iExsAtMost [Finite β] (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsAtMost β n).Realize v ↔
       {x : β → M | φ.Realize (Sum.elim v x)}.encard ≤ n := by
-  simpa [iExsAtMost] using ENat.lt_coe_add_one_iff
+  simpa [iExsAtMost] using ENat.lt_natCast_add_one_iff
 
 /-- Exact finite cardinality of the realization fiber. -/
 @[simp]
@@ -254,14 +254,14 @@ theorem realize_iExsExactly_one_iff_iExsUnique [Finite β]
     exact ⟨x, (hmem x).2 rfl, fun y hy ↦ (hmem y).1 hy⟩
   · rintro ⟨x, hx, hunique⟩
     refine ⟨x, Set.ext fun y ↦ ?_⟩
-    simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+    simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff]
     exact ⟨hunique y, fun hy ↦ hy ▸ hx⟩
 
 /-- Having at most `n` realizations is the negation of having at least `n + 1` realizations. -/
 theorem realize_iExsAtMost_iff_not_iExsAtLeast_succ [Finite β]
     (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsAtMost β n).Realize v ↔ ¬(φ.iExsAtLeast β (n + 1)).Realize v := by
-  simpa using Iff.symm ENat.lt_coe_add_one_iff
+  simpa using Iff.symm ENat.lt_natCast_add_one_iff
 
 /-- Having at most `n` realizations rules out any injective family of `n + 1` solutions. -/
 theorem realize_iExsAtMost_iff_not_exists_injection [Finite β]
@@ -409,9 +409,9 @@ theorem realize_onSentence_equivSentence {A : Set M} {B : Set N} (g : A → B)
     (θ : L.Formula A) :
     N ⊨ (L.lhomWithConstantsMap g).onSentence (Formula.equivSentence θ) ↔
       θ.Realize ((Subtype.val : B → N) ∘ g) := by
-  letI : (constantsOn A).Structure N := constantsOn.structure ((Subtype.val : B → N) ∘ g)
-  haveI : (LHom.constantsOnMap g).IsExpansionOn N := constantsOnMap_isExpansionOn (f := g) rfl
-  haveI : (L.lhomWithConstantsMap g).IsExpansionOn N :=
+  let : (constantsOn A).Structure N := constantsOn.structure ((Subtype.val : B → N) ∘ g)
+  have : (LHom.constantsOnMap g).IsExpansionOn N := constantsOnMap_isExpansionOn (f := g) rfl
+  have : (L.lhomWithConstantsMap g).IsExpansionOn N :=
     LHom.sumMap_isExpansionOn (LHom.id L) (LHom.constantsOnMap g) N
   rw [LHom.realize_onSentence, Formula.realize_equivSentence]
   rfl

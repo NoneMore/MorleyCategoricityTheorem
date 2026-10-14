@@ -66,7 +66,7 @@ theorem mem_of_mem_of_models_imp (p : T.CompleteType α) {φ ψ : L[[α]].Senten
   rw [models_sentence_iff]
   intro M
   have hMp : M ⊨ (p : L[[α]].Theory) := inferInstance
-  haveI : M ⊨ (L.lhomWithConstants α).onTheory T := hMp.mono p.subset
+  have : M ⊨ (L.lhomWithConstants α).onTheory T := hMp.mono p.subset
   exact (hφψ.realize_sentence M) (hMp.realize_of_mem φ hφ)
 
 /-- A complete type contains a conjunction exactly when it contains both conjuncts. -/

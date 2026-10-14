@@ -1,7 +1,11 @@
 import Mathlib.Data.List.OfFn
 import Mathlib.Data.Nat.Find
 import Mathlib.Data.Nat.Notation
-import Mathlib.Data.Set.Lattice
+import Mathlib.Data.Set.Lattice.Bounded
+import Mathlib.Data.Set.Lattice.Disjoint
+import Mathlib.Data.Set.Lattice.Image
+import Mathlib.Data.Set.Lattice.Indexed
+import Mathlib.Data.Set.Lattice.Order
 import Mathlib.Logic.Relation
 
 /-!
