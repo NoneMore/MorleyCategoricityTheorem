@@ -1,13 +1,25 @@
 ## macOS
 .DS_Store
+
 ## Lake
 .lake/*
 .cache/*
+
 ## Python
 __pycache__/
 *.py[cod]
+
 ## Local agent workspace
 .agents/
+
+## Jekyll / Bundler
+/home_page/_site/
+/home_page/.jekyll-cache/
+/home_page/.jekyll-metadata
+/home_page/.sass-cache/
+/home_page/.bundle/
+/home_page/vendor/bundle/
+
 ## Blueprint
 /blueprint/print/print.log
 /blueprint/web/
@@ -15,6 +27,7 @@ __pycache__/
 /blueprint/src/web.bbl
 /blueprint/src/print.pdf
 /blueprint/print/
+
 ## TeX
 *.aux
 *.lof
