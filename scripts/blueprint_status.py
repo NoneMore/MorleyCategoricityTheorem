@@ -672,15 +672,15 @@ def format_text(
     if analysis.blocked_by_definitions:
         lines += [
             f"  {node.label:<62} [{node.kind}] needs {', '.join(sorted(missing))}"
-        for node, missing in analysis.blocked_by_definitions
+            for node, missing in analysis.blocked_by_definitions
         ]
     else:
         lines.append("  (none)")
-    lines += ["", f"Blocked by pending results ({len(analysis.blocked)}); pass --all for details"]
+    lines += ["", f"Blocked by pending results ({len(analysis.blocked}); pass --all for details"]
     return "\n".join(lines)
 
 
-def format_json((
+def format_json(
     analysis: Analysis,
     metrics: dict[str, Metrics],
     tex_path: Path,
@@ -780,82 +780,4 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--unlocks", metavar="LABEL")
     parser.add_argument("--plan", metavar="MILESTONE_OR_LABEL")
     parser.add_argument("--top", type=int)
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--statement-only", action="store_true")
-    parser.add_argument("--allow-dangling", action="store_true")
-    args = parser.parse_args(argv)
-
-    if args.top is not None and args.top <= 0:
-        parser.error("--top must be positive")
-    if not args.tex.is_file():
-        print(f"error: blueprint source not found: {args.tex}", file=sys.stderr)
-        return 2
-    try:
-        config = load_config(args.config)
-        nodes = parse_blueprint(args.tex.read_text(encoding="utf-8"), not args.statement_only)
-    except (OSError, RuntimeError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 2
-
-    diagnostics = validate_graph(nodes)
-    fatal = [item for item in diagnostics if item.code != "dangling-use" or not args.allow_dangling]
-    if fatal:
-        print("Blueprint graph validation failed:", file=sys.stderr)
-        for item in fatal:
-            print("  " + _diagnostic(item), file=sys.stderr)
-        return 2
-
-    known = {node.label for node in nodes}
-    bad_milestones = {name: label for name, label in config.milestones.items() if label not in known}
-    bad_metadata = sorted((set(config.effort) | set(config.risk)) - known)
-    if bad_milestones or bad_metadata:
-        print("Planner config validation failed:", file=sys.stderr)
-        for name, label in sorted(bad_milestones.items()):
-            print(f"  milestone {name}: unknown goal {label}", file=sys.stderr)
-        for label in bad_metadata:
-            print(f"  node metadata: unknown label {label}", file=sys.stderr)
-        return 2
-    if args.milestone and args.milestone not in config.milestones:
-        print(f"error: unknown milestone: {args.milestone}", file=sys.stderr)
-        return 2
-
-    goal = args.goal
-    restrict = False
-    if args.milestone:
-        goal = config.milestones[args.milestone]
-        restrict = True
-    elif goal is None:
-        goal = config.milestones.get("morley", DEFAULT_GOAL)
-    goal = goal or None
-    if goal is not None and goal not in known:
-        print(f"error: goal label not found in blueprint: {goal}", file=sys.stderr)
-        return 2
-
-    analysis = analyse(nodes)
-    metrics = compute_metrics(analysis, goal, config)
-    exit_code = 0
-    if args.milestones:
-        print(format_milestones(analysis, config))
-    elif args.why:
-        print(format_why(args.why, analysis, config))
-        exit_code = 0 if args.why in known else 2
-    elif args.unlocks:
-        print(format_unlocks(args.unlocks, analysis))
-        exit_code = 0 if args.unlocks in known else 2
-    elif args.plan:
-        print(format_plan(args.plan, analysis, config))
-        resolved = _resolve_target(args.plan, config, known)
-        if resolved is None or plan_dangling(args.plan, analysis, config):
-            exit_code = 2
-    elif args.json:
-        print(format_json(analysis, metrics, args.tex, goal, config, args.sort, args.top, restrict))
-    else:
-        print(format_text(analysis, metrics, args.tex, args.all, args.sort, goal, args.top, restrict))
-
-    if diagnostics and args.allow_dangling:
-        _print_dangling_warnings(diagnostics)
-    return exit_code
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+    parser.add_argu[¶»§q«^
