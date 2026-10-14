@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   cleanup:
-    if: github.event.head_commit.message != 'chore: clean Mathlib 4.34 warnings'
+    if: "${{ github.event.head_commit.message != 'chore: clean Mathlib 4.34 warnings' }}"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout upgrade branch
@@ -52,8 +52,6 @@ jobs:
           replace("MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean",
                   "Set.mem_setOf", "Set.mem_ofPred")
 
-          # Mathlib 4.34's haveI/letI style linter: these are tactic-proof
-          # occurrences whose enclosing goals are propositions.
           fixes = {
               "MorleyCategoricityTheorem/ModelTheory/ElementaryChain.lean": {
                   74: ("haveI", "have"),
