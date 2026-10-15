@@ -86,9 +86,11 @@ Mathlib's `Set.definable_iff_exists_formula_sum` becomes
 A.Definable L s ↔ ∃ φ : L.Formula (A ⊕ α), s = φ.realizationSet (Subtype.val)
 ```
 
-so the witnessing formula of a definable set *is* the formula whose realization set it is, and the
-bridge to `DefinableSet` is `⟨φ, rfl⟩`. This is the main argument that the layer belongs upstream
-rather than being a local invention.
+so the witnessing formula of a definable set *is* the formula whose realization set it is. The
+bridge from this representation to `Set.Definable` should go through
+`Set.definable_iff_exists_formula_sum`; a `DefinableSet` can then bundle the resulting definability
+proof. This is the main argument that the layer belongs upstream rather than being a local
+invention.
 
 ### Relationship to type spaces
 
@@ -176,9 +178,9 @@ should move next to the new definitions or be generalized to `Equiv.funUnique (F
    Boolean-algebra structure itself stays in Mathlib's `DefinableSet`; do not duplicate it.
 3. **Variable relabelling.**
    ```lean
-   theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β' → β) :
+   theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β → β') :
        (φ.relabel (Sum.map id f)).realizationSet a =
-         (fun x : β → M => x ∘ f) ⁻¹' φ.realizationSet a
+         (fun x : β' → M => x ∘ f) ⁻¹' φ.realizationSet a
    ```
    proved from `Formula.realize_relabel` and `Sum.elim_comp_map`. This absorbs the `Sum.inl` /
    `Sum.inr` projections currently hand-rolled in `ModelTheory/Types.lean`.
@@ -186,7 +188,8 @@ should move next to the new definitions or be generalized to `Equiv.funUnique (F
    ```lean
    theorem ElementaryEmbedding.image_realizationSet_subset
        (e : M ↪ₑ[L] N) (φ : L.Formula (α ⊕ β)) (a : α → M) :
-       (e : M → N) '' φ.realizationSet a ⊆ φ.realizationSet (e ∘ a)
+       (fun x : β → M => (e : M → N) ∘ x) '' φ.realizationSet a ⊆
+         φ.realizationSet ((e : M → N) ∘ a)
    ```
    This generalizes `VaughtianPair.image_realizations_subset`, which should then be deleted. Also
    restate `ElementaryMaps` as
@@ -202,8 +205,9 @@ should move next to the new definitions or be generalized to `Equiv.funUnique (F
 
 ```lean
 theorem Set.definable_realizationSet {A : Set M} (φ : L.Formula (A ⊕ β)) :
-    A.Definable L (φ.realizationSet (Subtype.val : A → M)) :=
-  ⟨φ, rfl⟩
+    A.Definable L (φ.realizationSet (Subtype.val : A → M)) := by
+  rw [Set.definable_iff_exists_formula_sum]
+  exact ⟨φ, rfl⟩
 ```
 
 plus the reformulation of `Set.definable_iff_exists_formula_sum` in terms of `realizationSet`.
