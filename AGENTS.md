@@ -44,6 +44,9 @@ if the skill gives conflicting guidance.
 - Add module and declaration documentation for public definitions and
   non-obvious results. Explain the mathematical role rather than narrating the
   tactic script.
+- Follow `docs/plan/README.md` for infrastructure TODOs, active implementation
+  plans, and plan archival. Keep the full lifecycle rules there rather than
+  duplicating them in this file.
 - Do not introduce new `sorry` placeholders unless the task explicitly permits
   scaffolding. Never describe a declaration as fully proved while it or a local
   dependency still contains `sorry`.
