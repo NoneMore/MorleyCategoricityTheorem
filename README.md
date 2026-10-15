@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/build-project.yml/badge.svg)](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/build-project.yml)
 [![Blueprint](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/blueprint.yml/badge.svg)](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/blueprint.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-lightblue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/Apache-2.0-lightblue.svg)](LICENSE)
 
 This repository formalizes **Morley's categoricity theorem** in Lean 4 using
 [Mathlib](https://github.com/leanprover-community/mathlib4). The project follows a
@@ -57,8 +57,8 @@ lake exe mk_all --check
   and API documentation.
 - [`references/`](references) contains supporting references used by the project.
 - [`scripts/`](scripts) contains repository maintenance and project tooling.
-- [`docs/plan/`](docs/plan/) contains active infrastructure plans, with
-  [`docs/plan/README.md`](docs/plan/README.md) documenting the planning lifecycle.
+- [`docs/plan/`](docs/plan/) contains active Lean/formalization infrastructure plans, with
+  [`docs/plan/README.md`](docs/plan/README.md) documenting their planning lifecycle.
 
 ## Contributing
 
