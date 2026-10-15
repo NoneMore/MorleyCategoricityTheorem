@@ -57,7 +57,8 @@ lake exe mk_all --check
   and API documentation.
 - [`references/`](references) contains supporting references used by the project.
 - [`scripts/`](scripts) contains repository maintenance and project tooling.
-- [`PLAN.md`](PLAN.md) and [`TODO.md`](TODO.md) track project planning and remaining work.
+- [`docs/plan/`](docs/plan/) contains active Lean/formalization infrastructure plans, with
+  [`docs/plan/README.md`](docs/plan/README.md) documenting their planning lifecycle.
 
 ## Contributing
 

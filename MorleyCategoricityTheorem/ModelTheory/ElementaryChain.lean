@@ -10,6 +10,13 @@ the direct limit of the underlying directed system of first-order embeddings.
 
 The main remaining mathematical argument is that the canonical maps into the direct limit are
 elementary.  The relevant statements are included below with proof placeholders.
+
+## TODO
+
+- Package the recurring countable successor-stage construction pattern into a higher-level API that
+  combines `ofNatSucc`, passage to the limit, preservation of theories, and cardinality control.
+  Keep the abstraction driven by downstream model constructions rather than adding more direct-limit
+  lemmas.
 -/
 
 universe u v w w'

@@ -27,6 +27,14 @@ to the property of defining a nonempty basic open set with no isolated type.
 - `IsOmegaStable.false_of_formula_splitting`: an omega-stable theory admits no formula property
   that can be split indefinitely into contradictory realizable subformulas.
 
+## TODO
+
+- Investigate whether density of isolated types is better factored through a general theorem that a
+  countable Baire/Stone space has dense isolated points; retain the current binary-splitting proof
+  unless the topological abstraction is genuinely shorter and more reusable.
+- Add invariance/transport lemmas for `IsOmegaStable` under the relevant language or model
+  equivalences when downstream proofs need them.
+
 The semantic dictionary relating basic open sets to realization of their defining formulas is
 provided by `ModelTheory.Types`.
 -/

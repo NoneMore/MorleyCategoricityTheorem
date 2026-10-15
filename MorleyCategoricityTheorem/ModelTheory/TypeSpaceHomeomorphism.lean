@@ -53,6 +53,12 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
 - `FirstOrder.Language.LEquiv.isMaximal_onTheory`: a language equivalence carries maximal theories
   to maximal theories.
 
+## TODO
+
+- Add identity and composition laws for `completeTypeEquiv`, `completeTypeHomeomorph`, and
+  `completeTypeOverHomeomorph`, so downstream transports can be simplified functorially without
+  unfolding their implementations.
+
 The syntax-only functoriality laws used here (`LHom.onTheory_comp`, `LHom.id_onTheory`,
 `LHom.onSentence_not`, the mutual-inverse laws for `LEquiv`, and
 `LEquiv.onTheory_addConstants_lhomWithConstants`) live in `ModelTheory/Syntax.lean`, while

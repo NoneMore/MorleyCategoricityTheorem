@@ -1,11 +1,11 @@
-# Plan: The Realization Set of a Formula
+# Formula Realization Sets
 
-## Target
+## Intent
 
 Introduce a thin, unbundled semantic layer that names the set of tuples realizing a formula once
 its parameter variables have been assigned values, and equip it with the membership, Boolean,
 relabelling, elementary-embedding, and cardinality API needed by the two-cardinal part of the
-blueprint.  The layer is a naming and reuse exercise, not a new theory of definable sets.
+blueprint. The layer is a naming and reuse exercise, not a new theory of definable sets.
 
 The public definition is intended to be:
 
@@ -16,7 +16,17 @@ def FirstOrder.Language.Formula.realizationSet
 
 with a unary specialization `Formula.realizationSet₁ : Set M`.
 
-## Motivation
+The blueprint nodes that will need the layer are:
+
+- `def:kappa-lambda-model` ("some one-variable parameter-definable subset of `M`"),
+- `lem:kappa-lambda-model-gives-vaughtian-pair` (`φ(M,ā) = φ(N,ā)`),
+- `cor:no-small-infinite-definable-sets-without-vaughtian-pairs`,
+- `lem:countable-vaughtian-pair` ("no realizations outside the `U`-part"),
+- and the existing `lem:elementary-embedding-definable-set-cardinality`.
+
+## Facts / Observations
+
+### Repeated realization-set representation
 
 Commit `e5b2d77` (`feat: define Vaughtian pairs`) had to hand-write the same set-builder four times
 inside a 119-line file:
@@ -31,7 +41,7 @@ sends the source realization set into the target realization set" for the unary 
 `Fin n ⊕ Fin 1`, because it cannot reuse `ElementaryMaps.realizations_embedding` stated for the
 general shape `β ⊕ α`.
 
-This is not an isolated incident.  The same set-builder is the working representation of
+This is not an isolated incident. The same set-builder is the working representation of
 "parameter-definable subset" throughout the project:
 
 | Location | Occurrences |
@@ -42,19 +52,11 @@ This is not an isolated incident.  The same set-builder is the working represent
 | `ModelTheory/VaughtianPair.lean` | unary `Fin n ⊕ Fin 1` shape, four times |
 
 The project therefore already uses "the realization set of a formula" everywhere but has never
-given it a name.  Consequently no `simp` or `rw` lemma can move between call sites, and every new
+given it a name. Consequently no `simp` or `rw` lemma can move between call sites, and every new
 node of the form "this parameter-definable set is infinite / has cardinality λ / is unchanged in an
 elementary extension" restates the object in a slightly different shape.
 
-The blueprint nodes that will need the layer are:
-
-- `def:kappa-lambda-model` ("some one-variable parameter-definable subset of `M`"),
-- `lem:kappa-lambda-model-gives-vaughtian-pair` (`φ(M,ā) = φ(N,ā)`),
-- `cor:no-small-infinite-definable-sets-without-vaughtian-pairs`,
-- `lem:countable-vaughtian-pair` ("no realizations outside the `U`-part"),
-- and the existing `lem:elementary-embedding-definable-set-cardinality`.
-
-## Relationship to Mathlib
+### Relationship to Mathlib
 
 Mathlib already provides two related but insufficient notions.
 
@@ -69,12 +71,12 @@ def L.DefinableSet (A : Set M) (α : Type*) :=
 Neither replaces the proposed definition.
 
 - `Set.Definable` is a proposition, so it cannot be used as a set.
-- `L.DefinableSet` is a bundled subtype with a Boolean algebra structure.  Using it makes the image
+- `L.DefinableSet` is a bundled subtype with a Boolean algebra structure. Using it makes the image
   of a definable set under an elementary embedding no longer a definable set over the same
   parameter set, so the Vaughtian condition "unchanged in `N`" becomes an asymmetric coercion
   problem rather than an equality of sets.
 - Both take parameters as constants of the expansion `L[[A]]`, while the two-cardinal part of the
-  blueprint uses parameters as tuple variables `a : α → M`.  The translation between the two
+  blueprint uses parameters as tuple variables `a : α → M`. The translation between the two
   conventions should be one lemma, not repeated inline.
 
 The proposed definition is exactly the unbundled companion of `Set.Definable`: with it,
@@ -84,16 +86,18 @@ Mathlib's `Set.definable_iff_exists_formula_sum` becomes
 A.Definable L s ↔ ∃ φ : L.Formula (A ⊕ α), s = φ.realizationSet (Subtype.val)
 ```
 
-so the witnessing formula of a definable set *is* the formula whose realization set it is, and the
-bridge to `DefinableSet` is `⟨φ, rfl⟩`.  This is the main argument that the layer belongs upstream
-rather than being a local invention.
+so the witnessing formula of a definable set *is* the formula whose realization set it is. The
+bridge from this representation to `Set.Definable` should go through
+`Set.definable_iff_exists_formula_sum`; a `DefinableSet` can then bundle the resulting definability
+proof. This is the main argument that the layer belongs upstream rather than being a local
+invention.
 
-## Relationship to Type Spaces
+### Relationship to type spaces
 
 `T.typesWith σ` is a clopen subset of the Stone space of complete types; its elements are types, not
-tuples.  `φ.realizationSet a` is a subset of the model `β → M` and is the model-side counterpart.
+tuples. `φ.realizationSet a` is a subset of the model `β → M` and is the model-side counterpart.
 The dictionary between the two already exists in `ModelTheory/Types.lean` as
-`CompleteType.typesWith_nonempty_iff_exists_realize`.  The new definition does not duplicate it; the
+`CompleteType.typesWith_nonempty_iff_exists_realize`. The new definition does not duplicate it; the
 module documentation should state which side of the dictionary each object lives on.
 
 ## Design
@@ -119,23 +123,23 @@ theorem mem_realizationSet {φ : L.Formula (α ⊕ β)} {a : α → M} {x : β �
 
 Conventions, chosen to match the existing code rather than to introduce a third one:
 
-- **Parameters first.**  The index type is `α ⊕ β`, the parameter tuple is `a : α → M`, and the
-  realized tuples live in `β → M`.  This is the orientation already used by
+- **Parameters first.** The index type is `α ⊕ β`, the parameter tuple is `a : α → M`, and the
+  realized tuples live in `β → M`. This is the orientation already used by
   `Formula.realize_iExsAtLeast` (`φ : L.Formula (α ⊕ β)`, `v : α → M`,
-  `{x : β → M | …}.encard`) and by `ElementaryMaps.realizations_embedding`.  It also lets the
+  `{x : β → M | …}.encard`) and by `ElementaryMaps.realizations_embedding`. It also lets the
   counting-formula lemmas be restated as
   `(φ.iExsAtLeast β n).Realize v ↔ (n : ℕ∞) ≤ (φ.realizationSet v).encard`.
-- **`def`, not `abbrev`.**  An `abbrev` would unfold during every `simp`, risking defeq blow-ups and
+- **`def`, not `abbrev`.** An `abbrev` would unfold during every `simp`, risking defeq blow-ups and
   simp loops in the large cardinality proofs; a `def` together with a `@[simp]` membership lemma is
   the Mathlib convention and keeps the `Definable` bridge available.
-- **Unbundled.**  The object is a plain `Set`, so images, preimages, and equality behave as in
+- **Unbundled.** The object is a plain `Set`, so images, preimages, and equality behave as in
   ordinary set theory and the `Cardinal.mk` / `Set.encard` API applies directly.
-- **No notation.**  A custom notation would add blueprint-matching cost for little gain.
+- **No notation.** A custom notation would add blueprint-matching cost for little gain.
 
 ### Unary specialization
 
 The two-cardinal story only uses unary sets, and `Set (Fin 1 → M)` is an awkward home for
-`Set.Infinite`, `Set.encard`, and `Cardinal.mk`.  Provide
+`Set.Infinite`, `Set.encard`, and `Cardinal.mk`. Provide
 
 ```lean
 /-- The unary realization set. -/
@@ -169,30 +173,31 @@ should move next to the new definitions or be generalized to `Equiv.funUnique (F
    and the `Set.ext` corollary.
 2. **Boolean laws**, each one `ext x; simp`:
    `realizationSet_top`, `realizationSet_bot`, `realizationSet_inf`, `realizationSet_sup`,
-   `realizationSet_compl`, `realizationSet_imp`.  These attach the existing
-   `Formula.realize_inf`/`realize_sup`/`realize_not`/`realize_imp` lemmas to the new name.  The
+   `realizationSet_compl`, `realizationSet_imp`. These attach the existing
+   `Formula.realize_inf`/`realize_sup`/`realize_not`/`realize_imp` lemmas to the new name. The
    Boolean-algebra structure itself stays in Mathlib's `DefinableSet`; do not duplicate it.
 3. **Variable relabelling.**
    ```lean
-   theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β' → β) :
+   theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β → β') :
        (φ.relabel (Sum.map id f)).realizationSet a =
-         (fun x : β → M => x ∘ f) ⁻¹' φ.realizationSet a
+         (fun x : β' → M => x ∘ f) ⁻¹' φ.realizationSet a
    ```
-   proved from `Formula.realize_relabel` and `Sum.elim_comp_map`.  This absorbs the `Sum.inl` /
+   proved from `Formula.realize_relabel` and `Sum.elim_comp_map`. This absorbs the `Sum.inl` /
    `Sum.inr` projections currently hand-rolled in `ModelTheory/Types.lean`.
 4. **Elementary-embedding transport.**
    ```lean
    theorem ElementaryEmbedding.image_realizationSet_subset
        (e : M ↪ₑ[L] N) (φ : L.Formula (α ⊕ β)) (a : α → M) :
-       (e : M → N) '' φ.realizationSet a ⊆ φ.realizationSet (e ∘ a)
+       (fun x : β → M => (e : M → N) ∘ x) '' φ.realizationSet a ⊆
+         φ.realizationSet ((e : M → N) ∘ a)
    ```
-   This generalizes `VaughtianPair.image_realizations_subset`, which should then be deleted.  Also
+   This generalizes `VaughtianPair.image_realizations_subset`, which should then be deleted. Also
    restate `ElementaryMaps` as
    `realizations_embedding e φ b : φ.realizationSet b ↪ φ.realizationSet (e ∘ b)`.
-5. **Cardinality.**  Restate `mk_realizations_le`, `encard_realizations_eq_coe_iff`, and
-   `infinite_realizations_iff` with `realizationSet`.  Because `realizationSet` is a `def`, each
+5. **Cardinality.** Restate `mk_realizations_le`, `encard_realizations_eq_coe_iff`, and
+   `infinite_realizations_iff` with `realizationSet`. Because `realizationSet` is a `def`, each
    restatement is definitionally equal to the current statement, so this is safe; see the risk
-   note about declaration types below.  Keep the documented boundary: `Set.encard` only for
+   note about declaration types below. Keep the documented boundary: `Set.encard` only for
    comparison with a natural number, `Cardinal.mk` for monotonicity and arbitrary infinite lower
    bounds.
 
@@ -200,8 +205,9 @@ should move next to the new definitions or be generalized to `Equiv.funUnique (F
 
 ```lean
 theorem Set.definable_realizationSet {A : Set M} (φ : L.Formula (A ⊕ β)) :
-    A.Definable L (φ.realizationSet (Subtype.val : A → M)) :=
-  ⟨φ, rfl⟩
+    A.Definable L (φ.realizationSet (Subtype.val : A → M)) := by
+  rw [Set.definable_iff_exists_formula_sum]
+  exact ⟨φ, rfl⟩
 ```
 
 plus the reformulation of `Set.definable_iff_exists_formula_sum` in terms of `realizationSet`.
@@ -229,22 +235,54 @@ Because `realizationSet₁` unfolds to the current set-builder, this is a defini
 restatement: `isVaughtianPair_iff` keeps its proof, and `image_realizations_subset` disappears.
 After the rewrite `VaughtianPair.lean` should contain no `Sum.elim` at all.
 
-## File plan
+## Specs / Constraints
+
+### Non-goals
+
+- Do not introduce a bundled realization-set or definable-set type alongside `L.DefinableSet`.
+- Do not change the two-cardinal encoding in which the Vaughtian formula is unary with `Fin n`
+  parameters; keep the general layer at `α ⊕ β` and specialize.
+- Do not decide between `Set.encard` and `Cardinal.mk` inside the definition layer.
+- Do not add `Formula.toDefinableSet` or any notation without a concrete caller.
+- Do not conflate the model-side realization set with the type-space basic open set `typesWith`.
+- Do not modify `blueprint/` as part of this work unless the user explicitly requests blueprint
+  changes.
+
+### Risks and invariants
+
+- **Declaration types of `\leanok` nodes.** `lem:elementary-embedding-definable-set-cardinality`
+  already names `realizations_embedding`, `mk_realizations_le`, `encard_realizations_eq_coe_iff`,
+  and `infinite_realizations_iff` with `\leanok`. Keep those names. Restating their types in
+  terms of `realizationSet` is definitionally neutral, but if it causes churn, add parallel
+  `realizationSet`-stated lemmas instead and leave the original statements untouched.
+- **Definitional transparency.** `realizationSet` must remain a plain `def` whose body is the
+  set-builder, so that `mem_realizationSet` is `Iff.rfl` and the Vaughtian restatement is
+  definitionally equal to the committed one.
+- **Orientation.** Mixing `α ⊕ β` with `β ⊕ α` is the historical source of the duplication this
+  plan removes. Fix parameters-first everywhere and provide `Sum.comm`-based conversion lemmas
+  only if a concrete caller needs them.
+- **Import discipline.** The `Definability` bridge must not force
+  `Mathlib.ModelTheory.Definability` into the foundational `Semantics.lean`; place it under
+  `DefinablyFull.lean` or a new module and keep imports acyclic.
+
+## Implementation / Verification
+
+### File plan
 
 1. `MorleyCategoricityTheorem/ModelTheory/Semantics.lean`
    - `Formula.realizationSet`, `Formula.realizationSet₁`, membership, Boolean, and relabelling
-     lemmas.  No new imports.
+     lemmas. No new imports.
 2. `MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean`
-   - elementary-embedding transport and cardinality restatements.  No new imports.
+   - elementary-embedding transport and cardinality restatements. No new imports.
 3. `MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean` (or a small new module)
    - the `Set.Definable` bridge, placed where `Mathlib.ModelTheory.Definability` is already
-     imported.  Do not add that import to the foundational `Semantics.lean`.
+     imported. Do not add that import to the foundational `Semantics.lean`.
 4. `MorleyCategoricityTheorem/ModelTheory/VaughtianPair.lean`
    - restate `IsVaughtianPair` and delete the superseded lemma.
 5. `MorleyCategoricityTheorem.lean`
    - only if a new module is added.
 
-## Implementation order
+### Implementation order
 
 1. Search the current Mathlib dependency again for an upstream realization-set definition; confirm
    that only `Set.Definable` and `L.DefinableSet` exist.
@@ -262,42 +300,14 @@ After the rewrite `VaughtianPair.lean` should contain no `Sum.elim` at all.
 9. Recheck whether the blueprint proof text of the two-cardinal nodes should reference the new
    declaration names; update the blueprint only when explicitly authorized.
 
-## Non-goals
-
-- Do not introduce a bundled realization-set or definable-set type alongside `L.DefinableSet`.
-- Do not change the two-cardinal encoding in which the Vaughtian formula is unary with `Fin n`
-  parameters; keep the general layer at `α ⊕ β` and specialize.
-- Do not decide between `Set.encard` and `Cardinal.mk` inside the definition layer.
-- Do not add `Formula.toDefinableSet` or any notation without a concrete caller.
-- Do not conflate the model-side realization set with the type-space basic open set `typesWith`.
-- Do not modify `blueprint/` as part of this work unless the user explicitly requests blueprint
-  changes.
-
-## Risks and invariants
-
-- **Declaration types of `\leanok` nodes.**  `lem:elementary-embedding-definable-set-cardinality`
-  already names `realizations_embedding`, `mk_realizations_le`, `encard_realizations_eq_coe_iff`,
-  and `infinite_realizations_iff` with `\leanok`.  Keep those names.  Restating their types in
-  terms of `realizationSet` is definitionally neutral, but if it causes churn, add parallel
-  `realizationSet`-stated lemmas instead and leave the original statements untouched.
-- **Definitional transparency.**  `realizationSet` must remain a plain `def` whose body is the
-  set-builder, so that `mem_realizationSet` is `Iff.rfl` and the Vaughtian restatement is
-  definitionally equal to the committed one.
-- **Orientation.**  Mixing `α ⊕ β` with `β ⊕ α` is the historical source of the duplication this
-  plan removes.  Fix parameters-first everywhere and provide `Sum.comm`-based conversion lemmas
-  only if a concrete caller needs them.
-- **Import discipline.**  The `Definability` bridge must not force
-  `Mathlib.ModelTheory.Definability` into the foundational `Semantics.lean`; place it under
-  `DefinablyFull.lean` or a new module and keep imports acyclic.
-
-## Estimated cost
+### Estimated cost
 
 Definition, unary specialization, membership, Boolean, relabelling, and embedding transport:
-roughly 120–180 lines, dominated by `ext; simp`.  The only non-trivial proof is
-`image_realizationSet_subset`, whose current unary proof transfers directly.  `VaughtianPair.lean`
+roughly 120–180 lines, dominated by `ext; simp`. The only non-trivial proof is
+`image_realizationSet_subset`, whose current unary proof transfers directly. `VaughtianPair.lean`
 should shrink.
 
-## Validation
+### Verification
 
 For Lean-only changes without new imports:
 
@@ -313,7 +323,7 @@ lake exe mk_all --check
 
 Blueprint validation is out of scope unless blueprint files are changed.
 
-## Completion criteria
+### Completion criteria
 
 - `Formula.realizationSet` and `Formula.realizationSet₁` exist with `[simp]` membership lemmas.
 - Boolean, relabelling, and elementary-embedding transport lemmas are available.
