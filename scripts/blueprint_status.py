@@ -125,6 +125,24 @@ def _labels(text: str) -> set[str]:
     return found
 
 
+def validate_source(tex: str) -> list[Diagnostic]:
+    """Return source-level errors that would otherwise disappear during parsing."""
+    diagnostics: list[Diagnostic] = []
+    masked = _mask_comments(tex)
+    for match in _NODE_RE.finditer(masked):
+        body = masked[match.start(3):match.end(3)]
+        label_match = _LABEL_RE.search(body)
+        if label_match is None or not label_match.group(1).strip():
+            diagnostics.append(
+                Diagnostic(
+                    "missing-label",
+                    f"{match.group(1)} has no non-empty \\label",
+                    line=tex.count("\n", 0, match.start()) + 1,
+                )
+            )
+    return diagnostics
+
+
 def parse_blueprint(tex: str, include_proof_uses: bool = True) -> list[Node]:
     """Extract blueprint nodes from one TeX document in document order."""
     nodes: list[Node] = []
@@ -134,7 +152,7 @@ def parse_blueprint(tex: str, include_proof_uses: bool = True) -> list[Node]:
         body = tex[match.start(3):match.end(3)]
         clean_body = _mask_comments(body)
         label_match = _LABEL_RE.search(clean_body)
-        if label_match is None:
+        if label_match is None or not label_match.group(1).strip():
             continue
         proof_uses: set[str] = set()
         if include_proof_uses:
@@ -691,14 +709,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        nodes = parse_blueprint(
-            args.tex.read_text(encoding="utf-8"), not args.statement_only
-        )
+        tex = args.tex.read_text(encoding="utf-8")
     except OSError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
+    nodes = parse_blueprint(tex, not args.statement_only)
 
-    diagnostics = validate_graph(nodes)
+    diagnostics = validate_source(tex) + validate_graph(nodes)
     fatal = [
         item
         for item in diagnostics
@@ -735,6 +752,16 @@ def main(argv: list[str] | None = None) -> int:
         if diagnostics and args.allow_dangling:
             _print_dangling_warnings(diagnostics)
         return 0 if args.why in known else 2
+
+    if args.all:
+        goal = args.goal or None
+        if goal is not None and goal not in known:
+            print(f"error: goal label not found in blueprint: {goal}", file=sys.stderr)
+            return 2
+        print(format_text(analysis, {}, args.tex, True, goal, None, False))
+        if diagnostics and args.allow_dangling:
+            _print_dangling_warnings(diagnostics)
+        return 0
 
     goal = args.goal
     restrict = False
