@@ -25,7 +25,8 @@ blueprint node or downstream consumer to be implemented.
 Before archiving a completed plan, move any durable knowledge that still describes the current
 system into the relevant module documentation, then remove the module pointer. Move the plan to
 `docs/plan/archive/`. Archived plans are historical design records: they explain the completed work
-but are no longer maintained and are not a source of truth for the current system.
+but are no longer maintained and are not a source of truth for the current system. The archive
+directory need not exist until the first plan is archived.
 
 Plans that predate this convention may be migrated directly into `docs/plan/` without inventing a
 module-local TODO or pointer retroactively. The pointer rule applies when a plan is promoted from an
