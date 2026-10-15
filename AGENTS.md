@@ -2,106 +2,104 @@
 
 ## Scope
 
-These instructions apply to the entire repository. More specific instructions
-under a subdirectory take precedence for files in that subtree.
+These instructions apply to the entire repository. More specific applicable
+project instructions under a subdirectory take precedence for files in that
+subtree.
 
 ## Project
 
 This repository formalizes Morley's categoricity theorem in Lean 4 using
 Mathlib.
 
-- Lean source lives under `MorleyCategoricityTheorem/`.
-- `MorleyCategoricityTheorem.lean` is the root import file.
-- `lakefile.toml` and `lean-toolchain` define the project configuration and
-  toolchain.
-
 Treat compiled Lean declarations as the authority for what is currently
-implemented. Never describe a declaration as fully proved while it or a local
+implemented. Do not describe a declaration as fully proved while it or a local
 dependency still contains `sorry`.
 
-## Lean 4 Workflow
+## Lean Workflow
 
 For Lean proofs, theorem statements, formalization, proof repair, diagnostics,
-Mathlib search, or Lake build work, use the discovered `lean4` skill and follow
-its relevant workflow when that skill is available in the active harness.
-
-When available, use the configured `lean-lsp` MCP server for interactive
-feedback. The applicable repository validation commands below remain the final
-completion gate.
-
-User instructions and repository-specific rules in this file take precedence
-if the skill gives conflicting guidance.
+Mathlib search, or Lake build work, use the discovered `lean4` skill and the
+configured `lean-lsp` MCP server when they are available. Repository validation
+remains the final completion gate.
 
 ## Lean Development
 
 - Search the current Mathlib dependency for an existing declaration before
   adding a local replacement.
 - Keep declarations in the narrowest appropriate namespace and follow the
-  naming and argument conventions of nearby Mathlib model-theory code.
-- The project disables automatic implicit variables. Declare variables and
-  assumptions explicitly so changes remain compatible with
-  `autoImplicit = false` and `relaxedAutoImplicit = false`.
+  naming and argument conventions of nearby Mathlib and project model-theory
+  code.
+- Declare variables and assumptions explicitly; the project builds with
+  automatic implicit variables disabled.
 - Add module and declaration documentation for public definitions and
-  non-obvious results. Explain the mathematical role rather than narrating the
+  non-obvious results. Explain mathematical purpose rather than narrating the
   tactic script.
-- Follow `docs/plan/README.md` for Lean/formalization infrastructure TODOs,
-  active implementation plans, and plan archival. Keep the full lifecycle rules
-  there rather than duplicating them in this file.
+- For reusable Lean/formalization infrastructure TODOs and implementation
+  plans, follow `docs/plan/README.md`; do not duplicate its lifecycle rules
+  here.
 - Do not introduce new `sorry` placeholders unless the task explicitly permits
-  scaffolding. Never describe a declaration as fully proved while it or a local
-  dependency still contains `sorry`.
+  scaffolding.
 - Keep imports minimal and acyclic. When adding, removing, or renaming a module,
-  keep `MorleyCategoricityTheorem.lean` synchronized.
+  synchronize `MorleyCategoricityTheorem.lean`.
 - Do not edit dependency sources under `.lake/packages/` or build artifacts
   under `.lake/build/`.
 
 ## Blueprint Boundary
 
 Unless the user explicitly requests blueprint work, do not modify files under
-`blueprint/`, do not synchronize Lean changes into the blueprint, and do not run
-blueprint-related validation.
+`blueprint/` and do not synchronize Lean changes into the blueprint.
 
-If the user explicitly requests blueprint work, follow the user-invoked skill or
-instructions for both blueprint editing and blueprint validation instead of
-relying on repository-default blueprint rules.
+Read-only consistency checks against blueprint data are allowed when their
+normal validation trigger applies. In particular, changes to Lean declarations
+referenced by the blueprint may require
+`lake exe checkdecls blueprint/lean_decls`; running that check does not
+authorize blueprint edits.
 
-## Blueprint Status
+If the user explicitly requests blueprint work, follow the user-invoked skill
+or instructions for blueprint editing and validation.
+
+## Blueprint Status Tool
 
 `scripts/blueprint_status.py` is a read-only dependency-graph validator and
-goal-aware frontier reporter. Use `python3 scripts/blueprint_status.py --help`
-for CLI usage. Keep the small `MILESTONES` mapping synchronized with blueprint
-labels when milestone theorem names change.
+goal-aware frontier reporter. Use
+`python3 scripts/blueprint_status.py --help` for CLI usage.
 
-## Generated Files
+When milestone theorem labels change, keep the script's `MILESTONES` mapping
+synchronized with the blueprint labels.
 
-- Do not hand-edit `lake-manifest.json`. Update it only through Lake dependency
-  commands when the task calls for a dependency change.
-- Preserve unrelated working-tree changes. Do not remove or overwrite user
-  work in order to obtain a clean build.
+## Generated and Existing Files
+
+- Do not hand-edit `lake-manifest.json`; update it only through Lake dependency
+  commands when the task requires a dependency change.
+- Preserve unrelated working-tree changes. Do not remove or overwrite user work
+  to obtain a clean build.
 
 ## Validation
 
-Run the checks that match the files changed, from the repository root.
+Use the validation rules in `CONTRIBUTING.md` for the files and interfaces
+changed. In particular:
 
-| Files changed | Command |
-|---|---|
-| Only `.lean` files, no new imports | `lake build MorleyCategoricityTheorem` |
-| `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
-| Blueprint status files | `python3 -m unittest discover -s scripts/tests -v` + `python3 scripts/blueprint_status.py --milestones` |
+- Lean changes: `lake build MorleyCategoricityTheorem`.
+- Added, removed, or renamed Lean modules: also
+  `lake exe mk_all --check`.
+- Changed, renamed, or removed Lean declarations referenced by the blueprint:
+  also `lake exe checkdecls blueprint/lean_decls`.
+- Changes to `scripts/blueprint_status.py` or its tests:
+  `python3 -m unittest discover -s scripts/tests -v` and
+  `python3 scripts/blueprint_status.py --milestones`.
 
-If neither files under `blueprint/` nor blueprint status files were changed, do
-not run blueprint-related validation. If the user explicitly requested blueprint
-changes, use the validation workflow specified by the user-invoked blueprint
-skill or instructions.
+Do not run unrelated blueprint build or synchronization work merely because a
+Lean file changed.
 
 If an applicable validation cannot be run, state exactly which command was
 omitted and why.
 
 ## Definition of Done
 
-- Relevant Lean targets build successfully.
+- Applicable validation passes.
 - No unintended `sorry` placeholders or unrelated changes were introduced.
-- Root imports reflect the current module set.
-- Blueprint files remain untouched unless the user explicitly requested
-  blueprint work.
-- The final report lists the files changed and the validation performed.
+- The root import file reflects the module set when modules changed.
+- Blueprint files remain untouched unless blueprint work was explicitly
+  requested.
+- The final report lists files changed, validation performed, and any applicable
+  validation that could not be run.
