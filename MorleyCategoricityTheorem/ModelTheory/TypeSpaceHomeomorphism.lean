@@ -127,7 +127,7 @@ private theorem map_map_toTheory' (e : L ≃ᴸ L') (h : e.toLHom.onTheory T = T
   LEquiv.toLHom_onTheory_invLHom_onTheory (e.addConstants α) p.toTheory
 
 /-- A language equivalence that carries a theory `T` onto a theory `T'` induces an equivalence
-between the complete types over `T` and over `T'` with the same variables.
+between the complete types over `T` and the complete types over `T'` with the same variables.
 
 The forward direction renames the symbols of the underlying maximal theory along `e.addConstants α`,
 and the inverse direction renames them back along `(e.symm).addConstants α`. -/
