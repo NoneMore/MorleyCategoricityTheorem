@@ -126,7 +126,7 @@ jobs:
           key: lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ hashFiles('MorleyCategoricityTheorem.lean', 'MorleyCategoricityTheorem/**/*.lean', 'lakefile.toml') }}
 
       - name: Build blueprint
-        uses: xu-cheng/texlive-action@f886de8159e5952a131848a5fa9c3196a2132b5d # v2
+        uses: xu-cheng/texlive-action@22c04326a5d855880f9d39bb955138bf11c6df80 # v3
         with:
           docker_image: ghcr.io/xu-cheng/texlive-small:20250401@sha256:d3f65cc1473a6c0b60f08f4b5e6b8cb36f5f3cbee34bf28d342db5674c4fb25a
           run: bash blueprint/ci-build.sh
