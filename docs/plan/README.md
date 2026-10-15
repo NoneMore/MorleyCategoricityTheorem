@@ -27,6 +27,10 @@ system into the relevant module documentation, then remove the module pointer. M
 `docs/plan/archive/`. Archived plans are historical design records: they explain the completed work
 but are no longer maintained and are not a source of truth for the current system.
 
+Plans that predate this convention may be migrated directly into `docs/plan/` without inventing a
+module-local TODO or pointer retroactively. The pointer rule applies when a plan is promoted from an
+existing module TODO.
+
 ## Plan format
 
 Every active plan uses the following five top-level sections. Keep a section short when there is
