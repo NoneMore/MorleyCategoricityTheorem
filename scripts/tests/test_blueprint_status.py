@@ -54,6 +54,17 @@ Done.
         diagnostics = bs.validate_graph(nodes)
         self.assertEqual([item.code for item in diagnostics], ["dangling-use"])
 
+    def test_unlabelled_nodes_are_reported(self) -> None:
+        tex = r"""
+\begin{lemma}[Missing]\uses{lem:a}\end{lemma}
+\begin{lemma}\label{   }\end{lemma}
+\begin{lemma}\label{lem:a}\leanok\end{lemma}
+"""
+        diagnostics = bs.validate_source(tex)
+        self.assertEqual([item.code for item in diagnostics], ["missing-label", "missing-label"])
+        self.assertEqual([item.line for item in diagnostics], [2, 3])
+        self.assertEqual([node.label for node in bs.parse_blueprint(tex)], ["lem:a"])
+
     def test_duplicate_self_and_cycle_are_reported(self) -> None:
         tex = r"""
 \begin{lemma}\label{lem:a}\uses{lem:b}\end{lemma}
@@ -143,7 +154,7 @@ Done.
             path.write_text(tex, encoding="utf-8")
             stdout = io.StringIO()
             with contextlib.redirect_stdout(stdout):
-                result = bs.main(["--tex", str(path), "--goal", "thm:goal", "--all"])
+                result = bs.main(["--tex", str(path), "--all"])
         self.assertEqual(result, 0)
 
     def test_why_custom_tex_does_not_require_default_goal(self) -> None:
