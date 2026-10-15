@@ -73,11 +73,14 @@ A Lean-only or repository-infrastructure pull request does not need to modify th
 
 ## Validation
 
-Run the checks relevant to the files you changed:
+Run the checks relevant to the files you changed from the repository root:
 
 - Lean changes: `lake build MorleyCategoricityTheorem`
 - Added, removed, or renamed Lean modules: also run `lake exe mk_all --check`
 - Lean declarations referenced by the blueprint: also run `lake exe checkdecls blueprint/lean_decls`
+- Changes to `scripts/blueprint_status.py` or its tests: run
+  `python3 -m unittest discover -s scripts/tests -v` and
+  `python3 scripts/blueprint_status.py --milestones`
 - Blueprint or `home_page/` changes: ensure the documentation validation workflow passes
 - Documentation-only Markdown changes: review rendered Markdown and verify links where applicable
 
