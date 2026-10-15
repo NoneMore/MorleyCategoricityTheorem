@@ -2,8 +2,9 @@
 
 ## Scope
 
-These instructions apply to the entire repository. More specific `AGENTS.md`
-instructions under a subdirectory take precedence for files in that subtree.
+These instructions apply to the entire repository. More specific applicable
+project instructions under a subdirectory take precedence for files in that
+subtree.
 
 ## Project
 
@@ -25,8 +26,9 @@ remains the final completion gate.
 
 - Search the current Mathlib dependency for an existing declaration before
   adding a local replacement.
-- Follow the naming, namespace, and argument conventions of nearby Mathlib and
-  project model-theory code.
+- Keep declarations in the narrowest appropriate namespace and follow the
+  naming and argument conventions of nearby Mathlib and project model-theory
+  code.
 - Declare variables and assumptions explicitly; the project builds with
   automatic implicit variables disabled.
 - Add module and declaration documentation for public definitions and
