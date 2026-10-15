@@ -103,6 +103,12 @@ Done.
         rows = bs.milestone_rows(analysis, {"demo": "thm:goal"})
         self.assertEqual(rows[0], ("demo", "thm:goal", "1", "2", "1"))
 
+    def test_builtin_milestone_alias_matches_blueprint_architecture(self) -> None:
+        self.assertEqual(
+            bs.MILESTONES["no_vaughtian_pairs"],
+            "thm:uncountable-categoricity-no-vaughtian-pairs",
+        )
+
     def test_json_respects_goal_restriction_and_top(self) -> None:
         tex = r"""
 \begin{lemma}\label{lem:a}\end{lemma}
@@ -157,12 +163,27 @@ Done.
         for argv in (
             ["--json", "--why", "thm:goal"],
             ["--goal", "thm:goal", "--milestone", "morley"],
+            ["--milestones", "--milestone", "morley"],
+            ["--why", "thm:goal", "--top", "1"],
+            ["--all", "--top", "1"],
+            ["--all", "--json"],
         ):
             with self.subTest(argv=argv):
                 with contextlib.redirect_stderr(io.StringIO()):
                     with self.assertRaises(SystemExit) as error:
                         bs.main(argv)
                 self.assertEqual(error.exception.code, 2)
+
+    def test_help_describes_goal_aware_options(self) -> None:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            with self.assertRaises(SystemExit) as error:
+                bs.main(["--help"])
+        self.assertEqual(error.exception.code, 0)
+        help_text = stdout.getvalue()
+        self.assertIn("restrict the frontier to a named milestone path", help_text)
+        self.assertIn("show at most N ranked frontier nodes", help_text)
+        self.assertIn("allow missing dependency labels", help_text)
 
     def test_allow_dangling_is_an_explicit_escape_hatch(self) -> None:
         tex = r"""

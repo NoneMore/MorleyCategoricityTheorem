@@ -86,9 +86,10 @@ Run the checks that match the files changed, from the repository root.
 | `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
 | Blueprint status files | `python3 -m unittest discover -s scripts/tests -v` + `python3 scripts/blueprint_status.py --milestones` |
 
-If no blueprint files were changed, do not run blueprint-related validation. If
-the user explicitly requested blueprint changes, use the validation workflow
-specified by the user-invoked blueprint skill or instructions.
+If neither files under `blueprint/` nor blueprint status files were changed, do
+not run blueprint-related validation. If the user explicitly requested blueprint
+changes, use the validation workflow specified by the user-invoked blueprint
+skill or instructions.
 
 If an applicable validation cannot be run, state exactly which command was
 omitted and why.

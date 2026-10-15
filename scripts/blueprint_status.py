@@ -29,7 +29,7 @@ FORMALIZED_MARKERS = ("\\leanok", "\\mathlibok")
 DEFAULT_GOAL = "cor:morley-categoricity"
 MILESTONES = {
     "omega_stability": "thm:uncountable-categoricity-implies-omega-stable",
-    "no_vaughtian_pairs": "thm:uncountable-categoricity-implies-omega-stable-no-vaughtian-pairs",
+    "no_vaughtian_pairs": "thm:uncountable-categoricity-no-vaughtian-pairs",
     "reverse_direction": "thm:omega-stable-no-vaughtian-pairs-implies-uncountably-categorical",
     "morley": DEFAULT_GOAL,
 }
@@ -620,22 +620,72 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Validate the blueprint dependency graph and report a goal-aware frontier."
     )
-    parser.add_argument("--tex", type=Path, default=DEFAULT_TEX)
-    parser.add_argument("--all", action="store_true")
+    parser.add_argument(
+        "--tex",
+        type=Path,
+        default=DEFAULT_TEX,
+        help="blueprint source to parse (default: blueprint/src/content.tex)",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="list every pending node in document order instead of the frontier",
+    )
     goal_options = parser.add_mutually_exclusive_group()
-    goal_options.add_argument("--goal", default=None)
-    goal_options.add_argument("--milestone")
+    goal_options.add_argument(
+        "--goal",
+        default=None,
+        help="goal label for ranking; pass an empty string to disable goal-aware metrics",
+    )
+    goal_options.add_argument(
+        "--milestone",
+        help="restrict the frontier to a named milestone path",
+    )
     output_options = parser.add_mutually_exclusive_group()
-    output_options.add_argument("--milestones", action="store_true")
-    output_options.add_argument("--why", metavar="LABEL")
-    output_options.add_argument("--json", action="store_true")
-    parser.add_argument("--top", type=int)
-    parser.add_argument("--statement-only", action="store_true")
-    parser.add_argument("--allow-dangling", action="store_true")
+    output_options.add_argument(
+        "--milestones",
+        action="store_true",
+        help="show progress for configured milestones and exit",
+    )
+    output_options.add_argument(
+        "--why",
+        metavar="LABEL",
+        help="explain why LABEL is blocked or ready and exit",
+    )
+    output_options.add_argument(
+        "--json",
+        action="store_true",
+        help="emit machine-readable JSON",
+    )
+    parser.add_argument(
+        "--top",
+        type=int,
+        help="show at most N ranked frontier nodes",
+    )
+    parser.add_argument(
+        "--statement-only",
+        action="store_true",
+        help="ignore \\uses commands inside proofs",
+    )
+    parser.add_argument(
+        "--allow-dangling",
+        action="store_true",
+        help="allow missing dependency labels while keeping them as blockers",
+    )
     args = parser.parse_args(argv)
 
     if args.top is not None and args.top <= 0:
         parser.error("--top must be positive")
+    if args.milestones and (
+        args.goal is not None or args.milestone or args.all or args.top is not None
+    ):
+        parser.error("--milestones cannot be combined with --goal, --milestone, --all, or --top")
+    if args.why and (
+        args.goal is not None or args.milestone or args.all or args.top is not None
+    ):
+        parser.error("--why cannot be combined with --goal, --milestone, --all, or --top")
+    if args.all and (args.json or args.milestone or args.top is not None):
+        parser.error("--all cannot be combined with --json, --milestone, or --top")
     if not args.tex.is_file():
         print(f"error: blueprint source not found: {args.tex}", file=sys.stderr)
         return 2
