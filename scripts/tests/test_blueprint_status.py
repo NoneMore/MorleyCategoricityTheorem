@@ -140,6 +140,30 @@ Done.
                 result = bs.main(["--tex", str(path), "--goal", "thm:goal", "--all"])
         self.assertEqual(result, 0)
 
+    def test_why_custom_tex_does_not_require_default_goal(self) -> None:
+        tex = r"""
+\begin{theorem}\label{thm:goal}\end{theorem}
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "content.tex"
+            path.write_text(tex, encoding="utf-8")
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                result = bs.main(["--tex", str(path), "--why", "thm:goal"])
+        self.assertEqual(result, 0)
+        self.assertIn("Why thm:goal?", stdout.getvalue())
+
+    def test_conflicting_cli_modes_are_rejected(self) -> None:
+        for argv in (
+            ["--json", "--why", "thm:goal"],
+            ["--goal", "thm:goal", "--milestone", "morley"],
+        ):
+            with self.subTest(argv=argv):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as error:
+                        bs.main(argv)
+                self.assertEqual(error.exception.code, 2)
+
     def test_allow_dangling_is_an_explicit_escape_hatch(self) -> None:
         tex = r"""
 \begin{theorem}\label{thm:goal}\uses{lem:missing}\end{theorem}
@@ -147,8 +171,9 @@ Done.
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "content.tex"
             path.write_text(tex, encoding="utf-8")
+            stdout = io.StringIO()
             stderr = io.StringIO()
-            with contextlib.redirect_stderr(stderr):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 original = bs.MILESTONES
                 bs.MILESTONES = {"morley": "thm:goal"}
                 try:
@@ -166,6 +191,7 @@ Done.
                     bs.MILESTONES = original
         self.assertEqual(result, 0)
         self.assertIn("dangling-use", stderr.getvalue())
+        self.assertNotIn("graph validation passed", stdout.getvalue())
 
 
 if __name__ == "__main__":
