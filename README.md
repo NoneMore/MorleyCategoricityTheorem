@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/build-project.yml/badge.svg)](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/build-project.yml)
 [![Blueprint](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/blueprint.yml/badge.svg)](https://github.com/NoneMore/MorleyCategoricityTheorem/actions/workflows/blueprint.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/Apache-2.0-lightblue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-lightblue.svg)](LICENSE)
 
 This repository formalizes **Morley's categoricity theorem** in Lean 4 using
 [Mathlib](https://github.com/leanprover-community/mathlib4). The project follows a
