@@ -271,11 +271,11 @@ def analyse(nodes: list[Node]) -> Analysis:
     dangling: list[tuple[Node, set[str]]] = []
 
     for node in nodes:
-        if node.formalized:
-            continue
         unknown = node.uses - known.keys()
         if unknown:
             dangling.append((node, unknown))
+        if node.formalized:
+            continue
         missing_known = {dep for dep in node.uses if dep in known and dep not in formalized}
         missing = missing_known | unknown
         if not missing:
@@ -508,12 +508,17 @@ def format_text(
     goal: str | None,
     top: int | None,
     restrict_to_goal: bool,
+    include_proof_uses: bool = True,
 ) -> str:
     lines = [
         f"Blueprint status for {tex_path}",
         f"  {len(analysis.nodes)} nodes: {len(analysis.formalized)} formalized, {len(analysis.pending)} pending",
         f"  {len(analysis.frontier)} pending nodes on the dependency frontier",
-        "  statement/proof dependencies are merged",
+        (
+            "  statement/proof dependencies are merged"
+            if include_proof_uses
+            else "  statement dependencies only"
+        ),
         "",
     ]
 
@@ -758,7 +763,18 @@ def main(argv: list[str] | None = None) -> int:
         if goal is not None and goal not in known:
             print(f"error: goal label not found in blueprint: {goal}", file=sys.stderr)
             return 2
-        print(format_text(analysis, {}, args.tex, True, goal, None, False))
+        print(
+            format_text(
+                analysis,
+                {},
+                args.tex,
+                True,
+                goal,
+                None,
+                False,
+                not args.statement_only,
+            )
+        )
         if diagnostics and args.allow_dangling:
             _print_dangling_warnings(diagnostics)
         return 0
@@ -779,7 +795,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(format_json(analysis, metrics, args.tex, goal, args.top, restrict))
     else:
-        print(format_text(analysis, metrics, args.tex, args.all, goal, args.top, restrict))
+        print(
+            format_text(
+                analysis,
+                metrics,
+                args.tex,
+                args.all,
+                goal,
+                args.top,
+                restrict,
+                not args.statement_only,
+            )
+        )
 
     if diagnostics and args.allow_dangling:
         _print_dangling_warnings(diagnostics)
