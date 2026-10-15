@@ -21,6 +21,12 @@ elementary embedding.
 - `PartialElementaryEmbedding.map_sentence`: this equivalence preserves satisfaction of sentences.
 - `PartialElementaryEmbedding.map_completeTheory`: it carries the complete theory of `M` over `A`
   onto the complete theory of `N` over `B`.
+
+## TODO
+
+- As isolated-type extension and back-and-forth constructions create concrete callers, develop an
+  extension/restriction relation and unions of compatible chains of partial elementary embeddings.
+  Keep this API proof-driven rather than fixing a general framework in advance.
 -/
 
 universe u v w w'
