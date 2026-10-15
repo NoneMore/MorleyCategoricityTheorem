@@ -1,16 +1,20 @@
-# Infrastructure Plans
+# Lean Infrastructure Plans
 
-This directory holds active implementation plans for project infrastructure. Plans are promoted from
-lightweight module-local TODOs only when the project decides to implement the underlying capability.
-The capability itself is the identity of a plan; blueprint nodes and downstream proofs are
-motivation or consumers, not plan owners.
+This directory holds active implementation plans for infrastructure inside the Lean formalization:
+reusable model-theory APIs, proof-support abstractions, and related Lean library structure. It does
+not govern repository tooling, CI/workflows, blueprint tooling, website/documentation infrastructure,
+or other non-Lean project infrastructure.
+
+Plans are promoted from lightweight module-local TODOs only when the project decides to implement
+the underlying capability. The capability itself is the identity of a plan; blueprint nodes and
+downstream proofs are motivation or consumers, not plan owners.
 
 ## Lifecycle
 
-Infrastructure ideas begin as natural-language bullets under `## TODO` in the documentation header
-of the most relevant Lean module. A TODO may describe a candidate improvement, an investigation, or
-an open design question. Recording it does not mean that the need is validated, the design is
-settled, or implementation is committed.
+Lean/formalization infrastructure ideas begin as natural-language bullets under `## TODO` in the
+documentation header of the most relevant Lean module. A TODO may describe a candidate improvement,
+an investigation, or an open design question. Recording it does not mean that the need is validated,
+the design is settled, or implementation is committed.
 
 When the project decides to implement an item, promote it to an active plan in `docs/plan/`, named
 after the infrastructure capability. Replace the originating TODO with a short pointer to the plan;
