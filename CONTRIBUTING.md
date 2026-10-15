@@ -42,6 +42,8 @@ When making Lean changes:
 
 - Prefer existing Mathlib declarations over local replacements when possible.
 - Keep imports minimal and follow the naming and namespace conventions of nearby code.
+- For reusable Lean/formalization infrastructure discovered during proof development, follow the
+  TODO, active-plan, and archival lifecycle in [`docs/plan/README.md`](docs/plan/README.md).
 - Do not introduce new `sorry` placeholders unless the change is explicitly intended as
   scaffolding and the pull request clearly says so.
 - Do not edit files under `.lake/packages/` or `.lake/build/`.
