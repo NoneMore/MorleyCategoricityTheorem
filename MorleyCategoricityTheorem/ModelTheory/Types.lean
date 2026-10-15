@@ -28,8 +28,8 @@ types is developed in `ModelTheory.IsolatedTypes`.
   pass through `Formula.equivSentence.symm`.
 - If a concrete caller needs to act on arbitrary complete types rather than realized tuples,
   investigate a contravariant reindexing API along variable maps. Keep the scope caller-driven: the
-  current realized-type projection lemmas already cover their existing uses, and do not add a
-  canonical covariant extension along injections.
+  current realized-type projection lemmas already cover their existing uses. Do not add a canonical
+  covariant extension along injections.
 - Generalize `typeOf_eq_of_typeOf_eq_of_subset` from realized types to a contravariant parameter
   restriction map on arbitrary complete types; prove compatibility with formula membership,
   `typeOf`, and composition, relate it to continuous or open maps of Stone spaces, and reformulate
