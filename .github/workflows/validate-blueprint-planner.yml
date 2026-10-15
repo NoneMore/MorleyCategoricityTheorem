@@ -1,0 +1,27 @@
+name: Validate blueprint status
+
+on:
+  pull_request:
+    paths:
+      - scripts/blueprint_status.py
+      - scripts/tests/**
+      - blueprint/src/content.tex
+      - .github/workflows/validate-blueprint-planner.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run blueprint status unit tests
+        run: python3 -m unittest discover -s scripts/tests -v
+
+      - name: Validate repository blueprint graph
+        run: python3 scripts/blueprint_status.py --milestones

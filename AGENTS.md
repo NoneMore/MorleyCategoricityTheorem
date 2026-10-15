@@ -62,58 +62,12 @@ If the user explicitly requests blueprint work, follow the user-invoked skill or
 instructions for both blueprint editing and blueprint validation instead of
 relying on repository-default blueprint rules.
 
-## Blueprint Progress
+## Blueprint Status
 
-`scripts/blueprint_status.py` answers "what can be formalized next, and which
-node first?" by parsing the dependency graph of `blueprint/src/content.tex`. It
-is read-only: it never writes to `blueprint/` and does not replace the blueprint
-validation build.
-
-```bash
-python3 scripts/blueprint_status.py              # frontier, ranked by priority
-python3 scripts/blueprint_status.py --all        # every pending node, in order
-python3 scripts/blueprint_status.py --sort reach # rank by one metric
-python3 scripts/blueprint_status.py --json       # machine-readable output
-```
-
-Conventions the report relies on:
-
-- A node counts as formalized when its environment is marked `\leanok` (proved
-  in this repository) or `\mathlibok` (supplied by Mathlib).
-- Dependencies are the labels of every `\uses{...}` command, both in the node's
-  statement and in the proof attached to it, because proof-level `\uses` list
-  the lemmas the proof actually invokes.
-- The *frontier* is the pending nodes whose dependencies are all formalized.
-  Nodes held up only by a missing definition are listed separately, since the
-  definition is usually the immediate next step.
-
-Frontier nodes are ranked by how much formalizing them would advance the
-blueprint:
-
-    score = (unlocks + reach + new_ready + critical) / effort
-
-- `unlocks` counts the pending nodes that directly depend on the node, `reach`
-  those that depend on it transitively, and `new_ready` the currently blocked
-  nodes that become frontier as soon as it is done.
-- `critical` is the longest remaining chain of pending nodes from it to the goal
-  (default `cor:morley-categoricity`; `--goal` changes it and an empty string
-  disables critical paths). A node on no path to the goal is reported as
-  off-goal.
-- `effort` is a coarse cost proxy: 1 for a definition, 2 for a lemma,
-  proposition or corollary, 3 for a theorem. It is a heuristic, not a
-  measurement.
-
-The composite is a default, not a verdict: `--sort` ranks by any single metric
-(`score`, `unlocks`, `reach`, `new`, `critical`, `effort`) and the component
-columns are always printed. Prefer a definition with high `reach` when the goal
-is to unblock the largest part of the blueprint; prefer `critical` when the goal
-is the shortest route to Morley's theorem.
-
-Use the report to pick the next blueprint node; it is a planning aid, not a
-completion gate, so it does not replace `lake build MorleyCategoricityTheorem`,
-`lake exe mk_all --check`, or a blueprint build. The script locates the
-repository from its own path, so it may be invoked from any working directory;
-pass `--tex PATH` to analyse a different document.
+`scripts/blueprint_status.py` is a read-only dependency-graph validator and
+goal-aware frontier reporter. Use `python3 scripts/blueprint_status.py --help`
+for CLI usage. Keep the small `MILESTONES` mapping synchronized with blueprint
+labels when milestone theorem names change.
 
 ## Generated Files
 
@@ -130,10 +84,12 @@ Run the checks that match the files changed, from the repository root.
 |---|---|
 | Only `.lean` files, no new imports | `lake build MorleyCategoricityTheorem` |
 | `.lean` files with new or removed imports | above + `lake exe mk_all --check` |
+| Blueprint status files | `python3 -m unittest discover -s scripts/tests -v` + `python3 scripts/blueprint_status.py --milestones` |
 
-If no blueprint files were changed, do not run blueprint-related validation. If
-the user explicitly requested blueprint changes, use the validation workflow
-specified by the user-invoked blueprint skill or instructions.
+If neither files under `blueprint/` nor blueprint status files were changed, do
+not run blueprint-related validation. If the user explicitly requested blueprint
+changes, use the validation workflow specified by the user-invoked blueprint
+skill or instructions.
 
 If an applicable validation cannot be run, state exactly which command was
 omitted and why.
