@@ -495,7 +495,7 @@ def format_text(
         f"Blueprint status for {tex_path}",
         f"  {len(analysis.nodes)} nodes: {len(analysis.formalized)} formalized, {len(analysis.pending)} pending",
         f"  {len(analysis.frontier)} pending nodes on the dependency frontier",
-        "  graph validation passed; statement/proof dependencies are merged",
+        "  statement/proof dependencies are merged",
         "",
     ]
 
@@ -622,12 +622,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--tex", type=Path, default=DEFAULT_TEX)
     parser.add_argument("--all", action="store_true")
-    parser.add_argument("--goal", default=None)
-    parser.add_argument("--milestone")
-    parser.add_argument("--milestones", action="store_true")
-    parser.add_argument("--why", metavar="LABEL")
+    goal_options = parser.add_mutually_exclusive_group()
+    goal_options.add_argument("--goal", default=None)
+    goal_options.add_argument("--milestone")
+    output_options = parser.add_mutually_exclusive_group()
+    output_options.add_argument("--milestones", action="store_true")
+    output_options.add_argument("--why", metavar="LABEL")
+    output_options.add_argument("--json", action="store_true")
     parser.add_argument("--top", type=int)
-    parser.add_argument("--json", action="store_true")
     parser.add_argument("--statement-only", action="store_true")
     parser.add_argument("--allow-dangling", action="store_true")
     args = parser.parse_args(argv)
@@ -662,6 +664,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.milestone and args.milestone not in MILESTONES:
         print(f"error: unknown milestone: {args.milestone}", file=sys.stderr)
         return 2
+
+    analysis = analyse(nodes)
     if args.milestones:
         bad_milestones = {
             name: label for name, label in MILESTONES.items() if label not in known
@@ -671,6 +675,16 @@ def main(argv: list[str] | None = None) -> int:
             for name, label in sorted(bad_milestones.items()):
                 print(f"  {name}: unknown goal {label}", file=sys.stderr)
             return 2
+        print(format_milestones(analysis))
+        if diagnostics and args.allow_dangling:
+            _print_dangling_warnings(diagnostics)
+        return 0
+
+    if args.why:
+        print(format_why(args.why, analysis))
+        if diagnostics and args.allow_dangling:
+            _print_dangling_warnings(diagnostics)
+        return 0 if args.why in known else 2
 
     goal = args.goal
     restrict = False
@@ -684,16 +698,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: goal label not found in blueprint: {goal}", file=sys.stderr)
         return 2
 
-    analysis = analyse(nodes)
     metrics = compute_metrics(analysis, goal)
-
-    if args.milestones:
-        print(format_milestones(analysis))
-    elif args.why:
-        print(format_why(args.why, analysis))
-        if args.why not in known:
-            return 2
-    elif args.json:
+    if args.json:
         print(format_json(analysis, metrics, args.tex, goal, args.top, restrict))
     else:
         print(format_text(analysis, metrics, args.tex, args.all, goal, args.top, restrict))
