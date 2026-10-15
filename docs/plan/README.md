@@ -34,8 +34,11 @@ existing module TODO.
 
 ## Plan format
 
-Every active plan uses the following five top-level sections. Keep a section short when there is
-little to say; do not add filler merely to satisfy the structure.
+Every active plan uses these five top-level sections, in this order:
+
+`Intent` → `Facts / Observations` → `Design` → `Specs / Constraints` → `Implementation / Verification`.
+
+Keep a section short when there is little to say; do not add filler merely to satisfy the structure.
 
 ### Intent
 
