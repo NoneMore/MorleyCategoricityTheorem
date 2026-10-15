@@ -54,6 +54,19 @@ Done.
         diagnostics = bs.validate_graph(nodes)
         self.assertEqual([item.code for item in diagnostics], ["dangling-use"])
 
+    def test_formalized_dangling_dependency_is_reported_in_json(self) -> None:
+        tex = r"""
+\begin{lemma}\label{lem:done}\leanok\uses{lem:missing}\end{lemma}
+"""
+        analysis = bs.analyse(bs.parse_blueprint(tex))
+        payload = json.loads(
+            bs.format_json(analysis, bs.compute_metrics(analysis, None), Path("demo.tex"), None)
+        )
+        self.assertEqual(
+            payload["dangling_uses"],
+            [{"label": "lem:done", "missing": ["lem:missing"]}],
+        )
+
     def test_unlabelled_nodes_are_reported(self) -> None:
         tex = r"""
 \begin{lemma}[Missing]\uses{lem:a}\end{lemma}
@@ -90,6 +103,26 @@ Done.
         nodes = bs.parse_blueprint(tex)
         self.assertEqual([node.label for node in nodes], ["lem:real", "lem:user"])
         self.assertEqual(nodes[1].statement_uses, {"lem:real"})
+
+    def test_statement_only_report_describes_dependency_mode(self) -> None:
+        tex = r"""
+\begin{lemma}\label{lem:a}\end{lemma}
+\begin{proof}\uses{lem:b}\end{proof}
+\begin{lemma}\label{lem:b}\leanok\end{lemma}
+"""
+        analysis = bs.analyse(bs.parse_blueprint(tex, include_proof_uses=False))
+        output = bs.format_text(
+            analysis,
+            bs.compute_metrics(analysis, None),
+            Path("demo.tex"),
+            False,
+            None,
+            None,
+            False,
+            include_proof_uses=False,
+        )
+        self.assertIn("statement dependencies only", output)
+        self.assertNotIn("statement/proof dependencies are merged", output)
 
     def test_goal_metrics_are_structural_only(self) -> None:
         tex = r"""
