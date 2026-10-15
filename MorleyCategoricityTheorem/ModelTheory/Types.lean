@@ -26,10 +26,8 @@ types is developed in `ModelTheory.IsolatedTypes`.
 - Generalize `typeOf_eq_of_realize_imp` to formula-level extensionality lemmas for arbitrary
   complete types, including one-sided containment and biconditional forms, so callers need not
   pass through `Formula.equivSentence.symm`.
-- Develop contravariant reindexing of complete types along variable maps for arbitrary theories,
-  including formula membership, compatibility with `typeOf`, functoriality, variance under
-  injective or surjective maps, and isolation or topological behavior; avoid assuming a canonical
-  covariant extension along injections.
+- Active plan for contravariant complete-type reindexing along variable maps:
+  `docs/plan/complete-type-reindexing.md`.
 - Generalize `typeOf_eq_of_typeOf_eq_of_subset` from realized types to a contravariant parameter
   restriction map on arbitrary complete types; prove compatibility with formula membership,
   `typeOf`, and composition, relate it to continuous or open maps of Stone spaces, and reformulate
