@@ -141,8 +141,8 @@ def realizationSet (φ : L.Formula (α ⊕ β)) (a : α → M) : Set (β → M) 
 
 @[simp]
 theorem mem_realizationSet {φ : L.Formula (α ⊕ β)} {a : α → M} {x : β → M} :
-    x ∈ φ.realizationSet a ↔ φ.Realize (Sum.elim a x) := by
-  sorry
+    x ∈ φ.realizationSet a ↔ φ.Realize (Sum.elim a x) :=
+  Iff.rfl
 
 /-- `Formula.realizationSetIn M φ` is the set of `β`-tuples of `M` realizing the parameter-free
 formula `φ`.
@@ -154,8 +154,8 @@ def realizationSetIn (M : Type w) [L.Structure M] (φ : L.Formula β) : Set (β 
 
 @[simp]
 theorem mem_realizationSetIn (M : Type w) [L.Structure M] (φ : L.Formula β) {x : β → M} :
-    x ∈ realizationSetIn M φ ↔ φ.Realize x := by
-  sorry
+    x ∈ realizationSetIn M φ ↔ φ.Realize x :=
+  Iff.rfl
 
 /-- The unary realization set: the elements of `M` realizing `φ` when the `α`-variables are assigned
 the parameter tuple `a`. -/
@@ -164,66 +164,82 @@ def realizationSet₁ (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) : Set M :=
 
 @[simp]
 theorem mem_realizationSet₁ {φ : L.Formula (α ⊕ Fin 1)} {a : α → M} {x : M} :
-    x ∈ φ.realizationSet₁ a ↔ φ.Realize (Sum.elim a (fun _ : Fin 1 => x)) := by
-  sorry
+    x ∈ φ.realizationSet₁ a ↔ φ.Realize (Sum.elim a (fun _ : Fin 1 => x)) :=
+  Iff.rfl
 
 /-- The `Fin 1`-indexed realization set is the image of the unary one under the canonical
 identification of `M` with `Fin 1 → M`. -/
 theorem realizationSet_fin_one_image (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
     φ.realizationSet a = (fun x : M => fun _ : Fin 1 => x) '' φ.realizationSet₁ a := by
-  sorry
+  ext x
+  constructor
+  · intro hx
+    have hx' : (fun _ : Fin 1 => x 0) = x :=
+      funext fun i => by simp [Fin.eq_zero i]
+    exact ⟨x 0, by rwa [mem_realizationSet₁, hx'], hx'⟩
+  · rintro ⟨y, hy, rfl⟩
+    simpa using hy
 
 /-- The `Fin 1`-indexed and unary realization sets are infinite simultaneously. -/
 theorem infinite_realizationSet_fin_one_iff (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
     (φ.realizationSet a).Infinite ↔ (φ.realizationSet₁ a).Infinite := by
-  sorry
+  rw [realizationSet_fin_one_image]
+  exact Set.infinite_image_iff fun x _ y _ h => congrFun h 0
 
 /-- Two realization sets are equal as soon as the two formulas realize the same tuples after their
 respective parameter assignments. -/
 theorem realizationSet_congr {φ ψ : L.Formula (α ⊕ β)} {a b : α → M}
     (h : ∀ x : β → M, φ.Realize (Sum.elim a x) ↔ ψ.Realize (Sum.elim b x)) :
-    φ.realizationSet a = ψ.realizationSet b := by
-  sorry
+    φ.realizationSet a = ψ.realizationSet b :=
+  Set.ext h
 
 @[simp]
 theorem realizationSet_top (a : α → M) :
     (⊤ : L.Formula (α ⊕ β)).realizationSet a = Set.univ := by
-  sorry
+  ext x
+  simp
 
 @[simp]
 theorem realizationSet_bot (a : α → M) :
     (⊥ : L.Formula (α ⊕ β)).realizationSet a = ∅ := by
-  sorry
+  ext x
+  simp
 
 @[simp]
 theorem realizationSet_inf (φ ψ : L.Formula (α ⊕ β)) (a : α → M) :
     (φ ⊓ ψ).realizationSet a = φ.realizationSet a ∩ ψ.realizationSet a := by
-  sorry
+  ext x
+  simp
 
 @[simp]
 theorem realizationSet_sup (φ ψ : L.Formula (α ⊕ β)) (a : α → M) :
     (φ ⊔ ψ).realizationSet a = φ.realizationSet a ∪ ψ.realizationSet a := by
-  sorry
+  ext x
+  simp
 
 /-- Negation of a formula corresponds to complement of its realization set.  Mathlib has no `Compl`
 instance on `Formula`, so this is stated with `Formula.not` rather than with `ᶜ`. -/
 @[simp]
 theorem realizationSet_not (φ : L.Formula (α ⊕ β)) (a : α → M) :
     φ.not.realizationSet a = (φ.realizationSet a)ᶜ := by
-  sorry
+  ext x
+  simp
 
 /-- Implication of formulas corresponds to the set-theoretic implication `sᶜ ∪ t`. -/
 @[simp]
 theorem realizationSet_imp (φ ψ : L.Formula (α ⊕ β)) (a : α → M) :
     (φ.imp ψ).realizationSet a = (φ.realizationSet a)ᶜ ∪ ψ.realizationSet a := by
-  sorry
+  ext x
+  simp [imp_iff_not_or]
 
 /-- Relabelling the realized variables of a formula precomposes the realization set with the
 corresponding reindexing. -/
 theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β → β') :
     (φ.relabel (Sum.map id f)).realizationSet a =
       (fun x : β' → M => x ∘ f) ⁻¹' φ.realizationSet a := by
-  sorry
+  ext x
+  simp only [mem_realizationSet, Set.mem_preimage, Formula.realize_relabel, Sum.elim_comp_map,
+    Function.comp_id]
 
 end RealizationSet
 
