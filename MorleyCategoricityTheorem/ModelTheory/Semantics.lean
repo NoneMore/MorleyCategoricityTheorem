@@ -22,6 +22,12 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
 
 ## Main results
 
+- `FirstOrder.Language.Formula.realizationSet` and `FirstOrder.Language.Formula.realizationSet₁`:
+  name the set of tuples realizing a formula once its parameter variables have been assigned, the
+  unbundled companion of `Set.Definable`; `FirstOrder.Language.Formula.realizationSetIn` is the
+  parameter-free variant with an explicit model variable. Membership, Boolean, relabelling, and
+  unary shape-conversion lemmas for the new names are provided below; the cardinality
+  characterizations that follow are stated through `realizationSet`.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast_iff_exists_injective`: normalize realization of
   `iExsAtLeast` into an injective family `Fin n → (β → M)` of solutions.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast`: characterize the lower-bound constructor by
@@ -118,6 +124,108 @@ variable {L : Language.{u, v}} {α β : Type*} {M : Type w}
 namespace Formula
 
 variable [L.Structure M]
+
+section RealizationSet
+
+variable {β' : Type*}
+
+/-- `φ.realizationSet a` is the set of `β`-tuples realizing `φ` when the `α`-variables are assigned
+the parameter tuple `a`.
+
+This is the unbundled companion of `Set.Definable`: the witnessing formula of a definable set is
+exactly the formula whose realization set it is.  Keeping the object a plain `Set` lets images,
+preimages, `Set.encard`, and `Cardinal.mk` apply directly; the Boolean-algebra structure itself
+stays in Mathlib's `L.DefinableSet`. -/
+def realizationSet (φ : L.Formula (α ⊕ β)) (a : α → M) : Set (β → M) :=
+  {x | φ.Realize (Sum.elim a x)}
+
+@[simp]
+theorem mem_realizationSet {φ : L.Formula (α ⊕ β)} {a : α → M} {x : β → M} :
+    x ∈ φ.realizationSet a ↔ φ.Realize (Sum.elim a x) := by
+  sorry
+
+/-- `Formula.realizationSetIn M φ` is the set of `β`-tuples of `M` realizing the parameter-free
+formula `φ`.
+
+Unlike `Formula.realizationSet`, there is no parameter tuple from which the model could be
+inferred, so `M` is an explicit argument. -/
+def realizationSetIn (M : Type w) [L.Structure M] (φ : L.Formula β) : Set (β → M) :=
+  {x | φ.Realize x}
+
+@[simp]
+theorem mem_realizationSetIn (M : Type w) [L.Structure M] (φ : L.Formula β) {x : β → M} :
+    x ∈ realizationSetIn M φ ↔ φ.Realize x := by
+  sorry
+
+/-- The unary realization set: the elements of `M` realizing `φ` when the `α`-variables are assigned
+the parameter tuple `a`. -/
+def realizationSet₁ (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) : Set M :=
+  {x | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))}
+
+@[simp]
+theorem mem_realizationSet₁ {φ : L.Formula (α ⊕ Fin 1)} {a : α → M} {x : M} :
+    x ∈ φ.realizationSet₁ a ↔ φ.Realize (Sum.elim a (fun _ : Fin 1 => x)) := by
+  sorry
+
+/-- The `Fin 1`-indexed realization set is the image of the unary one under the canonical
+identification of `M` with `Fin 1 → M`. -/
+theorem realizationSet_fin_one_image (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    φ.realizationSet a = (fun x : M => fun _ : Fin 1 => x) '' φ.realizationSet₁ a := by
+  sorry
+
+/-- The `Fin 1`-indexed and unary realization sets are infinite simultaneously. -/
+theorem infinite_realizationSet_fin_one_iff (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    (φ.realizationSet a).Infinite ↔ (φ.realizationSet₁ a).Infinite := by
+  sorry
+
+/-- Two realization sets are equal as soon as the two formulas realize the same tuples after their
+respective parameter assignments. -/
+theorem realizationSet_congr {φ ψ : L.Formula (α ⊕ β)} {a b : α → M}
+    (h : ∀ x : β → M, φ.Realize (Sum.elim a x) ↔ ψ.Realize (Sum.elim b x)) :
+    φ.realizationSet a = ψ.realizationSet b := by
+  sorry
+
+@[simp]
+theorem realizationSet_top (a : α → M) :
+    (⊤ : L.Formula (α ⊕ β)).realizationSet a = Set.univ := by
+  sorry
+
+@[simp]
+theorem realizationSet_bot (a : α → M) :
+    (⊥ : L.Formula (α ⊕ β)).realizationSet a = ∅ := by
+  sorry
+
+@[simp]
+theorem realizationSet_inf (φ ψ : L.Formula (α ⊕ β)) (a : α → M) :
+    (φ ⊓ ψ).realizationSet a = φ.realizationSet a ∩ ψ.realizationSet a := by
+  sorry
+
+@[simp]
+theorem realizationSet_sup (φ ψ : L.Formula (α ⊕ β)) (a : α → M) :
+    (φ ⊔ ψ).realizationSet a = φ.realizationSet a ∪ ψ.realizationSet a := by
+  sorry
+
+/-- Negation of a formula corresponds to complement of its realization set.  Mathlib has no `Compl`
+instance on `Formula`, so this is stated with `Formula.not` rather than with `ᶜ`. -/
+@[simp]
+theorem realizationSet_not (φ : L.Formula (α ⊕ β)) (a : α → M) :
+    φ.not.realizationSet a = (φ.realizationSet a)ᶜ := by
+  sorry
+
+/-- Implication of formulas corresponds to the set-theoretic implication `sᶜ ∪ t`. -/
+@[simp]
+theorem realizationSet_imp (φ ψ : L.Formula (α ⊕ β)) (a : α → M) :
+    (φ.imp ψ).realizationSet a = (φ.realizationSet a)ᶜ ∪ ψ.realizationSet a := by
+  sorry
+
+/-- Relabelling the realized variables of a formula precomposes the realization set with the
+corresponding reindexing. -/
+theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : β → β') :
+    (φ.relabel (Sum.map id f)).realizationSet a =
+      (fun x : β' → M => x ∘ f) ⁻¹' φ.realizationSet a := by
+  sorry
+
+end RealizationSet
 
 /-- Realization of `iExsAtLeast` is equivalent to the existence of an injective family of `n`
 pairwise distinct realizing `β`-tuples. -/
