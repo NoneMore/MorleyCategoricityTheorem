@@ -3,6 +3,7 @@ Copyright (c) 2026 NoneMore. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
+import Mathlib.ModelTheory.ElementaryMaps
 import MorleyCategoricityTheorem.ModelTheory.LanguageEmbedding
 import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding
 import MorleyCategoricityTheorem.ModelTheory.Syntax
@@ -32,6 +33,8 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
   homeomorphism of Stone spaces.
 - `FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph`: the homeomorphism of
   complete type spaces over the parameter sets of a partial elementary embedding.
+- `FirstOrder.Language.Equiv.toPartialElementaryEmbeddingOn`: the restriction of a first-order
+  equivalence to a partial elementary embedding from a parameter set onto its image.
 
 ## Main results
 
@@ -50,6 +53,9 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
   `_symm` variant: the forward and inverse membership rules for the parameter-set homeomorphism.
 - `FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph_image_typesWith`: the
   parameter-set homeomorphism carries basic open sets over `A` to basic open sets over `B`.
+- `FirstOrder.Language.Equiv.image_realizedTypes`: an isomorphism induces a bijection between the
+  complete types over a parameter set realized in the source and those over the image of that
+  parameter set realized in the target.
 - `FirstOrder.Language.LEquiv.isMaximal_onTheory`: a language equivalence carries maximal theories
   to maximal theories.
 
@@ -285,6 +291,43 @@ theorem completeTypeOverHomeomorph_image_typesWith (f : A ↪ₚₑ[L] B) (α : 
   Theory.CompleteType.image_typesWith f.parameterLEquiv f.map_completeTheory φ
 
 end PartialElementaryEmbedding
+
+namespace Equiv
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
+variable [L.Structure M] [L.Structure N]
+
+/-- The restriction of a first-order equivalence `f : M ≃[L] N` to a partial elementary embedding
+from a parameter set `A` onto its image `f '' A`.
+
+The underlying map sends `a : A` to `f a`, and elementarity is inherited from the elementary
+embedding underlying `f`. -/
+def toPartialElementaryEmbeddingOn (f : M ≃[L] N) (A : Set M) :
+    A ↪ₚₑ[L] (f '' A) where
+  toFun a := ⟨f a, Set.mem_image_of_mem f a.2⟩
+  surjective' b := by
+    obtain ⟨a, ha, hfa⟩ := b.2
+    exact ⟨⟨a, ha⟩, Subtype.ext hfa⟩
+  map_formula' := fun {n} φ x => by
+    have h : Subtype.val ∘ (fun a : A => (⟨f a, Set.mem_image_of_mem f a.2⟩ : f '' A)) ∘ x =
+        ⇑f.toElementaryEmbedding ∘ (Subtype.val ∘ x) := rfl
+    rw [h]
+    exact (f.toElementaryEmbedding.map_formula φ (Subtype.val ∘ x)).symm
+
+/-- An isomorphism `f : M ≃[L] N` induces a bijection between the complete types over `A` realized
+in `M` and the complete types over `f '' A` realized in `N`: the parameter-set homeomorphism
+carries the set of types realized over `A` onto the set of types realized over `f '' A`.
+
+This is the formalized statement of the blueprint lemma that isomorphisms preserve realized type
+counts; the corresponding cardinality statement follows because a bijection preserves cardinality.
+The proof is intentionally omitted for now. -/
+theorem image_realizedTypes [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
+    (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α ''
+        (L[[A]].completeTheory M).realizedTypes M α =
+      (L[[f '' A]].completeTheory N).realizedTypes N α :=
+  sorry
+
+end Equiv
 
 end Language
 
