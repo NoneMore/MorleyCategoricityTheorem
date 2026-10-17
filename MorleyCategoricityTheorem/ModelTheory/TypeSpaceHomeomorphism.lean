@@ -3,6 +3,7 @@ Copyright (c) 2026 NoneMore. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
+import Mathlib.ModelTheory.ElementaryMaps
 import MorleyCategoricityTheorem.ModelTheory.LanguageEmbedding
 import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding
 import MorleyCategoricityTheorem.ModelTheory.Syntax
@@ -33,6 +34,10 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
 - `FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph`: the homeomorphism of
   complete type spaces over the parameter sets of a partial elementary embedding.
 
+The restriction of an elementary embedding (or of a first-order equivalence) to a partial elementary
+embedding on a parameter set lives in `ModelTheory.PartialEmbedding` as
+`ElementaryEmbedding.toPartialElementaryEmbeddingOn` and `Equiv.toPartialElementaryEmbeddingOn`.
+
 ## Main results
 
 - `FirstOrder.Language.Theory.CompleteType.mem_completeTypeEquiv_iff`: membership in the
@@ -50,6 +55,15 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
   `_symm` variant: the forward and inverse membership rules for the parameter-set homeomorphism.
 - `FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph_image_typesWith`: the
   parameter-set homeomorphism carries basic open sets over `A` to basic open sets over `B`.
+- `FirstOrder.Language.ElementaryEmbedding.completeTypeOverHomeomorph_typeOf`: the pointwise form of
+  realized-type preservation, sending `tp(v/A)` to `tp(e ∘ v/e '' A)` for an elementary embedding.
+- `FirstOrder.Language.ElementaryEmbedding.image_realizedTypes_subset`: an elementary embedding maps
+  realized types into realized types, the forward half of realized-type preservation.
+- `FirstOrder.Language.Equiv.image_realizedTypes`: an isomorphism induces a bijection between the
+  complete types over a parameter set realized in the source and those over the image of that
+  parameter set realized in the target.
+- `FirstOrder.Language.Equiv.mk_realizedTypes_eq`: the resulting identity of the cardinalities of
+  the realized type sets, stated with `Cardinal.mk` and explicit universe lifts.
 - `FirstOrder.Language.LEquiv.isMaximal_onTheory`: a language equivalence carries maximal theories
   to maximal theories.
 
@@ -285,6 +299,71 @@ theorem completeTypeOverHomeomorph_image_typesWith (f : A ↪ₚₑ[L] B) (α : 
   Theory.CompleteType.image_typesWith f.parameterLEquiv f.map_completeTheory φ
 
 end PartialElementaryEmbedding
+
+namespace ElementaryEmbedding
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
+variable [L.Structure M] [L.Structure N]
+
+/-- The transport of complete types along the parameter restriction of an elementary embedding
+sends the type of a tuple to the type of its image: `tp(v/A)` is carried to `tp(e ∘ v/e '' A)`.
+
+This is the pointwise form of the blueprint statement that isomorphisms preserve realized type
+counts; it needs only elementarity, not surjectivity. The proof is intentionally omitted for
+now. -/
+theorem completeTypeOverHomeomorph_typeOf [Nonempty M] [Nonempty N] (e : M ↪ₑ[L] N) (A : Set M)
+    {α : Type x} (v : α → M) :
+    (e.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
+        ((L[[A]].completeTheory M).typeOf v) =
+      (L[[e '' A]].completeTheory N).typeOf (e ∘ v) :=
+  sorry
+
+/-- An elementary embedding maps the complete types over a parameter set realized in its domain
+into the complete types over the image of that parameter set realized in its codomain.
+
+This is the forward half of the blueprint statement that isomorphisms preserve realized type
+counts, isolated from the surjectivity needed for the reverse inclusion. The proof is
+intentionally omitted for now. -/
+theorem image_realizedTypes_subset [Nonempty M] [Nonempty N] (e : M ↪ₑ[L] N) (A : Set M)
+    (α : Type x) :
+    (e.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α ''
+        (L[[A]].completeTheory M).realizedTypes M α ⊆
+      (L[[e '' A]].completeTheory N).realizedTypes N α :=
+  sorry
+
+end ElementaryEmbedding
+
+namespace Equiv
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
+variable [L.Structure M] [L.Structure N]
+
+/-- An isomorphism `f : M ≃[L] N` induces a bijection between the complete types over `A` realized
+in `M` and the complete types over `f '' A` realized in `N`: the parameter-set homeomorphism
+carries the set of types realized over `A` onto the set of types realized over `f '' A`.
+
+This is the formalized statement of the blueprint lemma that isomorphisms preserve realized type
+counts. The proof is intentionally omitted for now. -/
+theorem image_realizedTypes [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
+    (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α ''
+        (L[[A]].completeTheory M).realizedTypes M α =
+      (L[[f '' A]].completeTheory N).realizedTypes N α :=
+  sorry
+
+/-- Cardinality form of the blueprint statement that isomorphisms preserve realized type counts: an
+isomorphism identifies the cardinalities of the two realized type sets.
+
+Following the project's cardinality convention, this is stated with `Cardinal.mk` and explicit
+universe lifts rather than `Set.encard`, which collapses every infinite cardinality to `⊤`. The
+proof is intentionally omitted for now. -/
+theorem mk_realizedTypes_eq [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
+    Cardinal.lift.{max (max u v) w' x}
+        (Cardinal.mk ((L[[A]].completeTheory M).realizedTypes M α)) =
+      Cardinal.lift.{max (max u v) w x}
+        (Cardinal.mk ((L[[f '' A]].completeTheory N).realizedTypes N α)) :=
+  sorry
+
+end Equiv
 
 end Language
 
