@@ -17,13 +17,11 @@ dependency still contains `sorry`.
 
 ## Contribution Norms
 
-`CONTRIBUTING.md` owns the shared contribution workflow: local setup, the
-preference for existing Mathlib declarations over local replacements, the
-`sorry` policy, `.lake/` boundaries and `lake-manifest.json`, the
-`docs/plan/README.md` lifecycle, commit/branch/merge conventions, and pull
-request expectations. Follow it for anything it covers, including its ban on
-AI authorship trailers; add repository-specific rules below rather than
-restating it.
+`CONTRIBUTING.md` owns the shared contribution workflow, project-wide style,
+validation triggers, dependency and planning rules, commit/branch/merge
+conventions, and pull request expectations. Follow it for anything it covers,
+including its ban on AI authorship trailers; add repository- and agent-specific
+rules below rather than restating it.
 
 ## Lean Development
 
@@ -35,8 +33,6 @@ restating it.
 - Add module and declaration documentation for public definitions and
   non-obvious results. Explain mathematical purpose rather than narrating the
   tactic script.
-- Keep lines within 100 columns, matching the editor ruler in
-  `.vscode/settings.json`; neither the build nor CI enforces this.
 - Keep imports minimal and acyclic. When adding, removing, or renaming a module,
   synchronize `MorleyCategoricityTheorem.lean` and run
   `lake exe mk_all --check`.
