@@ -24,12 +24,10 @@ while their presence produces an `(ℵ₁, ℵ₀)`-model.
 
 ## Main results
 
-- `FirstOrder.Language.ElementaryEmbedding.image_realizations_subset`: the image of the
-  `M`-realization set of a unary formula is always contained in the corresponding `N`-realization
-  set.
 - `FirstOrder.Language.Theory.isVaughtianPair_iff`: the "unchanged in `N`" condition can be
   equivalently stated as the absence of new realizations, because elementarity supplies the
-  reverse inclusion.
+  reverse inclusion through
+  `FirstOrder.Language.ElementaryEmbedding.image_realizationSet₁_subset`.
 
 ## Implementation notes
 
@@ -37,8 +35,8 @@ The pair `M ≼ N` is encoded as an elementary embedding `e : M ↪ₑ[L] N`, an
 `¬ Function.Surjective e`.  Parameters are a finite tuple indexed by `Fin n`, matching
 `Formula.exists_fin_params`, while the single distinguished variable is indexed by `Fin 1`; this
 avoids the universe bookkeeping that an existential parameter *type* would introduce.  The
-realization set is written with `Set.Infinite`, and "unchanged in `N`" as the equality of the
-`N`-realization set with the image of the `M`-realization set.
+realization set is the unary `Formula.realizationSet₁`, written with `Set.Infinite`, and "unchanged
+in `N`" is the equality of the `N`-realization set with the image of the `M`-realization set.
 -/
 
 universe u v w w'
@@ -49,28 +47,6 @@ namespace Language
 
 variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
 variable [L.Structure M] [L.Structure N]
-
-namespace ElementaryEmbedding
-
-/-- The image of the `M`-realization set of a unary formula with parameters from `M`, under an
-elementary embedding, is contained in the corresponding `N`-realization set.
-
-This is the unary, parameter-tuple form of `ElementaryEmbedding.realizations_embedding`.  The
-reverse inclusion need not hold, and it fails exactly when the pair is Vaughtian. -/
-theorem image_realizations_subset (e : M ↪ₑ[L] N) (n : ℕ)
-    (φ : L.Formula (Fin n ⊕ Fin 1)) (a : Fin n → M) :
-    (e : M → N) '' {x : M | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))} ⊆
-      {y : N | φ.Realize (Sum.elim ((e : M → N) ∘ a) (fun _ : Fin 1 => y))} := by
-  rintro y ⟨x, hx, rfl⟩
-  show φ.Realize (Sum.elim ((e : M → N) ∘ a) (fun _ : Fin 1 => e x))
-  have hfun : (Sum.elim ((e : M → N) ∘ a) (fun _ : Fin 1 => e x)) =
-      (e : M → N) ∘ (Sum.elim a (fun _ : Fin 1 => x)) := by
-    ext i
-    cases i <;> rfl
-  rw [hfun]
-  exact (e.map_formula φ (Sum.elim a (fun _ => x))).mpr hx
-
-end ElementaryEmbedding
 
 namespace Theory
 
@@ -84,21 +60,19 @@ realizations; see `Theory.isVaughtianPair_iff`. -/
 def IsVaughtianPair (T : L.Theory) (e : M ↪ₑ[L] N) : Prop :=
   M ⊨ T ∧ N ⊨ T ∧ ¬ Function.Surjective e ∧
     ∃ (n : ℕ) (φ : L.Formula (Fin n ⊕ Fin 1)) (a : Fin n → M),
-      Set.Infinite {x : M | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))} ∧
-      {y : N | φ.Realize (Sum.elim ((e : M → N) ∘ a) (fun _ : Fin 1 => y))} =
-        (e : M → N) '' {x : M | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))}
+      (φ.realizationSet₁ a).Infinite ∧
+      φ.realizationSet₁ (e ∘ a) = (e : M → N) '' φ.realizationSet₁ a
 
 /-- Characteristic form of a Vaughtian pair in which "unchanged in `N`" is expressed as the
 absence of new realizations: it suffices to show that every `N`-realization is the image of an
 `M`-realization.  The reverse inclusion is automatic by
-`ElementaryEmbedding.image_realizations_subset`. -/
+`ElementaryEmbedding.image_realizationSet₁_subset`. -/
 theorem isVaughtianPair_iff (T : L.Theory) (e : M ↪ₑ[L] N) :
     IsVaughtianPair T e ↔
       M ⊨ T ∧ N ⊨ T ∧ ¬ Function.Surjective e ∧
         ∃ (n : ℕ) (φ : L.Formula (Fin n ⊕ Fin 1)) (a : Fin n → M),
-          Set.Infinite {x : M | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))} ∧
-          {y : N | φ.Realize (Sum.elim ((e : M → N) ∘ a) (fun _ : Fin 1 => y))} ⊆
-            (e : M → N) '' {x : M | φ.Realize (Sum.elim a (fun _ : Fin 1 => x))} := by
+          (φ.realizationSet₁ a).Infinite ∧
+          φ.realizationSet₁ (e ∘ a) ⊆ (e : M → N) '' φ.realizationSet₁ a := by
   simp only [IsVaughtianPair]
   refine and_congr_right fun _ => and_congr_right fun _ => and_congr_right fun _ => ?_
   constructor
@@ -106,7 +80,7 @@ theorem isVaughtianPair_iff (T : L.Theory) (e : M ↪ₑ[L] N) :
     exact ⟨n, φ, a, hinf, heq.subset⟩
   · rintro ⟨n, φ, a, hinf, hsub⟩
     exact ⟨n, φ, a, hinf,
-      Set.Subset.antisymm hsub (ElementaryEmbedding.image_realizations_subset e n φ a)⟩
+      Set.Subset.antisymm hsub (ElementaryEmbedding.image_realizationSet₁_subset e φ a)⟩
 
 /-- A theory has a Vaughtian pair if it has two models related by a Vaughtian pair. -/
 def HasVaughtianPair (T : L.Theory) : Prop :=
