@@ -45,8 +45,8 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
 5. Prove the equivalence of infinitude. One direction uses cardinal monotonicity, while the other
    argues contrapositively from preservation of exact finite cardinality.
 
-Because `Formula.realizationSet` is a plain `def` whose body is the set-builder, these restatements
-are definitionally equal to the previous set-builder statements, so existing callers are unaffected.
+Because `Formula.realizationSet` is a plain `def` whose body is the set-builder, these restated
+declaration types are definitionally equal to the previous set-builder statements.
 
 Formulas in `L[[A]]` should be converted with `BoundedFormula.constantsVarsEquiv` and then passed
 to the explicit-parameter API with parameter map `(↑) : A → M`. This is also the representation
@@ -97,8 +97,8 @@ theorem image_realizationSet_subset (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ 
 source unary realization set into the target unary realization set with transported parameters.
 
 This is the image inclusion underlying the Vaughtian-pair condition, whose distinguished variable is
-indexed by `Fin 1`. The reverse inclusion need not hold, and it fails exactly when the pair is
-Vaughtian. -/
+indexed by `Fin 1`. The reverse inclusion need not hold in general; for a Vaughtian witness it is
+exactly the additional condition that, together with this theorem, yields equality. -/
 theorem image_realizationSet₁_subset (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
     (e : M → N) '' φ.realizationSet₁ b ⊆ φ.realizationSet₁ (e ∘ b) := by
   rintro _ ⟨x, hx, rfl⟩
