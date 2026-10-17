@@ -11,8 +11,8 @@ __pycache__/
 
 ## Local agent and scratch workspace
 .agents/
-.dsh/
-notes/
+/.dsh/
+/notes/
 
 ## Jekyll / Bundler
 /home_page/_site/
