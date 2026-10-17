@@ -26,3 +26,5 @@
 - [ ] I did not introduce unintended `sorry` placeholders.
 - [ ] I changed the blueprint only if this pull request intentionally includes blueprint work.
 - [ ] I linked relevant issues or blueprint nodes when applicable.
+- [ ] The title follows the commit-subject format in `CONTRIBUTING.md`, for example
+      `docs: refine AGENTS.md validation guidance`.

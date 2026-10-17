@@ -9,6 +9,8 @@ formalization, project documentation, and repository infrastructure.
 - For mathematical work, consult the blueprint and its dependency graph before choosing a target.
 - Keep pull requests focused. Large or cross-cutting changes are easier to review when split into
   coherent pieces.
+- Keep handwritten source and documentation lines within 100 columns. The `.vscode` editor ruler
+  reflects this project convention; CI does not enforce it.
 
 ## Local setup
 
@@ -86,6 +88,36 @@ Run the checks relevant to the files you changed from the repository root:
 
 If you cannot run an applicable local check, mention that explicitly in the pull request
 description. CI remains the final validation gate for checks configured in the repository.
+
+## Commits, branches, and merges
+
+Changes reach `main` through a pull request. Project policy requires squash merges. `main` requires
+the `Validate repository` status check with "require branches to be up to date" enabled, requires
+review conversations to be resolved, and rejects force pushes and deletion. GitHub deletes the head
+branch on merge.
+
+- Name branches `<type>/<slug>` in lower case, using the commit types listed below. Blueprint work
+  also uses `blueprint/` and `planning/`. Keep `wip/` branches local, and delete draft branches
+  whose work has been abandoned.
+- Write commit subjects as `<type>(<scope>): <imperative summary>`, for example
+  `feat(semantics): prove the realization-set skeleton` or `docs: refine AGENTS.md validation
+  guidance`. Use the lowercase types `feat`, `fix`, `docs`, `refactor`, `chore`, `ci`, `build`, and
+  `test`. Preserve canonical capitalization for repository paths, Lean identifiers, and module
+  names. The optional `scope` names a repository area (`blueprint`, `deps`) or the Lean module
+  changed. Dependency updates keep the `build(deps): bump <dependency> from <old> to <new>` form.
+- Write the pull request title in the same format. With this repository's squash settings, a
+  single-commit pull request takes its merged subject from the branch commit, and a multi-commit
+  pull request takes it from the pull request title; the merged body is built from the branch
+  commits. Keep one logical change per pull request and prefer a single commit.
+- Describe why the change is needed, what it deliberately leaves unchanged, and the validation
+  commands you ran, for example with a final `Validation: lake build MorleyCategoricityTheorem`
+  line.
+- Do not add authorship or co-authorship trailers for AI assistance. Commits are attributed to the
+  people who directed the work.
+- Update the branch to the current `main` before merging. Never force push `main` or a branch
+  someone else is working on, and rewrite history only on local, unpushed commits.
+- Release tags are created automatically from `lean-toolchain` changes on `main`; do not create
+  them by hand.
 
 ## Pull requests
 
