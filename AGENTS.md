@@ -15,34 +15,31 @@ Treat compiled Lean declarations as the authority for what is currently
 implemented. Do not describe a declaration as fully proved while it or a local
 dependency still contains `sorry`.
 
-## Lean Workflow
+## Contribution Norms
 
-For Lean proofs, theorem statements, formalization, proof repair, diagnostics,
-Mathlib search, or Lake build work, use the discovered `lean4` skill and the
-configured `lean-lsp` MCP server when they are available. Repository validation
-remains the final completion gate.
+`CONTRIBUTING.md` owns the shared contribution workflow: local setup, the
+preference for existing Mathlib declarations over local replacements, the
+`sorry` policy, `.lake/` boundaries and `lake-manifest.json`, the
+`docs/plan/README.md` lifecycle, commit/branch/merge conventions, and pull
+request expectations. Follow it for anything it covers, including its ban on
+AI authorship trailers; add repository-specific rules below rather than
+restating it.
 
 ## Lean Development
 
-- Search the current Mathlib dependency for an existing declaration before
-  adding a local replacement.
+- Declare variables and assumptions explicitly; the project builds with
+  automatic implicit variables disabled.
 - Keep declarations in the narrowest appropriate namespace and follow the
   naming and argument conventions of nearby Mathlib and project model-theory
   code.
-- Declare variables and assumptions explicitly; the project builds with
-  automatic implicit variables disabled.
 - Add module and declaration documentation for public definitions and
   non-obvious results. Explain mathematical purpose rather than narrating the
   tactic script.
-- For reusable Lean/formalization infrastructure TODOs and implementation
-  plans, follow `docs/plan/README.md`; do not duplicate its lifecycle rules
-  here.
-- Do not introduce new `sorry` placeholders unless the task explicitly permits
-  scaffolding.
+- Keep lines within 100 columns, matching the editor ruler in
+  `.vscode/settings.json`; neither the build nor CI enforces this.
 - Keep imports minimal and acyclic. When adding, removing, or renaming a module,
-  synchronize `MorleyCategoricityTheorem.lean`.
-- Do not edit dependency sources under `.lake/packages/` or build artifacts
-  under `.lake/build/`.
+  synchronize `MorleyCategoricityTheorem.lean` and run
+  `lake exe mk_all --check`.
 
 ## Blueprint Boundary
 
@@ -55,8 +52,8 @@ referenced by the blueprint may require
 `lake exe checkdecls blueprint/lean_decls`; running that check does not
 authorize blueprint edits.
 
-If the user explicitly requests blueprint work, follow the user-invoked skill
-or instructions for blueprint editing and validation.
+When the user does request blueprint work, `blueprint/` becomes editable and the
+blueprint validation described in `CONTRIBUTING.md` applies.
 
 ## Blueprint Status Tool
 
@@ -67,12 +64,15 @@ goal-aware frontier reporter. Use
 When milestone theorem labels change, keep the script's `MILESTONES` mapping
 synchronized with the blueprint labels.
 
-## Generated and Existing Files
+## Version Control
 
-- Do not hand-edit `lake-manifest.json`; update it only through Lake dependency
-  commands when the task requires a dependency change.
-- Preserve unrelated working-tree changes. Do not remove or overwrite user work
-  to obtain a clean build.
+- Do not commit, push, open pull requests, or rewrite existing history unless
+  the task asks for it.
+- Preserve unrelated working-tree changes. Do not use `git restore`,
+  `git reset --hard`, `git stash`, or `git checkout --` to remove or overwrite
+  user work, including incomplete work that looks like scratch.
+- Stage files explicitly instead of using `git add -A` or `git add .`, so
+  unrelated work in the tree cannot slip into a commit.
 
 ## Validation
 
@@ -96,7 +96,8 @@ omitted and why.
 
 ## Definition of Done
 
-- Applicable validation passes.
+- Applicable validation passes. A clean LSP or diagnostic report, without the
+  build and applicable checks, is not completion evidence.
 - No unintended `sorry` placeholders or unrelated changes were introduced.
 - The root import file reflects the module set when modules changed.
 - Blueprint files remain untouched unless blueprint work was explicitly

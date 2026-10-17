@@ -9,8 +9,10 @@
 __pycache__/
 *.py[cod]
 
-## Local agent workspace
+## Local agent and scratch workspace
 .agents/
+.dsh/
+notes/
 
 ## Jekyll / Bundler
 /home_page/_site/
