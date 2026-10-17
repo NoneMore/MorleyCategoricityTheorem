@@ -33,10 +33,10 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
   homeomorphism of Stone spaces.
 - `FirstOrder.Language.PartialElementaryEmbedding.completeTypeOverHomeomorph`: the homeomorphism of
   complete type spaces over the parameter sets of a partial elementary embedding.
-- `FirstOrder.Language.ElementaryEmbedding.toPartialElementaryEmbeddingOn`: the restriction of an
-  elementary embedding to a partial elementary embedding from a parameter set onto its image.
-- `FirstOrder.Language.Equiv.toPartialElementaryEmbeddingOn`: the same restriction for a first-order
-  equivalence, obtained from the elementary embedding underlying it.
+
+The restriction of an elementary embedding (or of a first-order equivalence) to a partial elementary
+embedding on a parameter set lives in `ModelTheory.PartialEmbedding` as
+`ElementaryEmbedding.toPartialElementaryEmbeddingOn` and `Equiv.toPartialElementaryEmbeddingOn`.
 
 ## Main results
 
@@ -62,8 +62,8 @@ partial elementary embedding `f : A ↪ₚₑ[L] B` yields a homeomorphism betwe
 - `FirstOrder.Language.Equiv.image_realizedTypes`: an isomorphism induces a bijection between the
   complete types over a parameter set realized in the source and those over the image of that
   parameter set realized in the target.
-- `FirstOrder.Language.Equiv.encard_realizedTypes_eq`: the resulting identity of extended
-  cardinalities of the realized type sets.
+- `FirstOrder.Language.Equiv.mk_realizedTypes_eq`: the resulting identity of the cardinalities of
+  the realized type sets, stated with `Cardinal.mk` and explicit universe lifts.
 - `FirstOrder.Language.LEquiv.isMaximal_onTheory`: a language equivalence carries maximal theories
   to maximal theories.
 
@@ -305,21 +305,6 @@ namespace ElementaryEmbedding
 variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
 variable [L.Structure M] [L.Structure N]
 
-/-- The restriction of an elementary embedding `e : M ↪ₑ[L] N` to a partial elementary embedding
-from a parameter set `A` onto its image `e '' A`.
-
-The underlying map sends `a : A` to `e a`, and elementarity is inherited from `e`. -/
-def toPartialElementaryEmbeddingOn (e : M ↪ₑ[L] N) (A : Set M) : A ↪ₚₑ[L] (e '' A) where
-  toFun a := ⟨e a, Set.mem_image_of_mem e a.2⟩
-  surjective' b := by
-    obtain ⟨a, ha, hfa⟩ := b.2
-    exact ⟨⟨a, ha⟩, Subtype.ext hfa⟩
-  map_formula' := fun {n} φ x => by
-    have h : Subtype.val ∘ (fun a : A => (⟨e a, Set.mem_image_of_mem e a.2⟩ : e '' A)) ∘ x =
-        ⇑e ∘ (Subtype.val ∘ x) := rfl
-    rw [h]
-    exact (e.map_formula φ (Subtype.val ∘ x)).symm
-
 /-- The transport of complete types along the parameter restriction of an elementary embedding
 sends the type of a tuple to the type of its image: `tp(v/A)` is carried to `tp(e ∘ v/e '' A)`.
 
@@ -353,14 +338,6 @@ namespace Equiv
 variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
 variable [L.Structure M] [L.Structure N]
 
-/-- The restriction of a first-order equivalence `f : M ≃[L] N` to a partial elementary embedding
-from a parameter set `A` onto its image `f '' A`.
-
-This is the specialisation of `ElementaryEmbedding.toPartialElementaryEmbeddingOn` to the
-elementary embedding underlying `f`. -/
-def toPartialElementaryEmbeddingOn (f : M ≃[L] N) (A : Set M) : A ↪ₚₑ[L] (f '' A) :=
-  f.toElementaryEmbedding.toPartialElementaryEmbeddingOn A
-
 /-- An isomorphism `f : M ≃[L] N` induces a bijection between the complete types over `A` realized
 in `M` and the complete types over `f '' A` realized in `N`: the parameter-set homeomorphism
 carries the set of types realized over `A` onto the set of types realized over `f '' A`.
@@ -374,14 +351,16 @@ theorem image_realizedTypes [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set 
   sorry
 
 /-- Cardinality form of the blueprint statement that isomorphisms preserve realized type counts: an
-isomorphism identifies the extended cardinalities of the two realized type sets.
+isomorphism identifies the cardinalities of the two realized type sets.
 
-`Set.encard` records exact natural-number cardinality but collapses every infinite cardinality to
-`⊤`; for comparisons of infinite cardinalities, use the underlying bijection
-`image_realizedTypes` instead. The proof is intentionally omitted for now. -/
-theorem encard_realizedTypes_eq [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
-    ((L[[A]].completeTheory M).realizedTypes M α).encard =
-      ((L[[f '' A]].completeTheory N).realizedTypes N α).encard :=
+Following the project's cardinality convention, this is stated with `Cardinal.mk` and explicit
+universe lifts rather than `Set.encard`, which collapses every infinite cardinality to `⊤`. The
+proof is intentionally omitted for now. -/
+theorem mk_realizedTypes_eq [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
+    Cardinal.lift.{max (max u v) w' x}
+        (Cardinal.mk ((L[[A]].completeTheory M).realizedTypes M α)) =
+      Cardinal.lift.{max (max u v) w x}
+        (Cardinal.mk ((L[[f '' A]].completeTheory N).realizedTypes N α)) :=
   sorry
 
 end Equiv
