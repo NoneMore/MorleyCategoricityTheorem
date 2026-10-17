@@ -12,6 +12,11 @@ unary set is either finite or of full cardinality.
 
 ## Main results
 
+- `Set.definable_iff_exists_realizationSet`: reformulation of
+  `Set.definable_iff_exists_formula_sum` in which the witnessing formula is exactly the formula whose
+  realization set is the definable set.
+- `Set.definable_realizationSet`: the realization set of a formula with parameters indexed by `A` is
+  definable over `A`.
 - `Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations`:
   one-step elementary extension of cardinality `κ` that fully realizes every
   infinite unary formula with parameters from the base model.
@@ -21,6 +26,32 @@ unary set is either finite or of full cardinality.
 -/
 
 universe u v w z
+
+namespace Set
+
+open FirstOrder FirstOrder.Language
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {A : Set M} {α β : Type*}
+
+/-- A set is definable with parameters in `A` exactly when it is the realization set of a formula
+whose parameter variables are indexed by `A`.
+
+This restates `Set.definable_iff_exists_formula_sum` through `Formula.realizationSet`, so that the
+witnessing formula of a definable set is the formula whose realization set it is. -/
+theorem definable_iff_exists_realizationSet {s : Set (α → M)} :
+    A.Definable L s ↔ ∃ φ : L.Formula (A ⊕ α), s = φ.realizationSet (Subtype.val : A → M) := by
+  rw [definable_iff_exists_formula_sum]
+  rfl
+
+/-- The realization set of a formula with parameters drawn from `A` is definable over `A`.
+
+The formula itself is the witness; use this bridge to pass from the unbundled realization-set
+representation to `L.DefinableSet` when the Boolean-algebra structure is needed. -/
+theorem definable_realizationSet (φ : L.Formula (A ⊕ β)) :
+    A.Definable L (φ.realizationSet (Subtype.val : A → M)) :=
+  definable_iff_exists_realizationSet.mpr ⟨φ, rfl⟩
+
+end Set
 
 namespace FirstOrder
 
@@ -59,20 +90,6 @@ theorem definablyFull_of_unary
     · rw [Cardinal.mk_pi, Cardinal.prod_const]
       simpa using Cardinal.power_nat_le (Cardinal.aleph0_le_mk M)
   · simpa [← h] using Cardinal.mk_image_le
-
-namespace Formula
-
-variable {L : Language.{u, v}} {M : Type*} [L.Structure M]
-
-def finOneRealizationsEquiv (φ : L.Formula (Fin 1)) :
-      {x : Fin 1 → M | φ.Realize x} ≃
-        {x : M | φ.Realize fun _ ↦ x} := by
-  refine (Equiv.funUnique (Fin 1) M).subtypeEquiv ?_
-  intro v
-  simp
-  congr!
-
-end Formula
 
 namespace Theory
 
@@ -245,6 +262,7 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
   have hφI : {x : M | φ.Realize fun x_1 ↦ x}.Infinite := by
     rw [← infinite_coe_iff, ← (φ.finOneRealizationsEquiv).infinite_iff,
       infinite_coe_iff]
+    simp only [Formula.realizationSetIn]
     convert hψb with v
     simp [φ, Formula.Realize, ← BoundedFormula.realize_constantsVarsEquiv, Formula.relabel]
     congr!
@@ -282,6 +300,7 @@ theorem exists_elementaryExtension_card_eq_with_full_unary_realizations
     exact hNT₃' hij
   rw [← ((L.lhomWithConstantsMap ⇑eN).onFormula φ).finOneRealizationsEquiv.cardinal_eq]
     at hφN
+  simp only [Formula.realizationSetIn] at hφN
   change #({x : Fin 1 → N | ψ.Realize (Sum.elim (eN ∘ b) x)}) = κ
   convert hφN with v
   let := constantsOn.structure eN

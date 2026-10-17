@@ -14,8 +14,8 @@ This file extends `Mathlib.ModelTheory.Semantics` with realization theorems for 
 `MorleyCategoricityTheorem.ModelTheory.Syntax`. Its model-theoretic declarations are intended to
 migrate directly to `Mathlib/ModelTheory/Semantics.lean`, near `Formula.realize_iExsUnique`.
 
-For `φ : L.Formula (α ⊕ β)` and parameters `v : α → M`, the relevant fiber is the set of
-assignments `x : β → M` for which `φ.Realize (Sum.elim v x)` holds.
+For `φ : L.Formula (α ⊕ β)` and parameters `v : α → M`, the relevant fiber is the set
+`φ.realizationSet v` of assignments `x : β → M` for which `φ.Realize (Sum.elim v x)` holds.
 
 Variable layout matches the local syntax layer and Mathlib's `Formula.iExs` / `Formula.iExsUnique`:
 free parameters are indexed by `α`, and the quantified tuple is indexed by a finite type `β`.
@@ -28,14 +28,19 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   parameter-free variant with an explicit model variable. Membership, Boolean, relabelling, and
   unary shape-conversion lemmas for the new names are provided below; the cardinality
   characterizations that follow are stated through `realizationSet`.
+- `FirstOrder.Language.Formula.realizationSet_fin_one_equiv` and
+  `FirstOrder.Language.Formula.finOneRealizationsEquiv`: the subtype-level forms of the unary shape
+  conversion, respectively with and without parameters, identifying a `Fin 1`-tuple with its only
+  entry.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast_iff_exists_injective`: normalize realization of
-  `iExsAtLeast` into an injective family `Fin n → (β → M)` of solutions.
+  `iExsAtLeast` into an injective family `Fin n → (β → M)` of elements of the realization set
+  `φ.realizationSet v`.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast`: characterize the lower-bound constructor by
-  `(n : ℕ∞) ≤ Set.encard` of the realization fiber.
+  `(n : ℕ∞) ≤ (φ.realizationSet v).encard`.
 - `FirstOrder.Language.Formula.realize_iExsAtMost`: characterize the upper-bound constructor by
-  `Set.encard ≤ n`.
+  `(φ.realizationSet v).encard ≤ n`.
 - `FirstOrder.Language.Formula.realize_iExsExactly`: characterize exact finite cardinality by
-  `Set.encard = n`.
+  `(φ.realizationSet v).encard = n`.
 - `FirstOrder.Language.Formula.realize_existsExactlyLeft`: semantic theorem for the caller-facing
   variable order `Sum.elim x v`.
 - `FirstOrder.Language.Formula.realize_existsRight`: characterize `existsRight` by existence of an
@@ -144,17 +149,17 @@ theorem mem_realizationSet {φ : L.Formula (α ⊕ β)} {a : α → M} {x : β �
     x ∈ φ.realizationSet a ↔ φ.Realize (Sum.elim a x) :=
   Iff.rfl
 
-/-- `Formula.realizationSetIn M φ` is the set of `β`-tuples of `M` realizing the parameter-free
-formula `φ`.
+/-- `φ.realizationSetIn M` is the set of `β`-tuples of `M` realizing the parameter-free formula
+`φ`.
 
 Unlike `Formula.realizationSet`, there is no parameter tuple from which the model could be
 inferred, so `M` is an explicit argument. -/
-def realizationSetIn (M : Type w) [L.Structure M] (φ : L.Formula β) : Set (β → M) :=
+def realizationSetIn (φ : L.Formula β) (M : Type w) [L.Structure M] : Set (β → M) :=
   {x | φ.Realize x}
 
 @[simp]
-theorem mem_realizationSetIn (M : Type w) [L.Structure M] (φ : L.Formula β) {x : β → M} :
-    x ∈ realizationSetIn M φ ↔ φ.Realize x :=
+theorem mem_realizationSetIn (φ : L.Formula β) (M : Type w) [L.Structure M] {x : β → M} :
+    x ∈ φ.realizationSetIn M ↔ φ.Realize x :=
   Iff.rfl
 
 /-- The unary realization set: the elements of `M` realizing `φ` when the `α`-variables are assigned
@@ -180,11 +185,35 @@ theorem realizationSet_fin_one_image (φ : L.Formula (α ⊕ Fin 1)) (a : α →
   · rintro ⟨y, hy, rfl⟩
     simpa using hy
 
+/-- The `Fin 1`-indexed realization set is equivalent to the unary realization set, by identifying a
+`Fin 1`-tuple with its only entry.
+
+This strengthens `realizationSet_fin_one_image` from an equality of sets to an equivalence of the
+subtypes, which also yields equality of their extended and cardinal cardinalities;
+`finOneRealizationsEquiv` is the parameter-free companion. -/
+def realizationSet_fin_one_equiv (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    φ.realizationSet a ≃ φ.realizationSet₁ a :=
+  ((Equiv.funUnique (Fin 1) M).symm.subtypeEquiv fun _ => Iff.rfl).symm
+
 /-- The `Fin 1`-indexed and unary realization sets are infinite simultaneously. -/
 theorem infinite_realizationSet_fin_one_iff (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
     (φ.realizationSet a).Infinite ↔ (φ.realizationSet₁ a).Infinite := by
-  rw [realizationSet_fin_one_image]
-  exact Set.infinite_image_iff fun x _ y _ h => congrFun h 0
+  rw [← Set.infinite_coe_iff, ← Set.infinite_coe_iff]
+  exact (realizationSet_fin_one_equiv φ a).infinite_iff
+
+/-- The parameter-free form of the unary shape conversion: the `Fin 1`-indexed realization set of a
+formula is equivalent to the set of its unary realizations, by identifying a `Fin 1`-tuple with its
+only entry.
+
+This is the subtype-level companion of `realizationSet_fin_one_image` and
+`infinite_realizationSet_fin_one_iff`; the identification is `Equiv.funUnique (Fin 1) M`.  A
+parameter-free formula has no `realizationSet₁` shape, so the unary side stays a set-builder. -/
+def finOneRealizationsEquiv (φ : L.Formula (Fin 1)) :
+    φ.realizationSetIn M ≃ {x : M | φ.Realize fun _ ↦ x} := by
+  refine (Equiv.funUnique (Fin 1) M).subtypeEquiv ?_
+  intro v
+  simp
+  congr!
 
 /-- Two realization sets are equal as soon as the two formulas realize the same tuples after their
 respective parameter assignments. -/
@@ -244,11 +273,11 @@ theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : 
 end RealizationSet
 
 /-- Realization of `iExsAtLeast` is equivalent to the existence of an injective family of `n`
-pairwise distinct realizing `β`-tuples. -/
+pairwise distinct elements of the realization set `φ.realizationSet v`. -/
 theorem realize_iExsAtLeast_iff_exists_injective [Finite β]
     (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsAtLeast β n).Realize v ↔
-      ∃ f : Fin n → (β → M), (∀ i, φ.Realize (Sum.elim v (f i))) ∧ Injective f := by
+      ∃ f : Fin n → (β → M), (∀ i, f i ∈ φ.realizationSet v) ∧ Injective f := by
   simp [iExsAtLeast]
   refine (Equiv.curry (Fin n) β M).exists_congr fun u ↦ and_congr ?_ ?_
   · refine forall_congr' fun i ↦ iff_of_eq <| congrArg φ.Realize ?_
@@ -257,28 +286,28 @@ theorem realize_iExsAtLeast_iff_exists_injective [Finite β]
   · rw [Function.injective_iff_pairwise_ne]
     simp [Pairwise, funext_iff, Function.onFun]
 
-/-- The lower-bound constructor asserts that the realization fiber has extended cardinality at least
+/-- The lower-bound constructor asserts that the realization set has extended cardinality at least
 `n`. -/
 @[simp]
 theorem realize_iExsAtLeast [Finite β] (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsAtLeast β n).Realize v ↔
-      (n : ℕ∞) ≤ {x : β → M | φ.Realize (Sum.elim v x)}.encard := by
+      (n : ℕ∞) ≤ (φ.realizationSet v).encard := by
   rw [realize_iExsAtLeast_iff_exists_injective]
   exact Iff.symm (le_encard_iff_exists_injection_fin _ _)
 
-/-- The upper-bound constructor asserts that the realization fiber has extended cardinality at most
+/-- The upper-bound constructor asserts that the realization set has extended cardinality at most
 `n`. -/
 @[simp]
 theorem realize_iExsAtMost [Finite β] (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsAtMost β n).Realize v ↔
-      {x : β → M | φ.Realize (Sum.elim v x)}.encard ≤ n := by
+      (φ.realizationSet v).encard ≤ n := by
   simpa [iExsAtMost] using ENat.lt_natCast_add_one_iff
 
-/-- Exact finite cardinality of the realization fiber. -/
+/-- Exact finite cardinality of the realization set. -/
 @[simp]
 theorem realize_iExsExactly [Finite β] (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsExactly β n).Realize v ↔
-      {x : β → M | φ.Realize (Sum.elim v x)}.encard = n := by
+      (φ.realizationSet v).encard = n := by
   simpa [iExsExactly] using Iff.symm ge_antisymm_iff
 
 /-- Semantic characterization of `existsExactlyLeft` in the caller-facing variable order
@@ -287,7 +316,7 @@ theorem realize_iExsExactly [Finite β] (φ : L.Formula (α ⊕ β)) (v : α →
 theorem realize_existsExactlyLeft [Finite β] (φ : L.Formula (β ⊕ α)) (v : α → M) (n : ℕ) :
     (φ.existsExactlyLeft n).Realize v ↔
       {x : β → M | φ.Realize (Sum.elim x v)}.encard = n := by
-  simp [existsExactlyLeft]
+  simp [existsExactlyLeft, realizationSet]
 
 /-- `existsRight` realizes exactly when some assignment to the right variables realizes `φ`.
 
@@ -377,9 +406,7 @@ theorem realize_iExsExactly_one_iff_iExsUnique [Finite β]
     have hmem := Set.ext_iff.mp hx
     exact ⟨x, (hmem x).2 rfl, fun y hy ↦ (hmem y).1 hy⟩
   · rintro ⟨x, hx, hunique⟩
-    refine ⟨x, Set.ext fun y ↦ ?_⟩
-    simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff]
-    exact ⟨hunique y, fun hy ↦ hy ▸ hx⟩
+    exact ⟨x, Set.ext fun y ↦ ⟨hunique y, fun hy ↦ hy ▸ hx⟩⟩
 
 /-- Having at most `n` realizations is the negation of having at least `n + 1` realizations. -/
 theorem realize_iExsAtMost_iff_not_iExsAtLeast_succ [Finite β]
@@ -387,12 +414,13 @@ theorem realize_iExsAtMost_iff_not_iExsAtLeast_succ [Finite β]
     (φ.iExsAtMost β n).Realize v ↔ ¬(φ.iExsAtLeast β (n + 1)).Realize v := by
   simpa using Iff.symm ENat.lt_natCast_add_one_iff
 
-/-- Having at most `n` realizations rules out any injective family of `n + 1` solutions. -/
+/-- Having at most `n` realizations rules out any injective family of `n + 1` elements of the
+realization set. -/
 theorem realize_iExsAtMost_iff_not_exists_injection [Finite β]
     (φ : L.Formula (α ⊕ β)) (v : α → M) (n : ℕ) :
     (φ.iExsAtMost β n).Realize v ↔
       ¬∃ f : Fin (n + 1) → (β → M),
-        (∀ i, φ.Realize (Sum.elim v (f i))) ∧ Injective f := by
+        (∀ i, f i ∈ φ.realizationSet v) ∧ Injective f := by
   simpa only [realize_iExsAtMost_iff_not_iExsAtLeast_succ] using
     not_congr (realize_iExsAtLeast_iff_exists_injective φ v (n + 1))
 
