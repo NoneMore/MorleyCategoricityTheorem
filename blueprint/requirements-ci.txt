@@ -1,6 +1,6 @@
 # Versions captured from the successful Blueprint validation environment on 2026-10-14.
 # Keep these exact so regeneration of blueprint/lean_decls is reproducible.
-GitPython==3.2.0
+GitPython==3.2.1
 Jinja2==3.1.6
 MarkupSafe==3.0.4
 Pillow==12.3.0
