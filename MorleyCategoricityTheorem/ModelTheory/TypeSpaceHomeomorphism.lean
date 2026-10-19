@@ -374,6 +374,19 @@ namespace Equiv
 variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
 variable [L.Structure M] [L.Structure N]
 
+/-- The parameter-set homeomorphism of an isomorphism sends the type of a tuple to the type of its
+image. This is the isomorphism form of
+`ElementaryEmbedding.completeTypeOverHomeomorph_typeOf`. -/
+private theorem completeTypeOverHomeomorph_typeOf [Nonempty M] [Nonempty N] (f : M ≃[L] N)
+    (A : Set M) {α : Type x} (v : α → M) :
+    (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
+        ((L[[A]].completeTheory M).typeOf v) =
+      (L[[f '' A]].completeTheory N).typeOf (f ∘ v) := by
+  change (f.toElementaryEmbedding.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
+      ((L[[A]].completeTheory M).typeOf v) =
+    (L[[f.toElementaryEmbedding '' A]].completeTheory N).typeOf (f.toElementaryEmbedding ∘ v)
+  exact ElementaryEmbedding.completeTypeOverHomeomorph_typeOf f.toElementaryEmbedding A v
+
 /-- An isomorphism `f : M ≃[L] N` induces a bijection between the complete types over `A` realized
 in `M` and the complete types over `f '' A` realized in `N`: the parameter-set homeomorphism
 carries the set of types realized over `A` onto the set of types realized over `f '' A`.
@@ -386,17 +399,11 @@ theorem image_realizedTypes [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set 
       (L[[f '' A]].completeTheory N).realizedTypes N α := by
   ext p
   constructor
-  · rintro hp
-    exact ElementaryEmbedding.image_realizedTypes_subset f.toElementaryEmbedding A α hp
+  · rintro ⟨_, ⟨v, rfl⟩, rfl⟩
+    exact ⟨f ∘ v, (completeTypeOverHomeomorph_typeOf f A v).symm⟩
   · rintro ⟨w, rfl⟩
-    refine ⟨(L[[A]].completeTheory M).typeOf (f.symm ∘ w), ⟨f.symm ∘ w, rfl⟩, ?_⟩
-    -- `f.toPartialElementaryEmbeddingOn` is the restriction of `f.toElementaryEmbedding`, and
-    -- `f.toElementaryEmbedding '' A` is definitionally `f '' A`, so the embedding form applies.
-    change (f.toElementaryEmbedding.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
-        ((L[[A]].completeTheory M).typeOf (f.symm ∘ w)) =
-      (L[[f.toElementaryEmbedding '' A]].completeTheory N).typeOf w
-    rw [ElementaryEmbedding.completeTypeOverHomeomorph_typeOf f.toElementaryEmbedding A
-      (f.symm ∘ w)]
+    refine ⟨(L[[A]].completeTheory M).typeOf (f.symm ∘ w), ⟨_, rfl⟩, ?_⟩
+    rw [completeTypeOverHomeomorph_typeOf f A (f.symm ∘ w)]
     congr 1 with i
     exact f.apply_symm_apply (w i)
 
@@ -410,12 +417,12 @@ theorem mk_realizedTypes_eq [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set 
         (Cardinal.mk ((L[[A]].completeTheory M).realizedTypes M α)) =
       Cardinal.lift.{max (max u v) w x}
         (Cardinal.mk ((L[[f '' A]].completeTheory N).realizedTypes N α)) := by
-  let eHomeo := (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
-  let e : (↑((L[[A]].completeTheory M).realizedTypes M α) : Type _) ≃
-      (↑((L[[f '' A]].completeTheory N).realizedTypes N α) : Type _) :=
-    (Equiv.Set.image eHomeo _ eHomeo.injective).trans
-      (Equiv.cast (congrArg Subtype (image_realizedTypes f A α)))
-  exact Cardinal.mk_congr_lift e
+  have h := Cardinal.mk_image_eq_lift
+    ((f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α)
+    ((L[[A]].completeTheory M).realizedTypes M α)
+    ((f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α).injective
+  rw [image_realizedTypes f A α] at h
+  exact h.symm
 
 end Equiv
 
