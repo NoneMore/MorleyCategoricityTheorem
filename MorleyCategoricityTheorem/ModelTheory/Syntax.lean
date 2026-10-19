@@ -66,13 +66,9 @@ constructor without turning implementation details into declarations that also n
 
 ## TODO
 
-- Prove the syntactic naturality law
-  `(L.lhomWithConstantsMap f).onSentence (Formula.equivSentence θ) =
-    Formula.equivSentence (θ.relabel f)`.  Together with `Formula.realize_relabel`, this would turn
-  the semantic bridge `LHom.realize_onSentence_equivSentence` into a purely syntactic calculation,
-  with no temporary structure on the target of a constant expansion.  The proof needs naturality of
-  `BoundedFormula.constantsVarsEquiv` and `BoundedFormula.relabelEquiv` with respect to
-  `lhomWithConstantsMap`, which Mathlib does not provide yet.
+- The syntactic naturality law for `Formula.equivSentence`, and the arity-preserving relabel kernel
+  that proves it, are designed in `docs/plan/syntax-kernel.md`. Those declarations belong to
+  `ModelTheory/SyntaxKernel.lean`, not to this module.
 -/
 
 universe u v
