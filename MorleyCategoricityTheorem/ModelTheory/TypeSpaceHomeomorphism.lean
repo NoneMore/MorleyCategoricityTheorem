@@ -57,6 +57,8 @@ embedding on a parameter set lives in `ModelTheory.PartialEmbedding` as
   parameter-set homeomorphism carries basic open sets over `A` to basic open sets over `B`.
 - `FirstOrder.Language.ElementaryEmbedding.completeTypeOverHomeomorph_typeOf`: the pointwise form of
   realized-type preservation, sending `tp(v/A)` to `tp(e ∘ v/e '' A)` for an elementary embedding.
+- `FirstOrder.Language.Equiv.completeTypeOverHomeomorph_typeOf`: the isomorphism form of the same
+  pointwise transport, stated without unfolding the underlying elementary embedding.
 - `FirstOrder.Language.ElementaryEmbedding.image_realizedTypes_subset`: an elementary embedding maps
   realized types into realized types, the forward half of realized-type preservation.
 - `FirstOrder.Language.Equiv.image_realizedTypes`: an isomorphism induces a bijection between the
@@ -377,7 +379,7 @@ variable [L.Structure M] [L.Structure N]
 /-- The parameter-set homeomorphism of an isomorphism sends the type of a tuple to the type of its
 image. This is the isomorphism form of
 `ElementaryEmbedding.completeTypeOverHomeomorph_typeOf`. -/
-private theorem completeTypeOverHomeomorph_typeOf [Nonempty M] [Nonempty N] (f : M ≃[L] N)
+theorem completeTypeOverHomeomorph_typeOf [Nonempty M] [Nonempty N] (f : M ≃[L] N)
     (A : Set M) {α : Type x} (v : α → M) :
     (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
         ((L[[A]].completeTheory M).typeOf v) =
