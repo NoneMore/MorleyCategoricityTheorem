@@ -309,14 +309,50 @@ variable [L.Structure M] [L.Structure N]
 sends the type of a tuple to the type of its image: `tp(v/A)` is carried to `tp(e ∘ v/e '' A)`.
 
 This is the pointwise form of the blueprint statement that isomorphisms preserve realized type
-counts; it needs only elementarity, not surjectivity. The proof is intentionally omitted for
-now. -/
+counts; it needs only elementarity, not surjectivity.
+
+The two complete types are compared through their underlying theories. The transported theory is
+the image of the complete theory of `M` over `A` and the variables `α` under the parameter language
+equivalence, so it suffices to identify the complete theory of `N` with that image. Elementarity of
+`e` extends to the parameter expansion `L[[A]]` through `liftWithConstants`, and the parameter
+language equivalence is an expansion of the `L[[A]]`-structure on `N`; reading a sentence both as an
+`L[[A]]`-sentence over `α` and as a sentence of the expanded language therefore transfers
+satisfaction from `M` to `N`. -/
 theorem completeTypeOverHomeomorph_typeOf [Nonempty M] [Nonempty N] (e : M ↪ₑ[L] N) (A : Set M)
     {α : Type x} (v : α → M) :
     (e.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
         ((L[[A]].completeTheory M).typeOf v) =
-      (L[[e '' A]].completeTheory N).typeOf (e ∘ v) :=
-  sorry
+      (L[[e '' A]].completeTheory N).typeOf (e ∘ v) := by
+  let f := e.toPartialElementaryEmbeddingOn A
+  let hαM : (constantsOn α).Structure M := constantsOn.structure v
+  let hA : (constantsOn A).Structure N := constantsOn.structure (fun a => (e a : N))
+  let hαN : (constantsOn α).Structure N := constantsOn.structure (e ∘ v)
+  have hc : (LHom.constantsOnMap (f.toEquiv : A → e '' A)).IsExpansionOn N :=
+    constantsOnMap_isExpansionOn (f := (f.toEquiv : A → e '' A))
+      (fα := fun a => (e a : N)) (fβ := Subtype.val) rfl
+  have hg : f.parameterLEquiv.toLHom.IsExpansionOn N := by
+    rw [PartialElementaryEmbedding.parameterLEquiv_toLHom]
+    exact LHom.sumMap_isExpansionOn (ϕ := LHom.id L)
+      (ψ := LHom.constantsOnMap (f.toEquiv : A → e '' A)) N
+  have hΦ : (f.parameterLEquiv.addConstants α).toLHom.IsExpansionOn N :=
+    LHom.sumMap_isExpansionOn (ϕ := f.parameterLEquiv.toLHom)
+      (ψ := LHom.id (constantsOn α)) N
+  have hTheory : (f.parameterLEquiv.addConstants α).toLHom.onTheory
+      ((L[[A]])[[α]].completeTheory M) = (L[[e '' A]])[[α]].completeTheory N := by
+    rw [LEquiv.onTheory_completeTheory_eq_iff]
+    intro σ
+    have step1 : M ⊨ σ ↔ (Formula.equivSentence.symm σ).Realize v :=
+      (Formula.realize_equivSentence_symm (L := L[[A]]) (M := M) σ v).symm
+    have step2 : (Formula.equivSentence.symm σ).Realize v ↔
+        (Formula.equivSentence.symm σ).Realize ((e.liftWithConstants A) ∘ v) :=
+      ((e.liftWithConstants A).map_formula (Formula.equivSentence.symm σ) v).symm
+    have step3 : (Formula.equivSentence.symm σ).Realize (e ∘ v) ↔ N ⊨ σ :=
+      Formula.realize_equivSentence_symm (L := L[[A]]) (M := N) σ (e ∘ v)
+    have step4 : N ⊨ σ ↔ N ⊨ (f.parameterLEquiv.addConstants α).onSentence σ :=
+      (LHom.realize_onSentence (φ := (f.parameterLEquiv.addConstants α).toLHom) (M := N) σ).symm
+    exact step1.trans (step2.trans (step3.trans step4))
+  apply Theory.CompleteType.ext
+  exact hTheory
 
 /-- An elementary embedding maps the complete types over a parameter set realized in its domain
 into the complete types over the image of that parameter set realized in its codomain.
