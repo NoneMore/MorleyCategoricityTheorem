@@ -358,14 +358,14 @@ theorem completeTypeOverHomeomorph_typeOf [Nonempty M] [Nonempty N] (e : M ↪�
 into the complete types over the image of that parameter set realized in its codomain.
 
 This is the forward half of the blueprint statement that isomorphisms preserve realized type
-counts, isolated from the surjectivity needed for the reverse inclusion. The proof is
-intentionally omitted for now. -/
+counts, isolated from the surjectivity needed for the reverse inclusion. -/
 theorem image_realizedTypes_subset [Nonempty M] [Nonempty N] (e : M ↪ₑ[L] N) (A : Set M)
     (α : Type x) :
     (e.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α ''
         (L[[A]].completeTheory M).realizedTypes M α ⊆
-      (L[[e '' A]].completeTheory N).realizedTypes N α :=
-  sorry
+      (L[[e '' A]].completeTheory N).realizedTypes N α := by
+  rintro _ ⟨p, ⟨v, rfl⟩, rfl⟩
+  exact ⟨e ∘ v, (completeTypeOverHomeomorph_typeOf e A v).symm⟩
 
 end ElementaryEmbedding
 
@@ -379,25 +379,42 @@ in `M` and the complete types over `f '' A` realized in `N`: the parameter-set h
 carries the set of types realized over `A` onto the set of types realized over `f '' A`.
 
 This is the formalized statement of the blueprint lemma that isomorphisms preserve realized type
-counts. The proof is intentionally omitted for now. -/
+counts. -/
 theorem image_realizedTypes [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
     (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α ''
         (L[[A]].completeTheory M).realizedTypes M α =
-      (L[[f '' A]].completeTheory N).realizedTypes N α :=
-  sorry
+      (L[[f '' A]].completeTheory N).realizedTypes N α := by
+  ext p
+  constructor
+  · intro hp
+    exact ElementaryEmbedding.image_realizedTypes_subset f.toElementaryEmbedding A α hp
+  · rintro ⟨w, rfl⟩
+    refine ⟨(L[[A]].completeTheory M).typeOf (f.symm ∘ w), ⟨f.symm ∘ w, rfl⟩, ?_⟩
+    change (f.toElementaryEmbedding.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
+        ((L[[A]].completeTheory M).typeOf (f.symm ∘ w)) =
+      (L[[f.toElementaryEmbedding '' A]].completeTheory N).typeOf w
+    rw [ElementaryEmbedding.completeTypeOverHomeomorph_typeOf f.toElementaryEmbedding A
+      (f.symm ∘ w)]
+    congr 1
+    ext i
+    exact f.apply_symm_apply (w i)
 
 /-- Cardinality form of the blueprint statement that isomorphisms preserve realized type counts: an
 isomorphism identifies the cardinalities of the two realized type sets.
 
 Following the project's cardinality convention, this is stated with `Cardinal.mk` and explicit
-universe lifts rather than `Set.encard`, which collapses every infinite cardinality to `⊤`. The
-proof is intentionally omitted for now. -/
+universe lifts rather than `Set.encard`, which collapses every infinite cardinality to `⊤`. -/
 theorem mk_realizedTypes_eq [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set M) (α : Type x) :
     Cardinal.lift.{max (max u v) w' x}
         (Cardinal.mk ((L[[A]].completeTheory M).realizedTypes M α)) =
       Cardinal.lift.{max (max u v) w x}
-        (Cardinal.mk ((L[[f '' A]].completeTheory N).realizedTypes N α)) :=
-  sorry
+        (Cardinal.mk ((L[[f '' A]].completeTheory N).realizedTypes N α)) := by
+  let eHomeo := (f.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
+  let e : (↑((L[[A]].completeTheory M).realizedTypes M α) : Type _) ≃
+      (↑((L[[f '' A]].completeTheory N).realizedTypes N α) : Type _) :=
+    (Equiv.Set.image eHomeo _ eHomeo.injective).trans
+      (Equiv.cast (congrArg Subtype (image_realizedTypes f A α)))
+  exact Cardinal.mk_congr_lift e
 
 end Equiv
 
