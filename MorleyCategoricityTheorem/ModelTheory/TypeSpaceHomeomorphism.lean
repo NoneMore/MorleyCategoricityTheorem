@@ -364,7 +364,7 @@ theorem image_realizedTypes_subset [Nonempty M] [Nonempty N] (e : M ↪ₑ[L] N)
     (e.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α ''
         (L[[A]].completeTheory M).realizedTypes M α ⊆
       (L[[e '' A]].completeTheory N).realizedTypes N α := by
-  rintro _ ⟨p, ⟨v, rfl⟩, rfl⟩
+  rintro _ ⟨_, ⟨v, rfl⟩, rfl⟩
   exact ⟨e ∘ v, (completeTypeOverHomeomorph_typeOf e A v).symm⟩
 
 end ElementaryEmbedding
@@ -386,17 +386,18 @@ theorem image_realizedTypes [Nonempty M] [Nonempty N] (f : M ≃[L] N) (A : Set 
       (L[[f '' A]].completeTheory N).realizedTypes N α := by
   ext p
   constructor
-  · intro hp
+  · rintro hp
     exact ElementaryEmbedding.image_realizedTypes_subset f.toElementaryEmbedding A α hp
   · rintro ⟨w, rfl⟩
     refine ⟨(L[[A]].completeTheory M).typeOf (f.symm ∘ w), ⟨f.symm ∘ w, rfl⟩, ?_⟩
+    -- `f.toPartialElementaryEmbeddingOn` is the restriction of `f.toElementaryEmbedding`, and
+    -- `f.toElementaryEmbedding '' A` is definitionally `f '' A`, so the embedding form applies.
     change (f.toElementaryEmbedding.toPartialElementaryEmbeddingOn A).completeTypeOverHomeomorph α
         ((L[[A]].completeTheory M).typeOf (f.symm ∘ w)) =
       (L[[f.toElementaryEmbedding '' A]].completeTheory N).typeOf w
     rw [ElementaryEmbedding.completeTypeOverHomeomorph_typeOf f.toElementaryEmbedding A
       (f.symm ∘ w)]
-    congr 1
-    ext i
+    congr 1 with i
     exact f.apply_symm_apply (w i)
 
 /-- Cardinality form of the blueprint statement that isomorphisms preserve realized type counts: an
