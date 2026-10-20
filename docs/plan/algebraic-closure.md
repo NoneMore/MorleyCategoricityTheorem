@@ -8,12 +8,17 @@ algebraic over the parameter set `A`" and the set `algebraicClosure A`, both mat
 definable with parameters from `A`. The algebraic closure `acl(A)` is the set of all elements
 algebraic over `A`.").
 
-The public definitions are intended to be
+The public definitions are
 
 ```lean
-def FirstOrder.Language.IsAlgebraicOver (A : Set M) (b : M) : Prop
-def FirstOrder.Language.algebraicClosure (A : Set M) : Set M
+def FirstOrder.Language.IsAlgebraicOver (L : Language.{u, v}) {M : Type w} [L.Structure M]
+    (A : Set M) (b : M) : Prop
+def FirstOrder.Language.algebraicClosure (L : Language.{u, v}) {M : Type w} [L.Structure M]
+    (A : Set M) : Set M
 ```
+
+The language is explicit in both, so callers write `L.algebraicClosure A` rather than threading
+`(L := L)` through every use.
 
 The capability is the semantic layer's only notion of "parameter-definable finiteness", so it is
 also the entry point for the strongly-minimal pregeometry and dimension chain. Its direct blueprint
@@ -63,42 +68,53 @@ on top of `Mathlib.ModelTheory.Semantics` and the counting formulas
 
 `FirstOrder.Language.IsAlgebraic` already exists (`Mathlib/ModelTheory/Basic.lean:73`) with the
 unrelated meaning "the language has no relation symbols". The element predicate must therefore not
-be called `IsAlgebraic`; the draft uses `IsAlgebraicOver`. `algebraicClosure` is free in
+be called `IsAlgebraic`; the element predicate is `IsAlgebraicOver`. `algebraicClosure` is free in
 `FirstOrder.Language` (the only existing `algebraicClosure` is
 `IntermediateField.algebraicClosure` in field theory, a different namespace).
 
-### Verified draft, with the intended import boundary
+### The landed module and its import boundary
 
-`Scratch/AlgebraicClosure.lean` compiles with `lake env lean`, contains no `sorry`, and imports only
-`Mathlib.ModelTheory.Definability` and `MorleyCategoricityTheorem.ModelTheory.Semantics`. An earlier
-revision imported `ModelTheory.DefinablyFull`, which transitively pulls in `ElementaryMaps` and the
-semantic bridges; that was an accident of using the project's
-`Set.definable_iff_exists_realizationSet`, and it is fixed: the `Set.Definable` bridge now goes
-through Mathlib's `Set.definable_iff_exists_formula_sum` directly.
+`MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean` landed in `dc9f88e` with no `sorry`
+and no tactic import. Its import boundary is Mathlib's `ModelTheory.Definability`, the project's
+low-level `ModelTheory.Definability`, and `ModelTheory.Semantics`. The project bridge module was
+split out of `ModelTheory.DefinablyFull`: the two bridges `Set.definable_iff_exists_realizationSet`
+and `Set.definable_realizationSet` used to live there, so reaching them pulled in `ElementaryMaps`
+and with it the semantic bridges and the type-space layer. They now live in
+`ModelTheory/Definability.lean` together with the unary bridge
+`Set.definable₁_iff_exists_realizationSet₁` and the set-level identity `Set.image_fin_one_eq`;
+`DefinablyFull` imports that module, so no declaration moved out of reach.
 
-The draft fixes the definition and proves:
+The landed easy layer, before the idempotence layer:
 
-- `mem_algebraicClosure_iff` (unfolding, `Iff.rfl`);
-- `definable₁_iff_definable : A.Definable₁ L s ↔ A.Definable L {x : Fin 1 → M | x 0 ∈ s}`,
-  which is `Iff.rfl` — `Definable₁` *is* the one-dimensional `Definable`;
+- `IsAlgebraicOver` and `algebraicClosure`, with the language as an explicit argument;
+- `mem_algebraicClosure_iff` (unfolding, `Iff.rfl`, tagged `@[simp]`);
 - `subset_algebraicClosure` (reflexivity), from `Set.Definable.singleton_of_mem`;
 - `algebraicClosure_mono` (monotonicity), from `Set.Definable.mono`;
 - `mem_algebraicClosure_iff_exists_finset` (finite character), from
-  `Set.definable_iff_finitely_definable` plus `definable₁_iff_definable`;
-- `isAlgebraicOver_iff_exists_formula`, the formula-level form
-  `IsAlgebraicOver A b ↔ ∃ φ : L.Formula (A ⊕ Fin 1), (φ.realizationSet ↑).Finite ∧ φ.Realize …`,
+  `Set.definable_iff_finitely_definable`; its `Definable` statement unifies with `Definable₁` by
+  defeq, so no bridge lemma is needed;
+- `isAlgebraicOver_iff_exists_realizationSet₁`, the unary formula-level form
+  `IsAlgebraicOver A b ↔ ∃ φ : L.Formula (A ⊕ Fin 1), (φ.realizationSet₁ ↑).Finite ∧
+  b ∈ φ.realizationSet₁ ↑`,
   which is what `prop:algebraic-implies-isolated` and `lem:nonalgebraic-type-many-realizations`
-  need, in both directions.
+  need;
+- `isAlgebraicOver_iff_exists_formula`, the `Fin 1 → M` restatement for consumers that work with
+  `Formula.realizationSet` directly, derived from the unary form.
 
 Facts that shaped the statements:
 
-- **`Definable₁` is defeq to one-dimensional `Definable`, but `Fin 1` extensionality is not.**
-  `fun _ : Fin 1 => x 0` and `x` are propositionally equal only, so the unary shape needs `funext`
-  plus `Fin.eq_zero`; no tactic import is required, which keeps the module inside the
-  `Mathlib.ModelTheory` boundary.
-- **Finiteness of the unary realization set is a preimage.** `{x : Fin 1 → M | x 0 ∈ s}` is
-  `(fun x => x 0) ⁻¹' s`, so it is `s.Finite.preimage` with an `InjOn` proof (`Fin 1` is a
-  subsingleton). The reverse direction uses `Set.Finite.image` and the same extensionality step.
+- **The unary shape is the primary statement.** `Formula.realizationSet₁` and
+  `Formula.realizationSet_fin_one_image` in `ModelTheory.Semantics` already carry the `Fin 1`
+  bookkeeping, so the unary characterization needs no `funext`/`Fin.eq_zero` argument. The
+  `Fin 1 → M` form is derived from it with `Set.Finite.of_finite_image` and
+  `Formula.realizationSet_fin_one_image` instead of a bespoke image identity.
+- **The unary definability bridge belongs to `Set`, not to `FirstOrder.Language`.**
+  `Set.definable₁_iff_exists_realizationSet₁` follows from
+  `Set.definable_iff_exists_realizationSet` plus the set identity `Set.image_fin_one_eq`
+  (`(fun x : M => fun _ : Fin 1 => x) '' s = {x : Fin 1 → M | x 0 ∈ s}`), which replaces the
+  hand-written image equality and the `funext` step of the first draft. The `Iff.rfl` restatement
+  `definable₁_iff_definable` that the first draft exposed was dropped: `Definable₁` is
+  definitionally one-dimensional `Definable`, and `change` covers the only uses.
 
 ### Idempotence is needed before exchange, and is provable there
 
@@ -143,8 +159,8 @@ ground set `E`, `IsBase`, `Indep`, `Matroid.ExchangeProperty`, `closure` as a `C
 notion and no constructor from a closure operator with exchange; the entry points are
 `IndepMatroid.ofFinitary*` (independence first, and it yields `Finitary`) and `Matroid.ofBase`.
 
-`Scratch/MatroidBridge.lean` measures the cost of packaging `cl_A X = acl (A ∪ X) ∩ D` as a matroid
-through `IndepMatroid.ofFinitaryCardAugment`:
+The reconnaissance experiment (removed with `Scratch/` once the module landed) measured the cost of
+packaging `cl_A X = acl (A ∪ X) ∩ D` as a matroid through `IndepMatroid.ofFinitaryCardAugment`:
 
 | Obligation | Status |
 |---|---|
@@ -152,7 +168,7 @@ through `IndepMatroid.ofFinitaryCardAugment`:
 | `indep_subset` | glue, checked |
 | `indep_compact` | glue from finite character of `acl`, checked |
 | `subset_ground` | glue, checked |
-| finite Steinitz augmentation | real mathematics, the file's single `sorry` |
+| finite Steinitz augmentation | real mathematics, the experiment's single `sorry` |
 
 **Augmentation is false without exchange, so this is not merely an unproved lemma.** On
 `M = ℕ × ℕ` with the unary function `f (i, j) = (i, 0)`, take `A = ∅`, `D = M`, `I = {(0, 0)}` and
@@ -164,9 +180,9 @@ makes the hypothesis false even when `D` is strongly minimal. On `M = ℕ × Boo
 function `f (n, t) = (n, false)`, the set `D = {x | f x = x} = ℕ × {false}` is strongly minimal
 (its definable subsets with finitely many parameters are finite or cofinite, by permuting the
 remaining indices), and with `A = X = ∅`, `b = (0, false) ∈ D`, `c = (0, true) ∉ D` we have
-`b = f c ∈ acl {c} ∩ D` and `b ∉ acl ∅`, yet `c ∉ D`, so `c ∉ relClosure ∅ D {b}`. The draft
-therefore states `RelExchange` with `X ⊆ D` and `c ∈ D`, which is the standard exchange form and
-still suffices for finite augmentation because every independent set is a subset of `D`.
+`b = f c ∈ acl {c} ∩ D` and `b ∉ acl ∅`, yet `c ∉ D`, so `c ∉ relClosure ∅ D {b}`. The restricted
+form therefore states `RelExchange` with `X ⊆ D` and `c ∈ D`, which is the standard exchange form
+and still suffices for finite augmentation because every independent set is a subset of `D`.
 
 **The blueprint statement of `lem:strongly-minimal-exchange` needs those hypotheses too.** As
 written, "`b ∈ cl_A(X ∪ {c}) \ cl_A(X)` implies `c ∈ cl_A(X ∪ {b})`" quantifies `c` freely and
@@ -175,8 +191,8 @@ would force `c ∈ D`, which the counterexample above refutes. Its formal statem
 recorded here so the authorized blueprint change does not inherit the gap, and so the plan does not
 claim that the blueprint as written supplies the restricted hypothesis verbatim.
 
-The draft states augmentation under the restricted `RelExchange`; the `Payoff` namespace then
-constructs the matroid from it.
+Any matroid follow-up states augmentation under the restricted `RelExchange` and constructs the
+matroid from it; nothing claims unconditional augmentation.
 
 **`eRk` is the wrong rank for the blueprint.** `Matroid.eRk : Set α → ℕ∞` sends every infinite base
 to `∞`, so it cannot state `dim_A(Y) = |Y|` for uncountable `Y`. The cardinal-valued `cRk` is the
@@ -199,7 +215,7 @@ model-theoretic closure.
 ```lean
 namespace FirstOrder.Language
 
-variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
+variable (L : Language.{u, v}) {M : Type w} [L.Structure M]
 
 /-- `b` is algebraic over the parameter set `A` if it lies in a finite set definable with
 parameters from `A`. -/
@@ -207,7 +223,7 @@ def IsAlgebraicOver (A : Set M) (b : M) : Prop :=
   ∃ s : Set M, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s
 
 /-- The algebraic closure of a parameter set: all elements algebraic over it. -/
-def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver (L := L) A b}
+def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver L A b}
 ```
 
 Rationale:
@@ -217,9 +233,14 @@ Rationale:
   `lem:algebraic-closure-cardinality` only needs the predicate. A `def` with an `∃` body keeps both
   uses definitionally transparent. Bundling into `L.DefinableSet` is wrong here: algebraicity is not
   itself a definable set, only witnessed by one.
+- **The language is an explicit argument of both objects and of every public lemma about them.**
+  `A : Set M` and `b : M` do not determine `L`, so an implicit language forces `(L := L)` at every
+  call site and in every statement. With `L` explicit, the intended reading is
+  `L.IsAlgebraicOver A b`, `L.algebraicClosure A`, and `L.algebraicClosure_mono hAB`.
 - **`Definable₁` as the definability primitive.** It is the shape produced by
   `Definable.mono`/`Definable.singleton_of_mem` and consumed by
-  `Set.definable_iff_finitely_definable` after the `Fin 1` bridge.
+  `Set.definable_iff_finitely_definable` by defeq, and by
+  `Set.definable₁_iff_exists_realizationSet₁` when a formula is needed.
 - **`∃ s, s.Finite ∧ …` rather than a count-based phrasing.** This matches the blueprint text and
   keeps `Set.Finite` as the only finiteness notion; counting formulas enter only in idempotence,
   where they are genuinely needed.
@@ -228,9 +249,11 @@ Rationale:
 
 ### Laws in this capability
 
-Easy layer (already checked in the draft): `definable₁_iff_definable`, `mem_algebraicClosure_iff`,
-`subset_algebraicClosure`, `algebraicClosure_mono`, `mem_algebraicClosure_iff_exists_finset`,
-`isAlgebraicOver_iff_exists_formula`.
+Easy layer (landed): `mem_algebraicClosure_iff`, `subset_algebraicClosure`,
+`algebraicClosure_mono`, `mem_algebraicClosure_iff_exists_finset`,
+`isAlgebraicOver_iff_exists_realizationSet₁`, `isAlgebraicOver_iff_exists_formula`, plus the
+low-level bridges `Set.definable₁_iff_exists_realizationSet₁` and `Set.image_fin_one_eq` in
+`ModelTheory.Definability`.
 
 Idempotence layer (planned, and the reason this capability is not definition-only):
 
@@ -276,13 +299,19 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 
 ### Invariants
 
-- `IsAlgebraicOver` keeps the definitional body `∃ s, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s`, and
-  `algebraicClosure A` keeps the body `{b | IsAlgebraicOver A b}`, so downstream `rintro` and the
-  formula bridge stay stable.
-- Import boundary: the module imports `Mathlib.ModelTheory.Definability` and
-  `MorleyCategoricityTheorem.ModelTheory.Semantics` only. It must not import `DefinablyFull`,
-  `ElementaryMaps`, `Types`, or any type-space module. The idempotence layer adds counting formulas
-  from `Semantics`, not the semantic bridges.
+- `L.IsAlgebraicOver A b` keeps the definitional body `∃ s, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s`,
+  and `L.algebraicClosure A` keeps the body `{b | L.IsAlgebraicOver A b}`, so downstream `rintro`
+  and the formula bridge stay stable.
+- The language stays the first explicit argument of both objects and of every public lemma about
+  them, so callers reach them by dot notation (`L.algebraicClosure A`) instead of passing
+  `(L := L)`.
+- Import boundary: `AlgebraicClosure` imports `Mathlib.ModelTheory.Definability`, the low-level
+  `MorleyCategoricityTheorem.ModelTheory.Definability`, and
+  `MorleyCategoricityTheorem.ModelTheory.Semantics`. The semantic-layering requirement is what
+  forbids the rest: it must not import `DefinablyFull`, `ElementaryMaps`, `Types`, or any type-space
+  module, and the permitted low-level `Definability` module likewise imports only Mathlib's
+  definability layer and `Semantics`. The idempotence layer adds counting formulas from `Semantics`,
+  not the semantic bridges.
 - Explicit variables and universes (`universes u v w`), because the project builds with
   `autoImplicit = false`.
 - No declaration may be named `IsAlgebraic` or otherwise clash with the relation-free-language
@@ -306,52 +335,52 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
   `lem:algebraic-closure-cardinality` before idempotence is finished.
 - **Name stability for the blueprint.** `def:algebraic-closure` currently has no `\lean{}` label.
   Record the names above when the labels are wired; renaming later would orphan the reference.
-- **Deprecated set-builder lemmas.** The formula bridge uses `Set.mem_ofPred_eq`;
-  `Set.mem_setOf_eq` is deprecated in the pin.
+- **`Fin 1` shape conversion is the fragile seam.** The unary bridge and the `Fin 1 → M` form both
+  go through `Formula.realizationSet_fin_one_image`. `Set.image_fin_one_eq` isolates the set-level
+  half, so a change to the formula-level conversion is a one-place repair.
 
 ## Implementation / Verification
 
 ### File plan
 
-1. New `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`, built from
-   `Scratch/AlgebraicClosure.lean`: definitions, easy layer, then the idempotence layer in the same
-   module (it already imports `Semantics`, so no import change is needed).
-2. `MorleyCategoricityTheorem.lean`: add the import after `MorleyCategoricityTheorem.BinaryTree`,
-   preserving alphabetical order.
-3. No existing module changes. No blueprint change.
-4. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are both deleted when the module
-   lands; the matroid conclusions above are the design record, and the experiment's code is not
-   maintained in the tree.
+1. New `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions, easy layer, then
+   the idempotence layer in the same module (it already imports `Semantics`, so the counting
+   formulas need no further import).
+2. New `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
+   out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁` and
+   `Set.image_fin_one_eq`. `DefinablyFull` imports it; no other existing module changes.
+3. `MorleyCategoricityTheorem.lean`: import both new modules, preserving alphabetical order.
+4. No blueprint change.
+5. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are deleted once the module has
+   landed; the matroid conclusions above are the design record, and the experiment's code is not
+   maintained in the tree. Deleting them at landing rather than after idempotence keeps the tree
+   free of copies that diverge from the production definitions.
 
 ### Implementation order
 
 1. Re-check that Mathlib still has no model-theoretic `acl` (the pinned revision may move); confirm
-   the `Definable` API names used by the draft.
-2. Land the module with the two definitions, `definable₁_iff_definable`, and the easy layer. Run the
-   full verification; this is the increment that releases the node's direct consumers.
-3. Add `Definable.fiber` (parameter splitting), starting with the single-parameter case and only
+   the `Definable` API names the modules use. Done: Mathlib `v4.34.1` (`d13f23b7`) has neither
+   `algebraicClosure` nor `IsAlgebraicOver` under `Mathlib/ModelTheory/`, and the names used below
+   are unchanged.
+2. Extract the realization-set bridges into the low-level `ModelTheory/Definability.lean`, and add
+   the unary bridge, so that the algebraic-closure module reaches them without `DefinablyFull`.
+3. Land `AlgebraicClosure` with the two definitions and the easy layer, with the language explicit.
+   Run the full verification; this is the increment that releases the node's direct consumers.
+4. Add `Definable.fiber` (parameter splitting), starting with the single-parameter case and only
    then the finite-tuple case.
-4. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`.
-5. Prove `algebraicClosure_idem`, then restate the closure-law facts that
+5. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`.
+6. Prove `algebraicClosure_idem`, then restate the closure-law facts that
    `lem:strongly-minimal-closure-laws` needs in the pregeometry plan.
-6. Delete both `Scratch/` files in the change that completes step 5.
 
 ### Estimated cost
 
-The definition layer is the 100-line draft. The idempotence layer is the real work: parameter
+The definition layer is the ~110-line module. The idempotence layer is the real work: parameter
 splitting plus the finite-family collapse, estimated at 150–300 lines dominated by formula
 bookkeeping, with the single-parameter case as the fallback if the tuple case explodes.
 
 ### Verification
 
-For the drafts (no library change):
-
-```bash
-lake env lean Scratch/AlgebraicClosure.lean
-lake env lean Scratch/MatroidBridge.lean
-```
-
-For the module change:
+For the module changes:
 
 ```bash
 lake build MorleyCategoricityTheorem
@@ -361,21 +390,22 @@ lake exe checkdecls blueprint/lean_decls
 
 `mk_all --check` and `checkdecls` run unconditionally in the "Validate Lean" CI job and currently
 pass; they are not skipped for documentation-only pull requests, so the verification statement must
-not call them "not triggered". `Scratch/` is never built by CI or Lake, so its `lake env lean`
-validation is author-run and is not part of the CI gate.
+not call them "not triggered". `Scratch/` is never built by CI or Lake, so while it existed the
+`lake env lean` check on its files was author-run and outside the CI gate; after the deletion above
+that check no longer applies.
 
 ### Completion criteria
 
 - `FirstOrder.Language.IsAlgebraicOver` and `FirstOrder.Language.algebraicClosure` exist with the
-  bodies above and no `sorry`.
-- The easy layer is proved with the names listed in Design, and the module imports only the
-  permitted modules.
+  bodies above, the language explicit, and no `sorry`.
+- The easy layer is proved with the names listed in Design, the low-level bridges are in
+  `ModelTheory.Definability`, and the modules import only the permitted modules.
 - `algebraicClosure_idem` is proved, so `lem:strongly-minimal-closure-laws` can be discharged
   without depending on exchange.
-- The root import file reflects the new module and `lake exe mk_all --check` passes.
+- The root import file reflects both new modules and `lake exe mk_all --check` passes.
 - `blueprint/` is untouched; the intended `\lean{}` label for `def:algebraic-closure` is recorded in
   this plan for a later authorized blueprint change.
-- Both `Scratch/` files no longer exist once the idempotence layer lands.
+- Both `Scratch/` files no longer exist once the module has landed.
 
 ### Deferred follow-ups
 
@@ -386,7 +416,7 @@ validation is author-run and is not part of the CI gate.
   `IndepMatroid.ofFinitaryCardAugment` (which also supplies `Finitary`), prove the closure
   identification theorem, and define `dim_A Y := (relMatroid A D).cRk Y` with its
   `InvariantCardinalRank` instance. Supplying the finite Steinitz augmentation is the one proof
-  obligation; `Scratch/MatroidBridge.lean` records the shape of the five constructor inputs.
+  obligation; the shape of the five constructor inputs is the obligation table in Facts above.
 - **Upstream candidates.** Parameter splitting and the finite-family collapse are the kind of
   Mathlib-level lemmas the project has promoted before; record them for a possible upstream
   contribution only after a downstream proof uses them.
