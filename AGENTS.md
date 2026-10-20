@@ -37,8 +37,6 @@ rules below rather than restating it.
   synchronize `MorleyCategoricityTheorem.lean` and run
   `lake exe mk_all --check`.
 - Prefer `lean-lsp-mcp` over edit-build cycles for proof exploration.
-- Defer mechanical formatting until proofs stabilize; prefer automated fixes over
-  manual line-by-line adjustments.
 
 ## Blueprint Boundary
 
