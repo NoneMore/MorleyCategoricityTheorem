@@ -261,11 +261,11 @@ Idempotence layer (the reason this capability is not definition-only):
   two-variable set in `Fin 2 → M` whose `c`-fiber is `s`, plus the finite-tuple version
   `Definable.fiber_finset` for `F : Finset M`, producing an `A`-definable set in `↥F ⊕ Fin 1 → M`
   whose fiber over `F` is `s`. Both witness maps send each parameter variable either to its
-  `A`-parameter variable or to its tuple slot; `Formula.relabel` and `Formula.realize_relabel`
-  reduce the fiber identity to a pointwise check on that map, so no separate formula surgery is
-  needed. These are general definability facts, so they live in the low-level
-  `ModelTheory.Definability` rather than in `AlgebraicClosure`; the finite-family collapse and
-  idempotence stay with the closure definitions;
+  `A`-parameter variable or to its tuple slot, so the fiber identity is the transport step
+  `Set.mem_realizationSet_relabel` — relabelling along that map, then checking it pointwise — and
+  needs no separate formula surgery. These are general definability facts, so they live in the
+  low-level `ModelTheory.Definability` rather than in `AlgebraicClosure`; the finite-family collapse
+  and idempotence stay with the closure definitions;
 - `Set.Finite.biUnion_fibers`: the finite-family collapse, stated for a finite parameter set and a
   family whose contributing fibers are bounded;
 - `algebraicClosure_idem : algebraicClosure (algebraicClosure A) = algebraicClosure A`, from those
