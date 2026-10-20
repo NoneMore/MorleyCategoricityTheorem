@@ -214,13 +214,12 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     intro v hv
     rw [hVdef] at hv
     exact hv.2
-  have hSfin' : ({v : Fin 1 → M | v 0 ∈ S}).Finite := by
-    rw [← Set.image_fin_one_eq]
-    exact hSfin.image _
   have hVfin : V.Finite := by
-    refine hSfin'.subset ?_
+    rw [hVdef, ← Set.image_fin_one_eq]
+    exact (hSfin.image _).subset Set.inter_subset_left
+  have hVdefin : A.Definable L V := by
     rw [hVdef]
-    exact Set.inter_subset_left
+    exact hSdef.inter (Set.definable_setOf_fiber_encard_le (A := A) (φ := φ) m)
   have hcV : (fun _ : Fin 1 => c) ∈ V := by
     rw [hVdef, Set.mem_inter_iff]
     exact ⟨by simpa using hcS, hFibc_encard.le⟩
@@ -232,10 +231,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     refine (Set.Finite.biUnion_fibers (F := Fib) (n := m) hVfin hVbound).subset ?_
     rintro w ⟨v, hv, hw⟩
     exact Set.mem_iUnion₂.mpr ⟨v, hv, hw⟩
-  have hTdefin : A.Definable L T :=
-    Set.definable_exists_fiber (A := A) (φ := φ) (V := V) (by
-      rw [hVdef]
-      exact hSdef.inter (Set.definable_setOf_fiber_encard_le (A := A) (φ := φ) m))
+  have hTdefin : A.Definable L T := Set.definable_exists_fiber hVdefin
   -- an element of `M` is the one-entry tuple of itself, so `U` is the range of `w ↦ w 0` on `T`
   set U : Set M := {x | (fun _ : Fin 1 => x) ∈ T} with hUdef
   refine ⟨U, ?_, ?_, ⟨fun _ : Fin 1 => c, hcV, (hφ b).2 hbs⟩⟩
@@ -275,8 +271,8 @@ theorem isAlgebraicOver_of_finset_subset_algebraicClosure {b : M} :
       simp only [Set.mem_union, Set.mem_singleton_iff, Finset.mem_coe, Finset.mem_insert]
       tauto
     rw [hAset] at hb
-    exact ih hF' (isAlgebraicOver_of_isAlgebraicOver_union_singleton (L := L) (A := A ∪ ↑F)
-      (algebraicClosure_mono (L := L) Set.subset_union_left hc) hb)
+    exact ih hF' (L.isAlgebraicOver_of_isAlgebraicOver_union_singleton (A := A ∪ ↑F)
+      (L.algebraicClosure_mono Set.subset_union_left hc) hb)
 
 /-- Algebraic closure is idempotent: closing a parameter set twice gives the same set.
 
@@ -284,12 +280,13 @@ This is the closure law that `lem:strongly-minimal-closure-laws` needs before ex
 proved here rather than deferred to the pregeometry layer. -/
 theorem algebraicClosure_idem (A : Set M) :
     L.algebraicClosure (L.algebraicClosure A) = L.algebraicClosure A := by
-  refine Set.Subset.antisymm ?_ (algebraicClosure_mono (L := L) (subset_algebraicClosure (L := L)))
+  refine Set.Subset.antisymm ?_ (L.algebraicClosure_mono L.subset_algebraicClosure)
   intro b hb
   -- finite character reduces the outer parameters to a finite set of algebraic elements
-  obtain ⟨F, hF, hbF⟩ := (mem_algebraicClosure_iff_exists_finset (L := L)).mp hb
-  exact isAlgebraicOver_of_finset_subset_algebraicClosure (L := L) F hF
-    (algebraicClosure_mono (L := L) Set.subset_union_right hbF)
+  rw [L.mem_algebraicClosure_iff_exists_finset] at hb
+  obtain ⟨F, hF, hbF⟩ := hb
+  exact L.isAlgebraicOver_of_finset_subset_algebraicClosure F hF
+    (L.algebraicClosure_mono Set.subset_union_right hbF)
 
 end Language
 
