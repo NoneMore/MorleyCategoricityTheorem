@@ -224,42 +224,31 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
   have hcV : (fun _ : Fin 1 => c) ∈ V := by
     rw [hVdef, Set.mem_inter_iff]
     exact ⟨by simpa using hcS, hFibc_encard.le⟩
-  -- the target set, in tuple coordinates
-  set Ueq : Set (Fin 1 → M) :=
+  -- the elements that are algebraic over `A` through this family, in tuple coordinates
+  set T : Set (Fin 1 → M) :=
     {w | ∃ v : Fin 1 → M, v ∈ V ∧
-      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hUeqdef
-  have hUeq_fin : Ueq.Finite := by
+      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hTdef
+  have hTfin : T.Finite := by
     refine (Set.Finite.biUnion_fibers (F := Fib) (n := m) hVfin hVbound).subset ?_
     rintro w ⟨v, hv, hw⟩
     exact Set.mem_iUnion₂.mpr ⟨v, hv, hw⟩
-  have hUeq_defin : A.Definable L Ueq :=
+  have hTdefin : A.Definable L T :=
     Set.definable_exists_fiber (A := A) (φ := φ) (V := V) (by
       rw [hVdef]
       exact hSdef.inter (Set.definable_setOf_fiber_encard_le (A := A) (φ := φ) m))
-  -- back to element coordinates
-  set U : Set M :=
-    {x | ∃ v : Fin 1 → M, v ∈ V ∧
-      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v (fun _ : Fin 1 => x)))} with hUdef
-  have hUeq_image : Ueq = (fun x : M => fun _ : Fin 1 => x) '' U := by
-    ext w
-    constructor
-    · rintro ⟨v, hv, hw⟩
-      have hw' : w = fun _ : Fin 1 => w 0 := funext fun i => by rw [Fin.eq_zero i]
-      refine ⟨w 0, ⟨v, hv, ?_⟩, hw'.symm⟩
-      rwa [hw'] at hw
-    · rintro ⟨x, ⟨v, hv, hx⟩, rfl⟩
-      exact ⟨v, hv, hx⟩
-  have hUfin : U.Finite := by
-    refine Set.Finite.of_finite_image (f := fun x : M => fun _ : Fin 1 => x) ?_ ?_
-    · rw [← hUeq_image]
-      exact hUeq_fin
-    · intro x _ y _ h
-      exact congrFun h 0
-  have hUdefin : A.Definable₁ L U := by
-    show A.Definable L {w : Fin 1 → M | w 0 ∈ U}
-    rw [← Set.image_fin_one_eq, ← hUeq_image]
-    exact hUeq_defin
-  exact ⟨U, hUfin, hUdefin, ⟨fun _ : Fin 1 => c, hcV, (hφ b).2 hbs⟩⟩
+  -- an element of `M` is the one-entry tuple of itself, so `U` is the range of `w ↦ w 0` on `T`
+  set U : Set M := {x | (fun _ : Fin 1 => x) ∈ T} with hUdef
+  refine ⟨U, ?_, ?_, ⟨fun _ : Fin 1 => c, hcV, (hφ b).2 hbs⟩⟩
+  · refine (hTfin.image (fun w : Fin 1 → M => w 0)).subset ?_
+    rintro x hx
+    exact ⟨fun _ : Fin 1 => x, hx, rfl⟩
+  · show A.Definable L {w : Fin 1 → M | w 0 ∈ U}
+    have hset : {w : Fin 1 → M | w 0 ∈ U} = T := by
+      ext w
+      have hw : (fun _ : Fin 1 => w 0) = w := funext fun i => by rw [Fin.eq_zero i]
+      simp only [Set.mem_ofPred_eq, hUdef, hw]
+    rw [hset]
+    exact hTdefin
 
 /-- Adjoining finitely many elements that are already algebraic over the base does not enlarge the
 algebraic closure: `b ∈ acl (A ∪ ↑F)` implies `b ∈ acl A` for finite `F ⊆ acl A`, hence
