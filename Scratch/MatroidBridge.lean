@@ -17,6 +17,14 @@ Two corrections that came out of review and are now built into the statements be
   `I`, because `f e = (0, 0)` is algebraic over `I ∪ {e}`.  The augmentation statement therefore
   takes the exchange hypothesis `RelExchange`, which `lem:strongly-minimal-exchange` supplies on a
   strongly minimal `D`.
+* The exchange hypothesis itself must be **restricted to `D`**.  Quantifying `c : M` freely makes
+  the statement false even for a strongly minimal `D`: on `M = ℕ × Bool` with `f (n, t) = (n,
+  false)`, the set `D = {x | f x = x} = ℕ × {false}` is strongly minimal, and with `A = X = ∅`,
+  `b = (0, false) ∈ D`, `c = (0, true) ∉ D` we have `b = f c ∈ acl {c} ∩ D` and `b ∉ acl ∅`, yet
+  `c ∉ D` and hence `c ∉ relClosure ∅ D {b}`.  `RelExchange` below therefore assumes `X ⊆ D` and
+  `c ∈ D`, which is also what the standard exchange lemma gives and what finite augmentation
+  needs.  The blueprint text of `lem:strongly-minimal-exchange` omits those hypotheses; the plan
+  records that its formal statement must carry them.
 * The cardinal-valued dimension must be `Matroid.cRk` (from `Rank/Cardinal.lean`, available for
   `Finitary` matroids through `InvariantCardinalRank`), not the `ℕ∞`-valued `Matroid.eRk`:
   `eRk` collapses all infinite cardinalities, while the blueprint needs `dim_A Y` to be a
@@ -74,12 +82,14 @@ def relClosure (X : Set M) : Set M := algebraicClosure (L := L) (A ∪ X) ∩ D
 def RelIndep (X : Set M) : Prop :=
   X ⊆ D ∧ ∀ x ∈ X, x ∉ algebraicClosure (L := L) (A ∪ (X \ {x}))
 
-/-- The exchange hypothesis for the relative closure.  On a strongly minimal `D` this is
-`lem:strongly-minimal-exchange`; it is not a theorem about `acl` in general, which is why
-augmentation below must assume it. -/
+/-- The exchange hypothesis for the relative closure, in the restricted form the standard exchange
+lemma supplies: `X ⊆ D` and the exchanged element `c` lies in `D`.  The unrestricted form is false
+(see the counterexample in the file header), and this restricted form still suffices for finite
+augmentation because independent sets are subsets of `D`. -/
 def RelExchange : Prop :=
-  ∀ (X : Set M) (b c : M), b ∈ relClosure (L := L) A D (insert c X) →
-    b ∉ relClosure (L := L) A D X → c ∈ relClosure (L := L) A D (insert b X)
+  ∀ ⦃X : Set M⦄, X ⊆ D → ∀ ⦃b c : M⦄, c ∈ D →
+    b ∈ relClosure (L := L) A D (insert c X) → b ∉ relClosure (L := L) A D X →
+      c ∈ relClosure (L := L) A D (insert b X)
 
 theorem relIndep_empty : RelIndep (L := L) A D ∅ := by
   refine ⟨Set.empty_subset _, ?_⟩

@@ -157,9 +157,26 @@ through `IndepMatroid.ofFinitaryCardAugment`:
 **Augmentation is false without exchange, so this is not merely an unproved lemma.** On
 `M = ℕ × ℕ` with the unary function `f (i, j) = (i, 0)`, take `A = ∅`, `D = M`, `I = {(0, 0)}` and
 `J = {(0, 1), (0, 2)}`. Both sets are independent and `|I| < |J|`, but no `e ∈ J \ I` can be added
-to `I`, because `f e = (0, 0)` is then algebraic over `I ∪ {e}`. The draft states augmentation
-under an explicit `RelExchange` hypothesis, which `lem:strongly-minimal-exchange` supplies on a
-strongly minimal `D`; the `Payoff` namespace then constructs the matroid from it.
+to `I`, because `f e = (0, 0)` is then algebraic over `I ∪ {e}`.
+
+**Exchange itself must be restricted to `D`.** Quantifying the exchanged element over all of `M`
+makes the hypothesis false even when `D` is strongly minimal. On `M = ℕ × Bool` with the unary
+function `f (n, t) = (n, false)`, the set `D = {x | f x = x} = ℕ × {false}` is strongly minimal
+(its definable subsets with finitely many parameters are finite or cofinite, by permuting the
+remaining indices), and with `A = X = ∅`, `b = (0, false) ∈ D`, `c = (0, true) ∉ D` we have
+`b = f c ∈ acl {c} ∩ D` and `b ∉ acl ∅`, yet `c ∉ D`, so `c ∉ relClosure ∅ D {b}`. The draft
+therefore states `RelExchange` with `X ⊆ D` and `c ∈ D`, which is the standard exchange form and
+still suffices for finite augmentation because every independent set is a subset of `D`.
+
+**The blueprint statement of `lem:strongly-minimal-exchange` needs those hypotheses too.** As
+written, "`b ∈ cl_A(X ∪ {c}) \ cl_A(X)` implies `c ∈ cl_A(X ∪ {b})`" quantifies `c` freely and
+would force `c ∈ D`, which the counterexample above refutes. Its formal statement must carry
+`X ⊆ D` and `c ∈ D`. That is a blueprint-text fix, out of scope for this pull request; it is
+recorded here so the authorized blueprint change does not inherit the gap, and so the plan does not
+claim that the blueprint as written supplies the restricted hypothesis verbatim.
+
+The draft states augmentation under the restricted `RelExchange`; the `Payoff` namespace then
+constructs the matroid from it.
 
 **`eRk` is the wrong rank for the blueprint.** `Matroid.eRk : Set α → ℕ∞` sends every infinite base
 to `∞`, so it cannot state `dim_A(Y) = |Y|` for uncountable `Y`. The cardinal-valued `cRk` is the
@@ -271,8 +288,9 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 - No declaration may be named `IsAlgebraic` or otherwise clash with the relation-free-language
   class.
 - If a matroid follow-up is opened, it must prove
-  `M.closure X = D ∩ algebraicClosure (A ∪ X)` for `X ⊆ D` before using the closure API, and must
-  state dimension through `cRk`, not `eRk`.
+  `M.closure X = D ∩ algebraicClosure (A ∪ X)` for `X ⊆ D` before using the closure API, must state
+  dimension through `cRk`, not `eRk`, and must carry exchange in the restricted form (`X ⊆ D`,
+  `c ∈ D`) that the strongly-minimal exchange lemma actually gives.
 
 ### Risks
 
