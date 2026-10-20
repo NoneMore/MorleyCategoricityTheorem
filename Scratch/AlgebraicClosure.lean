@@ -1,14 +1,21 @@
-import MorleyCategoricityTheorem.ModelTheory.DefinablyFull
+import Mathlib.ModelTheory.Definability
+import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
 Reconnaissance draft for blueprint `def:algebraic-closure`; see `docs/plan/algebraic-closure.md`.
 
 `Scratch/` is outside the Lake library, so `lake build MorleyCategoricityTheorem` and
-`lake exe mk_all --check` ignore this file.  The declarations are intended to move verbatim into
+`lake exe mk_all --check` ignore this file.  The declarations are intended to move into
 `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean` once the plan is approved.
 
+The import list is the planned production boundary: Mathlib's definability layer plus the
+project's low-level semantic layer (`ModelTheory.Semantics`, which supplies
+`Formula.realizationSet`).  In particular this file does not import `DefinablyFull`,
+`ElementaryMaps`, or any type-space module.  The `Set.Definable` bridge below is Mathlib's
+`Set.definable_iff_exists_formula_sum`, not the project's `Definable`-only restatement.
+
 Checked with `lake env lean Scratch/AlgebraicClosure.lean` against Lean `v4.34.1` and Mathlib
-`v4.34.1`; the file contains no `sorry` and needs no tactic import beyond the core library.
+`v4.34.1`; the file contains no `sorry` and needs no tactic import.
 -/
 
 universe u v w
@@ -34,6 +41,7 @@ theorem definable₁_iff_definable :
     A.Definable₁ L s ↔ A.Definable L {x : Fin 1 → M | x 0 ∈ s} :=
   Iff.rfl
 
+/-- Unfolding of membership in the algebraic closure. -/
 theorem mem_algebraicClosure_iff :
     b ∈ algebraicClosure (L := L) A ↔ IsAlgebraicOver (L := L) A b :=
   Iff.rfl
@@ -69,20 +77,22 @@ theorem isAlgebraicOver_iff_exists_formula {A : Set M} {b : M} :
         φ.Realize (Sum.elim (Subtype.val : A → M) (fun _ : Fin 1 => b)) := by
   constructor
   · rintro ⟨s, hfin, hdef, hb⟩
-    obtain ⟨φ, hφ⟩ := (Set.definable_iff_exists_realizationSet (α := Fin 1)).1
+    obtain ⟨φ, hφ⟩ := (Set.definable_iff_exists_formula_sum (α := Fin 1)).1
       ((definable₁_iff_definable).1 hdef)
     refine ⟨φ, ?_, ?_⟩
-    · rw [← hφ]
+    · change ({x : Fin 1 → M | φ.Realize (Sum.elim (Subtype.val : A → M) x)} : Set _).Finite
+      rw [← hφ]
       exact hfin.preimage (f := fun x : Fin 1 → M => x 0)
         (fun x _ y _ h => funext fun i => by rw [Fin.eq_zero i]; exact h)
-    · have : (fun _ : Fin 1 => b) ∈ φ.realizationSet (Subtype.val : A → M) := by
+    · have : (fun _ : Fin 1 => b) ∈ {x : Fin 1 → M | φ.Realize (Sum.elim (Subtype.val) x)} := by
         rw [← hφ]; exact hb
-      simpa [Set.mem_ofPred_eq] using this
+      simpa [Formula.realizationSet, Set.mem_ofPred_eq] using this
   · rintro ⟨φ, hfin, hb⟩
     refine ⟨{b' : M | φ.Realize (Sum.elim (Subtype.val : A → M) (fun _ : Fin 1 => b'))},
       ?_, ?_, hb⟩
-    · have himg : {b' : M | φ.Realize (Sum.elim (Subtype.val : A → M) (fun _ : Fin 1 => b'))} =
-          (fun x : Fin 1 → M => x 0) '' φ.realizationSet (Subtype.val : A → M) := by
+    · have himg :
+          {b' : M | φ.Realize (Sum.elim (Subtype.val : A → M) (fun _ : Fin 1 => b'))} =
+            (fun x : Fin 1 → M => x 0) '' φ.realizationSet (Subtype.val : A → M) := by
         ext b'
         constructor
         · intro h
@@ -90,7 +100,7 @@ theorem isAlgebraicOver_iff_exists_formula {A : Set M} {b : M} :
         · rintro ⟨x, hx, rfl⟩
           have hx' : (fun _ : Fin 1 => x 0) = x :=
             funext fun i => (congrArg x (Fin.eq_zero i)).symm
-          simpa [hx', Set.mem_ofPred_eq] using hx
+          simpa [Formula.realizationSet, Set.mem_ofPred_eq, hx'] using hx
       rw [himg]
       exact hfin.image _
     · refine (definable₁_iff_definable).2 ((Set.definable_iff_exists_formula_sum).2 ⟨φ, ?_⟩)

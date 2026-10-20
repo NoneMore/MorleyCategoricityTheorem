@@ -1,17 +1,29 @@
-import MorleyCategoricityTheorem.ModelTheory.DefinablyFull
 import Mathlib.Combinatorics.Matroid.IndepAxioms
-import Mathlib.Combinatorics.Matroid.Rank.ENat
+import Mathlib.Combinatorics.Matroid.Rank.Cardinal
+import Mathlib.ModelTheory.Definability
 
 /-!
 Reconnaissance draft for the matroid bridge discussed in `docs/plan/algebraic-closure.md`.
 
-This file is evidence for one design decision: whether the relative acl closure on a definable set
-should be packaged as a Mathlib `Matroid` now.  It is not part of the Lake library.  Everything in
-it compiles except the single deliberate `sorry` below, which marks the finite Steinitz
-augmentation obligation -- the one piece that is real mathematics rather than glue.  The `Payoff`
-section shows that `IndepMatroid.ofFinitaryCardAugment` accepts the five obligations and yields a
-`Matroid` once the augmentation hypothesis is supplied, which is why the missing lemma is recorded
-as a downstream capability instead of being discharged here.
+`Scratch/` is outside the Lake library, so `lake build MorleyCategoricityTheorem` and
+`lake exe mk_all --check` ignore this file.  Everything here compiles except one deliberate
+`sorry`, which marks the finite Steinitz augmentation obligation.
+
+Two corrections that came out of review and are now built into the statements below:
+
+* Finite augmentation is **false** for a general structure: `acl` need not have exchange.  On
+  `M = ℕ × ℕ` with the unary function `f (i, j) = (i, 0)`, `A = ∅`, `D = M`, `I = {(0, 0)}` and
+  `J = {(0, 1), (0, 2)}` are both `RelIndep` with `|I| < |J|`, but no `e ∈ J \ I` can be added to
+  `I`, because `f e = (0, 0)` is algebraic over `I ∪ {e}`.  The augmentation statement therefore
+  takes the exchange hypothesis `RelExchange`, which `lem:strongly-minimal-exchange` supplies on a
+  strongly minimal `D`.
+* The cardinal-valued dimension must be `Matroid.cRk` (from `Rank/Cardinal.lean`, available for
+  `Finitary` matroids through `InvariantCardinalRank`), not the `ℕ∞`-valued `Matroid.eRk`:
+  `eRk` collapses all infinite cardinalities, while the blueprint needs `dim_A Y` to be a
+  `Cardinal`.
+
+The `Payoff` section shows that `IndepMatroid.ofFinitaryCardAugment` accepts the obligations once
+augmentation is available, and records the cardinal-ranked API that then applies.
 -/
 
 universe u v w
@@ -22,11 +34,12 @@ namespace FirstOrder.Language
 
 variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
 
-/-- Algebraicity. -/
+/-- Algebraic over `A`: lies in a finite `A`-definable set.  Duplicates the draft in
+`Scratch/AlgebraicClosure.lean`; both are scratch and are removed when the module lands. -/
 def IsAlgebraicOver (A : Set M) (b : M) : Prop :=
   ∃ s : Set M, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s
 
-/-- Algebraic closure. -/
+/-- The algebraic closure of a parameter set. -/
 def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver (L := L) A b}
 
 theorem subset_algebraicClosure (A : Set M) : A ⊆ algebraicClosure (L := L) A := by
@@ -41,7 +54,6 @@ theorem algebraicClosure_mono {A B : Set M} (hAB : A ⊆ B) :
 theorem definable₁_iff_definable {A : Set M} {s : Set M} :
     A.Definable₁ L s ↔ A.Definable L {x : Fin 1 → M | x 0 ∈ s} := Iff.rfl
 
-/-- Finite character. -/
 theorem mem_algebraicClosure_iff_exists_finset {A : Set M} {b : M} :
     b ∈ algebraicClosure (L := L) A ↔
       ∃ A₀ : Finset M, (A₀ : Set M) ⊆ A ∧ b ∈ algebraicClosure (L := L) (A₀ : Set M) := by
@@ -62,6 +74,13 @@ def relClosure (X : Set M) : Set M := algebraicClosure (L := L) (A ∪ X) ∩ D
 def RelIndep (X : Set M) : Prop :=
   X ⊆ D ∧ ∀ x ∈ X, x ∉ algebraicClosure (L := L) (A ∪ (X \ {x}))
 
+/-- The exchange hypothesis for the relative closure.  On a strongly minimal `D` this is
+`lem:strongly-minimal-exchange`; it is not a theorem about `acl` in general, which is why
+augmentation below must assume it. -/
+def RelExchange : Prop :=
+  ∀ (X : Set M) (b c : M), b ∈ relClosure (L := L) A D (insert c X) →
+    b ∉ relClosure (L := L) A D X → c ∈ relClosure (L := L) A D (insert b X)
+
 theorem relIndep_empty : RelIndep (L := L) A D ∅ := by
   refine ⟨Set.empty_subset _, ?_⟩
   intro x hx
@@ -71,14 +90,11 @@ theorem relIndep_subset {X Y : Set M} (hY : RelIndep (L := L) A D Y) (hXY : X �
     RelIndep (L := L) A D X := by
   refine ⟨hXY.trans hY.1, ?_⟩
   intro x hx hxcl
-  exact hY.2 x (hXY hx) (algebraicClosure_mono (L := L) (by
-    intro y hy
-    rcases hy with hy | hy
-    · exact Or.inl hy
-    · exact Or.inr (by
-        have : y ∈ Y \ {x} := by
-          refine ⟨hXY hy.1, hy.2⟩
-        exact this)) hxcl)
+  refine hY.2 x (hXY hx) (algebraicClosure_mono (L := L) ?_ hxcl)
+  intro y hy
+  rcases hy with hy | hy
+  · exact Or.inl hy
+  · exact Or.inr ⟨hXY hy.1, hy.2⟩
 
 /-- Compactness of independence follows from finite character of `acl`. -/
 theorem relIndep_compact {I : Set M}
@@ -114,9 +130,11 @@ open FirstOrder FirstOrder.Language
 
 variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
 
-/-- The remaining obligation: finite Steinitz augmentation for relative acl-independence. -/
-example (A D : Set M) {I J : Set M} (hI : RelIndep (L := L) A D I) (hIfin : I.Finite)
-    (hJ : RelIndep (L := L) A D J) (hJfin : J.Finite) (hcard : I.ncard < J.ncard) :
+/-- The remaining obligation: finite Steinitz augmentation for relative acl-independence, stated
+under the exchange hypothesis that makes it true. -/
+theorem relIndep_finite_augment (A D : Set M) (hcl : RelExchange (L := L) A D) ⦃I J : Set M⦄
+    (hI : RelIndep (L := L) A D I) (hIfin : I.Finite) (hJ : RelIndep (L := L) A D J)
+    (hJfin : J.Finite) (hcard : I.ncard < J.ncard) :
     ∃ e ∈ J, e ∉ I ∧ RelIndep (L := L) A D (insert e I) := by
   sorry
 
@@ -128,19 +146,18 @@ open FirstOrder FirstOrder.Language
 
 variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
 
-/-- If the finite Steinitz augmentation is supplied, the relative acl closure is a matroid. -/
-noncomputable example (A D : Set M)
-    (haug : ∀ I J : Set M, RelIndep (L := L) A D I → I.Finite →
-      RelIndep (L := L) A D J → J.Finite → I.ncard < J.ncard →
-        ∃ e ∈ J, e ∉ I ∧ RelIndep (L := L) A D (insert e I)) : Matroid M :=
+/-- With exchange (and hence augmentation) supplied, the relative closure is a matroid whose
+ground set is `D`, and `ofFinitary` also gives the `Finitary` instance. -/
+noncomputable def relMatroid (A D : Set M) (hcl : RelExchange (L := L) A D) : Matroid M :=
   (IndepMatroid.ofFinitaryCardAugment D (RelIndep (L := L) A D)
     (relIndep_empty (L := L) A D) (fun _ _ => relIndep_subset (L := L) A D)
-    haug (fun _ => relIndep_compact (L := L) A D) (fun _ hI => hI.1)).matroid
+    (TestMatroid.relIndep_finite_augment A D hcl) (fun _ => relIndep_compact (L := L) A D)
+    (fun _ hI => hI.1)).matroid
 
-#check @Matroid.eRk
-#check @Matroid.IsBase.encard_eq_eRank
-#check @Matroid.ExchangeProperty.encard_isBase_eq
-#check @Matroid.closure
+#check @Matroid.Finitary
+#check @Matroid.cRk
+#check @Matroid.IsBasis'.cardinalMk_eq
+#check @Matroid.IsBasis'.cardinalMk_eq_cRk
 #check @Matroid.Indep.notMem_closure_iff_of_notMem
 
 end Payoff
