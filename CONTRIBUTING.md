@@ -9,8 +9,6 @@ formalization, project documentation, and repository infrastructure.
 - For mathematical work, consult the blueprint and its dependency graph before choosing a target.
 - Keep pull requests focused. Large or cross-cutting changes are easier to review when split into
   coherent pieces.
-- Keep handwritten source and documentation lines within 100 columns. The `.vscode` editor ruler
-  reflects this project convention; CI does not enforce it.
 
 ## Local setup
 
