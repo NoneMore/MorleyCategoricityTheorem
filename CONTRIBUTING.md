@@ -50,9 +50,10 @@ CI remains the final gate.
 - Changes reach `main` through focused PRs and squash merges; honor branch
   protections and preserve others' work.
 - Use descriptive lowercase branches such as `feat/...`, `fix/...`, or
-  `planning/...`. Use `<type>(<scope>): <imperative summary>` for commit subjects
-  and PR titles, with the scope optional.
+  `planning/...`. Use `<type>: <summary>` or `<type>(<scope>): <summary>`
+  for commit subjects and PR titles.
 - Keep dependency-update subjects in the `build(deps): bump ...` form.
+- Release tags are automated; do not create them manually.
 - Do not add AI authorship or co-authorship trailers.
 - Explain what changed and why, any intentional limitations, and validation
   performed or skipped. Link relevant issues or blueprint nodes when useful.
