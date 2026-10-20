@@ -264,10 +264,16 @@ Idempotence layer (the reason this capability is not definition-only):
   `A`-parameter variable or to its tuple slot, so the fiber identity is the transport step
   `Set.mem_realizationSet_relabel` — relabelling along that map, then checking it pointwise — and
   needs no separate formula surgery. These are general definability facts, so they live in the
-  low-level `ModelTheory.Definability` rather than in `AlgebraicClosure`; the finite-family collapse
-  and idempotence stay with the closure definitions;
+  low-level `ModelTheory.Definability` rather than in `AlgebraicClosure`;
 - `Set.Finite.biUnion_fibers`: the finite-family collapse, stated for a finite parameter set and a
-  family whose contributing fibers are bounded;
+  family whose contributing fibers are bounded: `hI : I.Finite` and
+  `hF : ∀ i ∈ I, (F i).encard ≤ n` give `(⋃ i ∈ I, F i).Finite`. The bound is what
+  `Formula.realize_iExsAtMost` certifies for a fiber, and the composing step is
+  `Set.finite_of_encard_le_coe` under `Set.Finite.biUnion`; the "contributing" qualifier lets the
+  caller exclude the fibers that the counting conjunct rejects, which is the idempotence case. The
+  lemma is pure set-cardinality scaffolding, so it lives in `ModelTheory.Semantics` beside the
+  `Set.le_encard_iff_exists_injection_fin` helper and the counting-formula semantics it composes
+  with, not in `AlgebraicClosure`; idempotence stays with the closure definitions;
 - `algebraicClosure_idem : algebraicClosure (algebraicClosure A) = algebraicClosure A`, from those
   two, with `⊇` following from monotonicity.
 
@@ -318,7 +324,9 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
   forbids the rest: it must not import `DefinablyFull`, `ElementaryMaps`, `Types`, or any type-space
   module, and the permitted low-level `Definability` module likewise imports only Mathlib's
   definability layer and `Semantics`. The idempotence layer adds counting formulas from `Semantics`,
-  not the semantic bridges.
+  not the semantic bridges, and the finite-family collapse's
+  `Mathlib.Data.Set.Finite.Lattice` import (for `Set.Finite.biUnion`) lands in `Semantics`, so the
+  boundary above is unchanged.
 - Explicit variables and universes (`universes u v w`), because the project builds with
   `autoImplicit = false`.
 - No declaration may be named `IsAlgebraic` or otherwise clash with the relation-free-language
@@ -351,15 +359,20 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 ### File plan
 
 1. `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions and easy layer
-   (landed), then the finite-family collapse and idempotence in the same module (it already imports
-   `Semantics`, so the counting formulas need no further import).
-2. `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
+   (landed), then idempotence in the same module; it imports `Semantics`, so the counting formulas
+   and the finite-family collapse need no further import.
+2. `MorleyCategoricityTheorem/ModelTheory/Semantics.lean`: the finite-family collapse
+   `Set.Finite.biUnion_fibers`, in the `Set` scaffolding block beside
+   `Set.le_encard_iff_exists_injection_fin` and the counting-formula semantics it composes with.
+   This module is the only one that needs `Mathlib.Data.Set.Finite.Lattice`, for
+   `Set.Finite.biUnion`.
+3. `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
    out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁`,
    `Set.image_fin_one_eq`, and the parameter-splitting lemmas `Set.Definable.fiber` and
    `Set.Definable.fiber_finset`. `DefinablyFull` imports it; no other existing module changes.
-3. `MorleyCategoricityTheorem.lean`: import both modules, preserving alphabetical order.
-4. No blueprint change.
-5. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are deleted once the module has
+4. `MorleyCategoricityTheorem.lean`: import both modules, preserving alphabetical order.
+5. No blueprint change.
+6. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are deleted once the module has
    landed; the matroid conclusions above are the design record, and the experiment's code is not
    maintained in the tree. Deleting them at landing rather than after idempotence keeps the tree
    free of copies that diverge from the production definitions.
@@ -377,7 +390,10 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 4. Add `Definable.fiber` (parameter splitting), starting with the single-parameter case and only
    then the finite-tuple case. Done: `Set.Definable.fiber` and `Set.Definable.fiber_finset` live in
    `ModelTheory.Definability` with the shapes recorded in Design.
-5. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`.
+5. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`. Done: it lives in the `Set`
+   scaffolding block of `ModelTheory.Semantics`, with the statement recorded in Design, and that
+   module now imports `Mathlib.Data.Set.Finite.Lattice` because `Set.Finite.biUnion` is not in its
+   earlier import closure.
 6. Prove `algebraicClosure_idem`, then restate the closure-law facts that
    `lem:strongly-minimal-closure-laws` needs in the pregeometry plan.
 
