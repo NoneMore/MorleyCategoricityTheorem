@@ -40,14 +40,18 @@ The element predicate is not named `IsAlgebraic`: that name already belongs to
   `b`; the unary form is the primary statement.
 - `FirstOrder.Language.isAlgebraicOver_iff_exists_formula`: the `Fin 1 → M` form of the same
   characterization, for consumers that work with `Formula.realizationSet` directly.
+- `FirstOrder.Language.isAlgebraicOver_of_isAlgebraicOver_union_singleton`: adjoining a single
+  element that is already algebraic over the base does not enlarge the algebraic closure.
+- `FirstOrder.Language.isAlgebraicOver_of_finset_subset_algebraicClosure`: the same for a finite set
+  of parameters that are already algebraic.
+- `FirstOrder.Language.algebraicClosure_idem`: algebraic closure is idempotent.
+
+The closure laws that `lem:strongly-minimal-closure-laws` needs are therefore all available here:
+reflexivity (`subset_algebraicClosure`), monotonicity (`algebraicClosure_mono`), idempotence
+(`algebraicClosure_idem`), and finite character (`mem_algebraicClosure_iff_exists_finset`).
 
 ## TODO
 
-- Prove idempotence, `L.algebraicClosure (L.algebraicClosure A) = L.algebraicClosure A`, with the
-  finite-family-collapse lemma it needs.  Parameter splitting is available from the low-level
-  `ModelTheory.Definability` module as `Set.Definable.fiber` and `Set.Definable.fiber_finset`, which
-  this module imports.  The counting argument is recorded in `docs/plan/algebraic-closure.md`; the
-  closure laws of `lem:strongly-minimal-closure-laws` need the result.
 - Prove the cardinality bound `|acl(A)| ≤ |A| + ℵ₀` and the strongly-minimal pregeometry.  Both are
   separate capabilities that consume this module.
 
@@ -134,6 +138,169 @@ theorem isAlgebraicOver_iff_exists_formula :
     refine ⟨φ, ?_, hreal⟩
     rw [Formula.realizationSet_fin_one_image] at hfin
     exact hfin.of_finite_image (fun x _ y _ h => congrFun h 0)
+
+/-! ### Idempotence
+
+Idempotence is the only closure law that is not immediate from the definition.  Finite character
+writes `b ∈ acl (acl A)` as `b ∈ acl (A ∪ ↑F)` for a finite `F ⊆ acl A`, so it suffices to adjoin
+one algebraic element at a time and iterate over `F`.
+
+Adjoining a single `c ∈ acl A` is a counting argument.  Split the parameter
+(`Set.Definable.fiber`): a set definable over `A ∪ {c}` becomes the `c`-fiber of a formula over `A`
+whose two free-variable blocks are the split-off parameter and the element.  Since the fiber through
+`c` is finite, the tuples whose fiber has at most that many elements are the only ones that can
+contribute an element of `acl A`; they form a definable set
+(`Set.definable_setOf_fiber_encard_le`), they sit over the finite `A`-definable set of possible
+values of `c`, and the union of their fibers is finite (`Set.Finite.biUnion_fibers`).  Projecting
+that union (`Set.definable_exists_fiber`) gives the finite `A`-definable set witnessing
+`b ∈ acl A`. -/
+
+/-- Parameter splitting in the shape the counting argument needs: the `c`-fiber of a formula with
+parameters from `A`.
+
+This is `Set.Definable.fiber` with the two-variable block split into a slot for the split-off
+parameter `c` and a slot for the element, so that `Formula.iExsAtMost` can bound the element slot
+and `Set.definable_exists_fiber` can quantify over the parameter slot. -/
+private theorem exists_fiber_formula {A : Set M} {s : Set M} {c : M}
+    (h : (A ∪ {c}).Definable₁ L s) :
+    ∃ φ : L.Formula (A ⊕ (Fin 1 ⊕ Fin 1)),
+      ∀ x : M, φ.Realize (Sum.elim (Subtype.val : A → M)
+        (Sum.elim (fun _ : Fin 1 => c) (fun _ : Fin 1 => x))) ↔ x ∈ s := by
+  classical
+  obtain ⟨φ, rfl⟩ := Set.definable₁_iff_exists_realizationSet₁ (A := A ∪ {c}) (L := L) |>.1 h
+  let g : ↥(A ∪ {c}) ⊕ Fin 1 → ↥A ⊕ (Fin 1 ⊕ Fin 1) := fun z =>
+    match z with
+    | Sum.inl p =>
+      if hp : (p : M) = c then Sum.inr (Sum.inl 0)
+      else Sum.inl ⟨p, by simpa [Set.mem_union, Set.mem_singleton_iff, hp] using p.2⟩
+    | Sum.inr _ => Sum.inr (Sum.inr 0)
+  refine ⟨φ.relabel g, fun x => ?_⟩
+  rw [Formula.realize_relabel, Formula.mem_realizationSet₁]
+  refine iff_of_eq <| congrArg φ.Realize <| funext fun z => ?_
+  rcases z with p | i
+  · by_cases hp : (p : M) = c <;> simp [g, hp]
+  · simp [g]
+
+/-- Adjoining a single element that is already algebraic over the base does not enlarge the
+algebraic closure: `b ∈ acl (A ∪ {c})` implies `b ∈ acl A` when `c ∈ acl A`.
+
+This is the counting step of idempotence.  A finite set definable over `A ∪ {c}` is the `c`-fiber
+of an `A`-definable family; the tuples of that family whose fiber is bounded by the size of the
+fiber through `c` form a finite `A`-definable set, and the projection of the bounded fibers over it
+is finite, `A`-definable, and contains everything algebraic over `A ∪ {c}`. -/
+theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
+    (hc : L.IsAlgebraicOver A c) (hb : L.IsAlgebraicOver (A ∪ {c}) b) :
+    L.IsAlgebraicOver A b := by
+  classical
+  obtain ⟨S, hSfin, hSdef, hcS⟩ := hc
+  obtain ⟨s, hsfin, hsdef, hbs⟩ := hb
+  obtain ⟨φ, hφ⟩ := exists_fiber_formula (L := L) hsdef
+  -- the fiber through `c` is `s`, so its size bounds the fibers that may contribute
+  obtain ⟨m, hm⟩ := hsfin.exists_encard_eq_coe
+  set Fib : (Fin 1 → M) → Set (Fin 1 → M) :=
+    fun v => {w | φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hFibdef
+  -- the tuples whose fiber is small: they sit over the finite set `S`, hence are finite
+  set V : Set (Fin 1 → M) := {v | v 0 ∈ S} ∩ {v | (Fib v).encard ≤ m} with hVdef
+  have hFibc : Fib (fun _ : Fin 1 => c) = {w : Fin 1 → M | w 0 ∈ s} := by
+    ext w
+    have hw : w = fun _ : Fin 1 => w 0 := funext fun i => by rw [Fin.eq_zero i]
+    simp only [hFibdef, Set.mem_ofPred_eq]
+    rw [hw]
+    exact hφ (w 0)
+  have hFibc_encard : (Fib (fun _ : Fin 1 => c)).encard = (m : ℕ∞) := by
+    have hinj : Set.InjOn (fun x : M => fun _ : Fin 1 => x) s := fun _ _ _ _ h => congrFun h 0
+    rw [hFibc, ← Set.image_fin_one_eq, Set.InjOn.encard_image hinj, hm]
+  have hVbound : ∀ v ∈ V, (Fib v).encard ≤ (m : ℕ∞) := by
+    intro v hv
+    rw [hVdef] at hv
+    exact hv.2
+  have hSfin' : ({v : Fin 1 → M | v 0 ∈ S}).Finite := by
+    rw [← Set.image_fin_one_eq]
+    exact hSfin.image _
+  have hVfin : V.Finite := by
+    refine hSfin'.subset ?_
+    rw [hVdef]
+    exact Set.inter_subset_left
+  have hcV : (fun _ : Fin 1 => c) ∈ V := by
+    rw [hVdef, Set.mem_inter_iff]
+    exact ⟨by simpa using hcS, hFibc_encard.le⟩
+  -- the target set, in tuple coordinates
+  set Ueq : Set (Fin 1 → M) :=
+    {w | ∃ v : Fin 1 → M, v ∈ V ∧
+      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hUeqdef
+  have hUeq_fin : Ueq.Finite := by
+    refine (Set.Finite.biUnion_fibers (F := Fib) (n := m) hVfin hVbound).subset ?_
+    rintro w ⟨v, hv, hw⟩
+    exact Set.mem_iUnion₂.mpr ⟨v, hv, hw⟩
+  have hUeq_defin : A.Definable L Ueq :=
+    Set.definable_exists_fiber (A := A) (φ := φ) (V := V) (by
+      rw [hVdef]
+      exact hSdef.inter (Set.definable_setOf_fiber_encard_le (A := A) (φ := φ) m))
+  -- back to element coordinates
+  set U : Set M :=
+    {x | ∃ v : Fin 1 → M, v ∈ V ∧
+      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v (fun _ : Fin 1 => x)))} with hUdef
+  have hUeq_image : Ueq = (fun x : M => fun _ : Fin 1 => x) '' U := by
+    ext w
+    constructor
+    · rintro ⟨v, hv, hw⟩
+      have hw' : w = fun _ : Fin 1 => w 0 := funext fun i => by rw [Fin.eq_zero i]
+      refine ⟨w 0, ⟨v, hv, ?_⟩, hw'.symm⟩
+      rwa [hw'] at hw
+    · rintro ⟨x, ⟨v, hv, hx⟩, rfl⟩
+      exact ⟨v, hv, hx⟩
+  have hUfin : U.Finite := by
+    refine Set.Finite.of_finite_image (f := fun x : M => fun _ : Fin 1 => x) ?_ ?_
+    · rw [← hUeq_image]
+      exact hUeq_fin
+    · intro x _ y _ h
+      exact congrFun h 0
+  have hUdefin : A.Definable₁ L U := by
+    show A.Definable L {w : Fin 1 → M | w 0 ∈ U}
+    rw [← Set.image_fin_one_eq, ← hUeq_image]
+    exact hUeq_defin
+  exact ⟨U, hUfin, hUdefin, ⟨fun _ : Fin 1 => c, hcV, (hφ b).2 hbs⟩⟩
+
+/-- Adjoining finitely many elements that are already algebraic over the base does not enlarge the
+algebraic closure: `b ∈ acl (A ∪ ↑F)` implies `b ∈ acl A` for finite `F ⊆ acl A`, hence
+`acl (A ∪ ↑F) = acl A` by monotonicity. -/
+theorem isAlgebraicOver_of_finset_subset_algebraicClosure {b : M} :
+    ∀ F : Finset M, (F : Set M) ⊆ L.algebraicClosure A →
+      L.IsAlgebraicOver (A ∪ (F : Set M)) b → L.IsAlgebraicOver A b := by
+  classical
+  intro F
+  induction F using Finset.induction with
+  | empty =>
+    intro _ hb
+    simpa using hb
+  | insert c F hcF ih =>
+    intro hF hb
+    -- the remaining parameters are still algebraic, and so is the newly adjoined one
+    have hF' : (F : Set M) ⊆ L.algebraicClosure A := fun x hx =>
+      hF (Finset.mem_coe.mpr (Finset.mem_insert_of_mem hx))
+    have hc : c ∈ L.algebraicClosure A :=
+      hF (Finset.mem_coe.mpr (Finset.mem_insert_self c F))
+    -- move the adjoined element to the end of the parameter set
+    have hAset : A ∪ (↑(insert c F) : Set M) = (A ∪ ↑F) ∪ {c} := by
+      ext x
+      simp only [Set.mem_union, Set.mem_singleton_iff, Finset.mem_coe, Finset.mem_insert]
+      tauto
+    rw [hAset] at hb
+    exact ih hF' (isAlgebraicOver_of_isAlgebraicOver_union_singleton (L := L) (A := A ∪ ↑F)
+      (algebraicClosure_mono (L := L) Set.subset_union_left hc) hb)
+
+/-- Algebraic closure is idempotent: closing a parameter set twice gives the same set.
+
+This is the closure law that `lem:strongly-minimal-closure-laws` needs before exchange, so it is
+proved here rather than deferred to the pregeometry layer. -/
+theorem algebraicClosure_idem (A : Set M) :
+    L.algebraicClosure (L.algebraicClosure A) = L.algebraicClosure A := by
+  refine Set.Subset.antisymm ?_ (algebraicClosure_mono (L := L) (subset_algebraicClosure (L := L)))
+  intro b hb
+  -- finite character reduces the outer parameters to a finite set of algebraic elements
+  obtain ⟨F, hF, hbF⟩ := (mem_algebraicClosure_iff_exists_finset (L := L)).mp hb
+  exact isAlgebraicOver_of_finset_subset_algebraicClosure (L := L) F hF
+    (algebraicClosure_mono (L := L) Set.subset_union_right hbF)
 
 end Language
 

@@ -33,6 +33,11 @@ bridges and the type-space layer.
 - `Set.Definable.fiber`: parameter splitting for one parameter: a set definable over `A ∪ {c}` is
   the `c`-fiber of a set definable over `A` in two variables.
 - `Set.Definable.fiber_finset`: the finite-tuple form of parameter splitting, for `F : Finset M`.
+- `Set.definable_setOf_fiber_encard_le`: the tuples over which a formula's `β`-fiber is bounded by
+  a natural number form a definable set, which is the definability half of the counting argument
+  behind idempotence of algebraic closure.
+- `Set.definable_exists_fiber`: existentially quantifying a definable fibre over a definable set of
+  parameters preserves definability, which is the other half.
 
 The first two are the same statements that were previously proved in `ModelTheory.DefinablyFull`;
 they moved here so that the algebraic-closure layer can reuse them without importing the semantic
@@ -179,5 +184,59 @@ theorem Definable.fiber_finset (F : Finset M) (h : (A ∪ (F : Set M)).Definable
     · simp only [g, dite_eq_right hp]
       simp
   · simp [g]
+
+/-- The tuples over which the `β`-fiber of a formula is bounded by a natural number form a set
+definable over the same parameter set.
+
+The fiber over `v : α → M` is `{w : β → M | φ(v, w)}`.  Relabelling the free variables along
+`Equiv.sumAssoc` moves the `β`-block into the position quantified by `Formula.iExsAtMost`, whose
+semantics is exactly a bound on the extended cardinality of that fiber; this is the definability
+half of the counting argument behind idempotence of algebraic closure. -/
+theorem definable_setOf_fiber_encard_le {α β : Type*} [Finite α] [Finite β]
+    {φ : L.Formula (A ⊕ (α ⊕ β))} (n : ℕ) :
+    A.Definable L {v : α → M |
+      ({w : β → M | φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))}).encard ≤ n} := by
+  have hrelabel : ∀ (v : α → M) (w : β → M),
+      (φ.relabel (Equiv.sumAssoc A α β).symm).Realize
+          (Sum.elim (Sum.elim (Subtype.val : A → M) v) w) ↔
+        φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w)) := by
+    intro v w
+    rw [Formula.realize_relabel]
+    exact iff_of_eq <| congrArg φ.Realize <| funext fun z => by rcases z with a | b | c <;> simp
+  have hfiber : ∀ v : α → M,
+      (φ.relabel (Equiv.sumAssoc A α β).symm).realizationSet (Sum.elim (Subtype.val : A → M) v) =
+        {w : β → M | φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} := by
+    intro v
+    ext w
+    exact hrelabel v w
+  have hset : {v : α → M |
+        ({w : β → M | φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))}).encard ≤ n} =
+      ((φ.relabel (Equiv.sumAssoc A α β).symm).iExsAtMost β n).realizationSet
+        (Subtype.val : A → M) := by
+    ext v
+    simp only [Set.mem_ofPred_eq, Formula.mem_realizationSet, Formula.realize_iExsAtMost, hfiber v]
+  rw [hset]
+  exact definable_realizationSet _
+
+/-- Existentially quantifying the fiber of a definable set over a definable set of parameters
+preserves definability.
+
+The result is the set of `w : β → M` for which some `v ∈ V` realizes `φ` on `(v, w)`; the
+quantified block `α` is finite, so this is a finite existential quantification.  Together with
+`Set.definable_setOf_fiber_encard_le` it is the second half of the counting argument behind
+idempotence of algebraic closure, where the parameters `v` range over a finite definable set and
+each contributing fiber is bounded. -/
+theorem definable_exists_fiber {α β : Type*} [Finite α] [Finite β] {V : Set (α → M)}
+    {φ : L.Formula (A ⊕ (α ⊕ β))} (hV : A.Definable L V) :
+    A.Definable L {w : β → M |
+      ∃ v : α → M, v ∈ V ∧
+        φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} := by
+  have hS : A.Definable L {u : (β ⊕ α) → M |
+      u ∘ Sum.inr ∈ V ∧ u ∘ Sum.swap ∈ φ.realizationSet (Subtype.val : A → M)} :=
+    (hV.preimage_comp Sum.inr).inter ((definable_realizationSet φ).preimage_comp Sum.swap)
+  have h := hS.exists_of_finite
+  convert h using 1
+  ext w
+  simp only [Set.mem_ofPred_eq, Formula.mem_realizationSet, Sum.elim_comp_inr, Sum.elim_swap]
 
 end Set

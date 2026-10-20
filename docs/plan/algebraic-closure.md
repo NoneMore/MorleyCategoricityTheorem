@@ -274,8 +274,36 @@ Idempotence layer (the reason this capability is not definition-only):
   lemma is pure set-cardinality scaffolding, so it lives in `ModelTheory.Semantics` beside the
   `Set.le_encard_iff_exists_injection_fin` helper and the counting-formula semantics it composes
   with, not in `AlgebraicClosure`; idempotence stays with the closure definitions;
-- `algebraicClosure_idem : algebraicClosure (algebraicClosure A) = algebraicClosure A`, from those
-  two, with `⊇` following from monotonicity.
+- `algebraicClosure_idem : algebraicClosure (algebraicClosure A) = algebraicClosure A`, with `⊇`
+  following from monotonicity.
+
+Two further general definability facts carry the counting argument, both in the low-level
+`ModelTheory.Definability` beside the splitting lemmas, because each is a statement about
+`Set.Definable` and formulas rather than about algebraic closure:
+
+- `Set.definable_setOf_fiber_encard_le`: for `φ : L.Formula (A ⊕ (α ⊕ β))` and `n : ℕ`, the set of
+  `v : α → M` whose `β`-fiber `{w | φ(v, w)}` has `encard ≤ n` is definable over `A`. It is
+  `Formula.iExsAtMost` after one relabelling along `Equiv.sumAssoc`, which is exactly the shape the
+  counting constructor quantifies over; stating it through the original `φ` keeps callers from
+  repeating the relabelling.
+- `Set.definable_exists_fiber`: existentially quantifying that fiber over a definable set `V` of
+  parameters preserves definability — `Definable.exists_of_finite` applied to the two definable
+  conjuncts after `Sum.swap`.
+
+Two design points:
+
+- **The single-parameter step is the core, and iteration is `Finset.induction`.** Stating the step as
+  "if `c ∈ acl A` and `b ∈ acl (A ∪ {c})` then `b ∈ acl A`"
+  (`isAlgebraicOver_of_isAlgebraicOver_union_singleton`) keeps the counting argument in `Fin 1`
+  coordinates and avoids conjoining one formula per parameter, which the finite-tuple form
+  `Definable.fiber_finset` would have required. The passage from `b ∈ acl (A ∪ ↑F)` to `b ∈ acl A`
+  for finite `F ⊆ acl A` is then `Finset.induction`
+  (`isAlgebraicOver_of_finset_subset_algebraicClosure`), each step using `algebraicClosure_mono` to
+  move `c` to the larger base and `Finset.coe_insert` to reshape the parameter set.
+- **The bound is the size of the fiber through `c`.** `Finite.exists_encard_eq_coe` on the finite set
+  witnessing `b ∈ acl (A ∪ {c})` supplies the natural number `m`, and
+  `Set.InjOn.encard_image` identifies the `c`-fiber with that set, so `m` is an honest bound and no
+  `ncard`/`encard` conversion is needed.
 
 This is one capability and not two because the counting formulas and the parameter-splitting lemma
 have no other consumer in the blueprint before exchange; splitting them would create a second plan
@@ -347,7 +375,8 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
   handling is set-based (`A ⊆ B`), and moving one parameter into a variable has no ready-made lemma.
   The completion criteria therefore separate the definition layer from the idempotence layer, so the
   module can land and unblock `prop:algebraic-implies-isolated` and
-  `lem:algebraic-closure-cardinality` before idempotence is finished.
+  `lem:algebraic-closure-cardinality` before idempotence is finished. In the event the single-parameter
+  step sufficed; see Design.
 - **Name stability for the blueprint.** `def:algebraic-closure` currently has no `\lean{}` label.
   Record the names above when the labels are wired; renaming later would orphan the reference.
 - **`Fin 1` shape conversion is the fragile seam.** The unary bridge and the `Fin 1 → M` form both
@@ -358,9 +387,10 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 
 ### File plan
 
-1. `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions and easy layer
-   (landed), then idempotence in the same module; it imports `Semantics`, so the counting formulas
-   and the finite-family collapse need no further import.
+1. `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions and easy layer, then
+   the idempotence layer — the single-parameter counting step, the finite-parameter induction, and
+   `algebraicClosure_idem` — in the same module; it imports `Semantics`, so the counting formulas and
+   the finite-family collapse need no further import.
 2. `MorleyCategoricityTheorem/ModelTheory/Semantics.lean`: the finite-family collapse
    `Set.Finite.biUnion_fibers`, in the `Set` scaffolding block beside
    `Set.le_encard_iff_exists_injection_fin` and the counting-formula semantics it composes with.
@@ -368,8 +398,10 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
    `Set.Finite.biUnion`.
 3. `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
    out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁`,
-   `Set.image_fin_one_eq`, and the parameter-splitting lemmas `Set.Definable.fiber` and
-   `Set.Definable.fiber_finset`. `DefinablyFull` imports it; no other existing module changes.
+   `Set.image_fin_one_eq`, the parameter-splitting lemmas `Set.Definable.fiber` and
+   `Set.Definable.fiber_finset`, and the two counting-definability lemmas
+   `Set.definable_setOf_fiber_encard_le` and `Set.definable_exists_fiber` that the idempotence proof
+   composes. `DefinablyFull` imports it; no other existing module changes.
 4. `MorleyCategoricityTheorem.lean`: import both modules, preserving alphabetical order.
 5. No blueprint change.
 6. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are deleted once the module has
@@ -395,13 +427,25 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
    module now imports `Mathlib.Data.Set.Finite.Lattice` because `Set.Finite.biUnion` is not in its
    earlier import closure.
 6. Prove `algebraicClosure_idem`, then restate the closure-law facts that
-   `lem:strongly-minimal-closure-laws` needs in the pregeometry plan.
+   `lem:strongly-minimal-closure-laws` needs in the pregeometry plan. Done:
+   `isAlgebraicOver_of_isAlgebraicOver_union_singleton` and
+   `isAlgebraicOver_of_finset_subset_algebraicClosure` are the counting step and its finite-parameter
+   iteration, `algebraicClosure_idem` is proved, and the four closure laws are listed in the module
+   documentation. The handoff to the pregeometry plan is recorded under Deferred follow-ups; no
+   `cl_A`-level restatement is added here, because `cl_A` is defined by
+   `def:strongly-minimal-pregeometry` in that separate capability.
 
 ### Estimated cost
 
 The definition layer is the ~110-line module. The idempotence layer is the real work: parameter
 splitting plus the finite-family collapse, estimated at 150–300 lines dominated by formula
 bookkeeping, with the single-parameter case as the fallback if the tuple case explodes.
+
+The single-parameter fallback is enough: `Finset.induction` reduces the finite-tuple case to it, so
+the formula-level conjunction over `↥F` that `Definable.fiber_finset` would have required is never
+built, and that conjunction is where the cost would have been. The counting step itself is dominated
+by packaging the two general definability facts, each stated once for arbitrary variable types and
+then consumed in `Fin 1` coordinates.
 
 ### Verification
 
@@ -434,6 +478,23 @@ that check no longer applies.
 
 ### Deferred follow-ups
 
+- **Pregeometry handoff: the closure laws of `lem:strongly-minimal-closure-laws`.** That node states
+  the laws for `cl_A X = D ∩ acl (A ∪ X)`; this capability supplies the `acl`-level facts it
+  quantifies over, and the pregeometry plan should cite them by name rather than reprove them:
+
+  | Law | Lean fact |
+  |---|---|
+  | reflexive | `subset_algebraicClosure` (`A ⊆ acl A`) |
+  | monotone | `algebraicClosure_mono` |
+  | idempotent | `algebraicClosure_idem` |
+  | finite character | `mem_algebraicClosure_iff_exists_finset` |
+
+  Two caveats for that plan. First, `cl_A` is idempotent only for `X ⊆ D`: with it, reflexivity
+  gives `X ⊆ cl_A X` and monotonicity plus `algebraicClosure_idem` give both inclusions; without it
+  the inclusion `cl_A X ⊆ cl_A (cl_A X)` can fail, because elements of `acl (A ∪ X) ∩ D` whose
+  algebraicity uses parameters outside `D` need not be algebraic over `A ∪ (D ∩ acl (A ∪ X))`.
+  Second, no `cl_A`-level Lean restatement belongs to this capability, since `D` and `cl_A` come from
+  `def:strongly-minimal-pregeometry`.
 - **Cardinality bound.** `lem:algebraic-closure-cardinality` needs a counting lemma over formulas
   and finite parameter tuples; it consumes `isAlgebraicOver_iff_exists_formula` and finite
   character.
