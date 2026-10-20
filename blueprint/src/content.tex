@@ -432,15 +432,24 @@ Use elementarity in both directions and restrict the isomorphism.
 
 \begin{lemma}[Isomorphisms preserve realized type counts]
 \label{lem:isomorphism-preserves-realized-type-counts}
+\lean{FirstOrder.Language.Equiv.image_realizedTypes, FirstOrder.Language.Equiv.mk_realizedTypes_eq}
+\leanok
 \uses{def:types-over-parameters,def:elementary-maps}
 If \(f:M\cong N\) and \(A\subseteq M\), then \(f\) induces a bijection
 between the complete types over \(A\) realized in \(M\) and the complete
 types over \(f(A)\) realized in \(N\).
+\emph{Formalization note.}  The first declaration is the bijection; the
+second is the cardinality form, stated with \texttt{Cardinal.mk} and
+explicit universe lifts.
 \end{lemma}
 
 \begin{proof}
-Send the type of \(\bar a\) over \(A\) to the type of \(f\bar a\) over
-\(f(A)\), and use \(f^{-1}\) for the inverse.
+\leanok
+\uses{lem:type-space-homeomorphism}
+The homeomorphism of type spaces induced by the restriction of \(f\) to
+a partial elementary embedding \(A\to f(A)\) sends the type of
+\(\bar a\) over \(A\) to the type of \(f\bar a\) over \(f(A)\).  Its
+inverse, given by \(f^{-1}\), yields the reverse inclusion.
 \end{proof}
 
 \section{Categoricity Implies Omega-Stability}

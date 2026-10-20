@@ -1,5 +1,6 @@
 import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Complexity
+import Mathlib.ModelTheory.ElementaryMaps
 import MorleyCategoricityTheorem.ModelTheory.LanguageEmbedding
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 
@@ -21,6 +22,9 @@ elementary embedding.
 - `PartialElementaryEmbedding.map_sentence`: this equivalence preserves satisfaction of sentences.
 - `PartialElementaryEmbedding.map_completeTheory`: it carries the complete theory of `M` over `A`
   onto the complete theory of `N` over `B`.
+- `ElementaryEmbedding.toPartialElementaryEmbeddingOn`: the restriction of an elementary embedding
+  `M ↪ₑ[L] N` to a partial elementary embedding from a parameter set onto its image.
+  `Equiv.toPartialElementaryEmbeddingOn` is the specialisation to a first-order equivalence.
 
 ## TODO
 
@@ -208,6 +212,43 @@ theorem map_completeTheory (f : A ↪ₚₑ[L] B) :
   (LEquiv.onTheory_completeTheory_eq_iff f.parameterLEquiv).mpr (map_sentence f)
 
 end PartialElementaryEmbedding
+
+namespace ElementaryEmbedding
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
+variable [L.Structure M] [L.Structure N]
+
+/-- The restriction of an elementary embedding `e : M ↪ₑ[L] N` to a partial elementary embedding
+from a parameter set `A` onto its image `e '' A`.
+
+The underlying map sends `a : A` to `e a`, and elementarity is inherited from `e`. -/
+def toPartialElementaryEmbeddingOn (e : M ↪ₑ[L] N) (A : Set M) : A ↪ₚₑ[L] (e '' A) where
+  toFun a := ⟨e a, Set.mem_image_of_mem e a.2⟩
+  surjective' b := by
+    obtain ⟨a, ha, hfa⟩ := b.2
+    exact ⟨⟨a, ha⟩, Subtype.ext hfa⟩
+  map_formula' := fun {n} φ x => by
+    have h : Subtype.val ∘ (fun a : A => (⟨e a, Set.mem_image_of_mem e a.2⟩ : e '' A)) ∘ x =
+        ⇑e ∘ (Subtype.val ∘ x) := rfl
+    rw [h]
+    exact (e.map_formula φ (Subtype.val ∘ x)).symm
+
+end ElementaryEmbedding
+
+namespace Equiv
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
+variable [L.Structure M] [L.Structure N]
+
+/-- The restriction of a first-order equivalence `f : M ≃[L] N` to a partial elementary embedding
+from a parameter set `A` onto its image `f '' A`.
+
+This is the specialisation of `ElementaryEmbedding.toPartialElementaryEmbeddingOn` to the
+elementary embedding underlying `f`. -/
+def toPartialElementaryEmbeddingOn (f : M ≃[L] N) (A : Set M) : A ↪ₚₑ[L] (f '' A) :=
+  f.toElementaryEmbedding.toPartialElementaryEmbeddingOn A
+
+end Equiv
 
 end Language
 
