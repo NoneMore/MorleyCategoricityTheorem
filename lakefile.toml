@@ -5,6 +5,8 @@ defaultTargets = ["MorleyCategoricityTheorem"]
 pp.unicode.fun = true
 autoImplicit = false
 relaxedAutoImplicit = false
+# Defer line-length lint until preparing upstream contributions.
+linter.style.longLine = false
 
 [[require]]
 name = "mathlib"
