@@ -87,7 +87,8 @@ the bridge module, so no declaration moved out of reach.
 
 The landed easy layer, before the idempotence layer:
 
-- `IsAlgebraicOver` and `algebraicClosure`, with the language as an explicit argument;
+- `IsAlgebraicOver` and `algebraicClosure`, with the language as an explicit argument, and the
+  lemmas about them with the language implicit;
 - `mem_algebraicClosure_iff` (unfolding, `Iff.rfl`, tagged `@[simp]`);
 - `subset_algebraicClosure` (reflexivity), from `Set.Definable.singleton_of_mem`;
 - `algebraicClosure_mono` (monotonicity), from `Set.Definable.mono`;
@@ -235,10 +236,12 @@ Rationale:
   `lem:algebraic-closure-cardinality` only needs the predicate. A `def` with an `∃` body keeps both
   uses definitionally transparent. Bundling into `L.DefinableSet` is wrong here: algebraicity is not
   itself a definable set, only witnessed by one.
-- **The language is an explicit argument of both objects and of every public lemma about them.**
-  `A : Set M` and `b : M` do not determine `L`, so an implicit language forces `(L := L)` at every
-  call site and in every statement. With `L` explicit, the intended reading is
-  `L.IsAlgebraicOver A b`, `L.algebraicClosure A`, and `L.algebraicClosure_mono hAB`.
+- **The language is an explicit argument of both objects and implicit in the lemmas about them.**
+  `A : Set M` and `b : M` do not determine `L`, so an implicit language on the objects would force
+  `(L := L)` in every statement; with `L` explicit the intended reading is `L.IsAlgebraicOver A b`
+  and `L.algebraicClosure A`. Every lemma statement mentions `L.algebraicClosure`,
+  `L.IsAlgebraicOver`, or `L.Formula`, so there `L` is inferred from the goal and callers write
+  `algebraicClosure_mono hAB` or `mem_algebraicClosure_iff.mp h` without naming it.
 - **`Definable₁` as the definability primitive.** It is the shape produced by
   `Definable.mono`/`Definable.singleton_of_mem` and consumed by
   `Set.definable_iff_finitely_definable` by defeq, and by
@@ -348,9 +351,10 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 - `L.IsAlgebraicOver A b` keeps the definitional body `∃ s, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s`,
   and `L.algebraicClosure A` keeps the body `{b | L.IsAlgebraicOver A b}`, so downstream `rintro`
   and the formula bridge stay stable.
-- The language stays the first explicit argument of both objects and of every public lemma about
-  them, so callers reach them by dot notation (`L.algebraicClosure A`) instead of passing
-  `(L := L)`.
+- The language stays the first explicit argument of both objects, so callers reach them by dot
+  notation (`L.algebraicClosure A`) instead of passing `(L := L)`. The lemmas about them take the
+  language implicitly, since every statement determines it; a lemma that needs `(L := L)` at a call
+  site is a signal that its statement lost the occurrence.
 - Import boundary: `AlgebraicClosure` imports `Mathlib.ModelTheory.Definability`, the low-level
   `MorleyCategoricityTheorem.ModelTheory.Definability`, and
   `MorleyCategoricityTheorem.ModelTheory.Semantics`. The semantic-layering requirement is what
@@ -422,7 +426,8 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
    are unchanged.
 2. Extract the realization-set bridges into the low-level `ModelTheory/Definability.lean`, and add
    the unary bridge, so that the algebraic-closure module reaches them without `DefinablyFull`.
-3. Land `AlgebraicClosure` with the two definitions and the easy layer, with the language explicit.
+3. Land `AlgebraicClosure` with the two definitions and the easy layer, with the language explicit
+   on the definitions and implicit on the lemmas about them.
    Run the full verification; this is the increment that releases the node's direct consumers.
 4. Parameter splitting, starting with the single-parameter case. Done, as the private
    `exists_fiber_formula` in `AlgebraicClosure` in the `L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` shape the
@@ -476,7 +481,7 @@ that check no longer applies.
 ### Completion criteria
 
 - `FirstOrder.Language.IsAlgebraicOver` and `FirstOrder.Language.algebraicClosure` exist with the
-  bodies above, the language explicit, and no `sorry`.
+  bodies above, the language explicit on the definitions and implicit on the lemmas, and no `sorry`.
 - The easy layer is proved with the names listed in Design, the low-level bridges are in
   `ModelTheory.Definability`, and the modules import only the permitted modules.
 - `algebraicClosure_idem` is proved, so `lem:strongly-minimal-closure-laws` can be discharged

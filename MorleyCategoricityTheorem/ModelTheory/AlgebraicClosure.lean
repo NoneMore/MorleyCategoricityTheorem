@@ -21,8 +21,10 @@ Both public objects are transparent by design.  `L.IsAlgebraicOver A b` is a pla
 `{b | L.IsAlgebraicOver A b}`.  Callers unfold both.  The bundled `L.DefinableSet` would be the
 wrong carrier here: algebraicity is not itself a definable set, only witnessed by one.
 
-The language is an explicit argument of both, so callers write `L.algebraicClosure A` rather than
-threading `(L := L)` through every use: `A : Set M` and `b : M` do not determine `L`.
+The language is an explicit argument of both objects, since `A : Set M` and `b : M` do not determine
+`L`, so callers write `L.algebraicClosure A`.  It is implicit in the lemmas about them: every lemma
+statement mentions `L.algebraicClosure`, `L.IsAlgebraicOver`, or `L.Formula`, so `L` is inferred from
+the goal and callers apply the lemmas directly instead of naming it.
 
 The element predicate is not named `IsAlgebraic`: that name already belongs to
 `FirstOrder.Language.IsAlgebraic`, which says that the language has no relation symbols.
@@ -105,6 +107,9 @@ def IsAlgebraicOver (A : Set M) (b : M) : Prop :=
 /-- The algebraic closure of a parameter set: the set of all elements algebraic over it. -/
 def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver L A b}
 
+-- Re-declare the language implicitly for the lemmas: every statement below mentions `L` through
+-- `L.algebraicClosure` or `L.IsAlgebraicOver`, so it is inferred and callers need not name it.
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
 variable {A B : Set M} {b : M}
 
 /-- Unfolding of membership in the algebraic closure. -/
@@ -195,7 +200,7 @@ private theorem exists_fiber_formula {A : Set M} {s : Set M} {c : M}
       ∀ x : M, φ.Realize (Sum.elim (Subtype.val : A → M)
         (Sum.elim (fun _ : Fin 1 => c) (fun _ : Fin 1 => x))) ↔ x ∈ s := by
   classical
-  obtain ⟨φ, rfl⟩ := Set.definable₁_iff_exists_realizationSet₁ (A := A ∪ {c}) (L := L) |>.1 h
+  obtain ⟨φ, rfl⟩ := Set.definable₁_iff_exists_realizationSet₁.1 h
   let g : ↥(A ∪ {c}) ⊕ Fin 1 → ↥A ⊕ (Fin 1 ⊕ Fin 1) := fun z =>
     match z with
     | Sum.inl p =>
@@ -222,7 +227,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
   classical
   obtain ⟨S, hSfin, hSdef, hcS⟩ := hc
   obtain ⟨s, hsfin, hsdef, hbs⟩ := hb
-  obtain ⟨φ, hφ⟩ := exists_fiber_formula (L := L) hsdef
+  obtain ⟨φ, hφ⟩ := exists_fiber_formula hsdef
   -- the fiber through `c` is `s`, so its size bounds the fibers that may contribute
   obtain ⟨m, hm⟩ := hsfin.exists_encard_eq_coe
   set Fib : (Fin 1 → M) → Set (Fin 1 → M) :=
@@ -247,7 +252,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     exact (hSfin.image _).subset Set.inter_subset_left
   have hVdefin : A.Definable L V := by
     rw [hVdef]
-    exact hSdef.inter (Set.definable_setOf_fiber_encard_le (A := A) (φ := φ) m)
+    exact hSdef.inter (Set.definable_setOf_fiber_encard_le m)
   have hcV : (fun _ : Fin 1 => c) ∈ V := by
     rw [hVdef, Set.mem_inter_iff]
     exact ⟨by simpa using hcS, hFibc_encard.le⟩
@@ -256,7 +261,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     {w | ∃ v : Fin 1 → M, v ∈ V ∧
       φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hTdef
   have hTfin : T.Finite := by
-    refine (Set.Finite.biUnion_fibers (F := Fib) (n := m) hVfin hVbound).subset ?_
+    refine (Set.Finite.biUnion_fibers hVfin hVbound).subset ?_
     rintro w ⟨v, hv, hw⟩
     exact Set.mem_iUnion₂.mpr ⟨v, hv, hw⟩
   have hTdefin : A.Definable L T := hVdefin.exists_fiber
@@ -299,8 +304,8 @@ theorem isAlgebraicOver_of_finset_subset_algebraicClosure {b : M} :
       simp only [Set.mem_union, Set.mem_singleton_iff, Finset.mem_coe, Finset.mem_insert]
       tauto
     rw [hAset] at hb
-    exact ih hF' (L.isAlgebraicOver_of_isAlgebraicOver_union_singleton (A := A ∪ ↑F)
-      (L.algebraicClosure_mono Set.subset_union_left hc) hb)
+    exact ih hF' (isAlgebraicOver_of_isAlgebraicOver_union_singleton
+      (algebraicClosure_mono Set.subset_union_left hc) hb)
 
 /-- Algebraic closure is idempotent: closing a parameter set twice gives the same set.
 
@@ -308,13 +313,13 @@ This is the closure law that `lem:strongly-minimal-closure-laws` needs before ex
 proved here rather than deferred to the pregeometry layer. -/
 theorem algebraicClosure_idem (A : Set M) :
     L.algebraicClosure (L.algebraicClosure A) = L.algebraicClosure A := by
-  refine Set.Subset.antisymm ?_ (L.algebraicClosure_mono L.subset_algebraicClosure)
+  refine Set.Subset.antisymm ?_ (algebraicClosure_mono subset_algebraicClosure)
   intro b hb
   -- finite character reduces the outer parameters to a finite set of algebraic elements
-  rw [L.mem_algebraicClosure_iff_exists_finset] at hb
+  rw [mem_algebraicClosure_iff_exists_finset] at hb
   obtain ⟨F, hF, hbF⟩ := hb
-  exact L.isAlgebraicOver_of_finset_subset_algebraicClosure F hF
-    (L.algebraicClosure_mono Set.subset_union_right hbF)
+  exact isAlgebraicOver_of_finset_subset_algebraicClosure F hF
+    (algebraicClosure_mono Set.subset_union_right hbF)
 
 end Language
 
