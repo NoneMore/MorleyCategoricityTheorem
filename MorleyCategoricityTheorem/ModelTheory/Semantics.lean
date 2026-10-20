@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
 import Mathlib.Data.Set.Card
-import Mathlib.Data.Set.Finite.Lattice
 import Mathlib.ModelTheory.Semantics
 import MorleyCategoricityTheorem.ModelTheory.Syntax
 
@@ -33,6 +32,8 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   `FirstOrder.Language.Formula.finOneRealizationsEquiv`: the subtype-level forms of the unary shape
   conversion, respectively with and without parameters, identifying a `Fin 1`-tuple with its only
   entry.
+- `Set.image_fin_one_eq`: the set-level half of the unary shape conversion, writing the tuples with
+  a single entry as the image of that entry; it pairs with `Formula.realizationSet_fin_one_image`.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast_iff_exists_injective`: normalize realization of
   `iExsAtLeast` into an injective family `Fin n → (β → M)` of elements of the realization set
   `φ.realizationSet v`.
@@ -40,9 +41,6 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   `(n : ℕ∞) ≤ (φ.realizationSet v).encard`.
 - `FirstOrder.Language.Formula.realize_iExsAtMost`: characterize the upper-bound constructor by
   `(φ.realizationSet v).encard ≤ n`.
-- `Set.Finite.biUnion_fibers`: the finite-family collapse that turns a uniform `encard` bound on the
-  members of a family over a finite index set into finiteness of their union; together with
-  `realize_iExsAtMost` it is what the idempotence proof of algebraic closure consumes.
 - `FirstOrder.Language.Formula.realize_iExsExactly`: characterize exact finite cardinality by
   `(φ.realizationSet v).encard = n`.
 - `FirstOrder.Language.Formula.realize_existsExactlyLeft`: semantic theorem for the caller-facing
@@ -122,23 +120,19 @@ theorem le_encard_iff_exists_injection_fin {α : Type*} (s : Set α) (n : ℕ) :
       ENat.card_coe_set_eq] using ENat.card_le_card_of_injective
         (f := fun i : Fin n ↦ ⟨f i, hf i⟩) (fun _ _ hi ↦ hfi (Subtype.ext_iff.mp hi))
 
-/-- Finite-family collapse: a union over a finite index set of sets whose contributing members share
-a common extended-cardinality bound is finite.
+/-- The tuples with a single entry are the image of that entry under the canonical identification of
+`M` with `Fin 1 → M`.
 
-The intended reading is a family of fibers over a finite parameter set.  The counting constructor
-`FirstOrder.Language.Formula.iExsAtMost` supplies the bound `(F i).encard ≤ n` at every parameter
-`i` where its counting conjunct holds (see `Formula.realize_iExsAtMost` below), and
-`Set.finite_of_encard_le_coe` turns that bound into finiteness, so the union over the finitely many
-contributing parameters is finite.  This is the set-theoretic half of "an algebraic family of finite
-sets has finite union", and it is what the idempotence proof of
-`FirstOrder.Language.algebraicClosure` consumes.
-
-The bound is stated through `Set.encard` rather than as a plain finiteness hypothesis because
-`encard` is what the counting formulas produce, and the index set is an arbitrary finite set so that
-the caller can restrict it to the fibers the counting conjunct accepts. -/
-theorem Finite.biUnion_fibers {ι α : Type*} {I : Set ι} (hI : I.Finite) {F : ι → Set α} {n : ℕ}
-    (hF : ∀ i ∈ I, (F i).encard ≤ n) : (⋃ i ∈ I, F i).Finite :=
-  hI.biUnion fun i hi => finite_of_encard_le_coe (hF i hi)
+This is the set-level half of the unary shape conversion whose formula-level half is
+`Formula.realizationSet_fin_one_image`. -/
+theorem image_fin_one_eq {M : Type w} (s : Set M) :
+    (fun x : M => fun _ : Fin 1 => x) '' s = {x : Fin 1 → M | x 0 ∈ s} := by
+  ext x
+  constructor
+  · rintro ⟨a, ha, rfl⟩
+    simpa using ha
+  · intro hx
+    exact ⟨x 0, hx, funext fun i => by rw [Fin.eq_zero i]⟩
 
 end Set
 

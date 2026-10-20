@@ -81,8 +81,9 @@ split out of `ModelTheory.DefinablyFull`: the two bridges `Set.definable_iff_exi
 and `Set.definable_realizationSet` used to live there, so reaching them pulled in `ElementaryMaps`
 and with it the semantic bridges and the type-space layer. They now live in
 `ModelTheory/Definability.lean` together with the unary bridge
-`Set.definable₁_iff_exists_realizationSet₁` and the set-level identity `Set.image_fin_one_eq`;
-`DefinablyFull` imports that module, so no declaration moved out of reach.
+`Set.definable₁_iff_exists_realizationSet₁`; the set-level identity `Set.image_fin_one_eq` stays in
+`ModelTheory.Semantics` beside `Formula.realizationSet_fin_one_image`, and `DefinablyFull` imports
+the bridge module, so no declaration moved out of reach.
 
 The landed easy layer, before the idempotence layer:
 
@@ -143,8 +144,9 @@ Two pieces of infrastructure are needed and belong to this capability:
 - **Parameter splitting.** A set definable over `A ∪ {c}` is the `c`-fiber of a set definable over
   `A`: move the single parameter `c` from the parameter set into a free variable. Mathlib's
   `Definable` API moves parameters only along `⊆` (`Set.Definable.mono`), so this needs a small
-  reindexing lemma, and the finite-family version needs it for a tuple of parameters. This is the
-  main new proof work of the capability.
+  reindexing lemma. It ended up private to `AlgebraicClosure` (`exists_fiber_formula`) in the
+  `L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` shape the counting step consumes, and no public splitting lemma
+  is exposed because nothing else consumes one. This is the main new proof work of the capability.
 - **Finite-family collapse.** A finite union of finite fibers over a finite definable parameter set
   is finite and definable over the same base; it consumes `Formula.iExsAtMost` and
   `Set.Finite.biUnion`.
@@ -252,33 +254,36 @@ Rationale:
 Easy layer (landed): `mem_algebraicClosure_iff`, `subset_algebraicClosure`,
 `algebraicClosure_mono`, `mem_algebraicClosure_iff_exists_finset`,
 `isAlgebraicOver_iff_exists_realizationSet₁`, `isAlgebraicOver_iff_exists_formula`, plus the
-low-level bridges `Set.definable₁_iff_exists_realizationSet₁` and `Set.image_fin_one_eq` in
-`ModelTheory.Definability`.
+low-level bridge `Set.definable₁_iff_exists_realizationSet₁` in `ModelTheory.Definability` and the
+set identity `Set.image_fin_one_eq` in `ModelTheory.Semantics`.
 
 Idempotence layer (the reason this capability is not definition-only):
 
-- `Definable.fiber`: parameter splitting — `(A ∪ {c}).Definable₁ L s` yields an `A`-definable
-  two-variable set in `Fin 2 → M` whose `c`-fiber is `s`, plus the finite-tuple version
-  `Definable.fiber_finset` for `F : Finset M`, producing an `A`-definable set in `↥F ⊕ Fin 1 → M`
-  whose fiber over `F` is `s`. Both witness maps send each parameter variable either to its
-  `A`-parameter variable or to its tuple slot, so the fiber identity is the transport step
-  `Set.mem_realizationSet_relabel` — relabelling along that map, then checking it pointwise — and
-  needs no separate formula surgery. These are general definability facts, so they live in the
-  low-level `ModelTheory.Definability` rather than in `AlgebraicClosure`;
+- Parameter splitting, private to `AlgebraicClosure` as `exists_fiber_formula`:
+  `(A ∪ {c}).Definable₁ L s` yields a formula `φ : L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` whose fiber at
+  `fun _ => c` is `s`, which is the shape `Formula.iExsAtMost` bounds. The witness map sends each
+  parameter variable either to its `A`-parameter variable or to its tuple slot, so the fiber identity
+  is a relabelling check (`Formula.realize_relabel`) and needs no separate formula surgery. A public
+  splitting pair (`Set.Definable.fiber` in `Fin 2 → M`, `Set.Definable.fiber_finset` in
+  `↥F ⊕ Fin 1 → M`) plus their transport lemma `Set.mem_realizationSet_relabel` were written first
+  and then removed: the single-parameter counting step is their only consumer and it needs the
+  formula shape, not the two-variable set shape. They are recoverable from the branch history if a
+  second consumer appears;
 - `Set.Finite.biUnion_fibers`: the finite-family collapse, stated for a finite parameter set and a
   family whose contributing fibers are bounded: `hI : I.Finite` and
   `hF : ∀ i ∈ I, (F i).encard ≤ n` give `(⋃ i ∈ I, F i).Finite`. The bound is what
   `Formula.realize_iExsAtMost` certifies for a fiber, and the composing step is
   `Set.finite_of_encard_le_coe` under `Set.Finite.biUnion`; the "contributing" qualifier lets the
   caller exclude the fibers that the counting conjunct rejects, which is the idempotence case. The
-  lemma is pure set-cardinality scaffolding, so it lives in `ModelTheory.Semantics` beside the
-  `Set.le_encard_iff_exists_injection_fin` helper and the counting-formula semantics it composes
-  with, not in `AlgebraicClosure`; idempotence stays with the closure definitions;
+  lemma is pure set-cardinality scaffolding with a single consumer, so it lives next to that
+  consumer in `ModelTheory.AlgebraicClosure`; the foundational `ModelTheory.Semantics` stays free of
+  the `Mathlib.Data.Set.Finite.Lattice` import, and the lemma moves to `Mathlib.Data.Set.Card` if a
+  second caller appears;
 - `algebraicClosure_idem : algebraicClosure (algebraicClosure A) = algebraicClosure A`, with `⊇`
   following from monotonicity.
 
 Two further general definability facts carry the counting argument, both in the low-level
-`ModelTheory.Definability` beside the splitting lemmas, because each is a statement about
+`ModelTheory.Definability` beside the unary bridge, because each is a statement about
 `Set.Definable` and formulas rather than about algebraic closure:
 
 - `Set.definable_setOf_fiber_encard_le`: for `φ : L.Formula (A ⊕ (α ⊕ β))` and `n : ℕ`, the set of
@@ -286,7 +291,7 @@ Two further general definability facts carry the counting argument, both in the 
   `Formula.iExsAtMost` after one relabelling along `Equiv.sumAssoc`, which is exactly the shape the
   counting constructor quantifies over; stating it through the original `φ` keeps callers from
   repeating the relabelling.
-- `Set.definable_exists_fiber`: existentially quantifying that fiber over a definable set `V` of
+- `Set.Definable.exists_fiber`: existentially quantifying that fiber over a definable set `V` of
   parameters preserves definability — `Definable.exists_of_finite` applied to the two definable
   conjuncts after `Sum.swap`.
 
@@ -295,8 +300,8 @@ Two design points:
 - **The single-parameter step is the core, and iteration is `Finset.induction`.** Stating the step as
   "if `c ∈ acl A` and `b ∈ acl (A ∪ {c})` then `b ∈ acl A`"
   (`isAlgebraicOver_of_isAlgebraicOver_union_singleton`) keeps the counting argument in `Fin 1`
-  coordinates and avoids conjoining one formula per parameter, which the finite-tuple form
-  `Definable.fiber_finset` would have required. The passage from `b ∈ acl (A ∪ ↑F)` to `b ∈ acl A`
+  coordinates and avoids conjoining one formula per parameter, which a finite-tuple splitting lemma
+  would have required. The passage from `b ∈ acl (A ∪ ↑F)` to `b ∈ acl A`
   for finite `F ⊆ acl A` is then `Finset.induction`
   (`isAlgebraicOver_of_finset_subset_algebraicClosure`), each step using `algebraicClosure_mono` to
   move `c` to the larger base and `Finset.coe_insert` to reshape the parameter set.
@@ -353,8 +358,8 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
   module, and the permitted low-level `Definability` module likewise imports only Mathlib's
   definability layer and `Semantics`. The idempotence layer adds counting formulas from `Semantics`,
   not the semantic bridges, and the finite-family collapse's
-  `Mathlib.Data.Set.Finite.Lattice` import (for `Set.Finite.biUnion`) lands in `Semantics`, so the
-  boundary above is unchanged.
+  `Mathlib.Data.Set.Finite.Lattice` import (for `Set.Finite.biUnion`) lands in `AlgebraicClosure`, so
+  the boundary above is unchanged.
 - Explicit variables and universes (`universes u v w`), because the project builds with
   `autoImplicit = false`.
 - No declaration may be named `IsAlgebraic` or otherwise clash with the relation-free-language
@@ -388,20 +393,20 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 ### File plan
 
 1. `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions and easy layer, then
-   the idempotence layer — the single-parameter counting step, the finite-parameter induction, and
-   `algebraicClosure_idem` — in the same module; it imports `Semantics`, so the counting formulas and
-   the finite-family collapse need no further import.
-2. `MorleyCategoricityTheorem/ModelTheory/Semantics.lean`: the finite-family collapse
-   `Set.Finite.biUnion_fibers`, in the `Set` scaffolding block beside
-   `Set.le_encard_iff_exists_injection_fin` and the counting-formula semantics it composes with.
-   This module is the only one that needs `Mathlib.Data.Set.Finite.Lattice`, for
-   `Set.Finite.biUnion`.
+   the idempotence layer — the single-parameter counting step, the finite-parameter induction,
+   `algebraicClosure_idem`, and the finite-family collapse `Set.Finite.biUnion_fibers` it consumes —
+   in the same module. It imports `Semantics`, so the counting formulas need no further import, and
+   it is the only module that needs `Mathlib.Data.Set.Finite.Lattice`, for `Set.Finite.biUnion`.
+2. `MorleyCategoricityTheorem/ModelTheory/Semantics.lean`: the set-level unary shape identity
+   `Set.image_fin_one_eq`, in the `Set` scaffolding block beside `Set.le_encard_iff_exists_injection_fin`
+   and the formula-level unary conversion `Formula.realizationSet_fin_one_image` it pairs with; no
+   new import.
 3. `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
-   out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁`,
-   `Set.image_fin_one_eq`, the parameter-splitting lemmas `Set.Definable.fiber` and
-   `Set.Definable.fiber_finset`, and the two counting-definability lemmas
-   `Set.definable_setOf_fiber_encard_le` and `Set.definable_exists_fiber` that the idempotence proof
-   composes. `DefinablyFull` imports it; no other existing module changes.
+   out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁`, and the
+   two counting-definability lemmas `Set.definable_setOf_fiber_encard_le` and
+   `Set.Definable.exists_fiber` that the idempotence proof composes. `DefinablyFull` imports it; no
+   other existing module changes. The parameter-splitting construction stays private to
+   `AlgebraicClosure`; the module exposes no splitting lemma.
 4. `MorleyCategoricityTheorem.lean`: import both modules, preserving alphabetical order.
 5. No blueprint change.
 6. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are deleted once the module has
@@ -419,13 +424,16 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
    the unary bridge, so that the algebraic-closure module reaches them without `DefinablyFull`.
 3. Land `AlgebraicClosure` with the two definitions and the easy layer, with the language explicit.
    Run the full verification; this is the increment that releases the node's direct consumers.
-4. Add `Definable.fiber` (parameter splitting), starting with the single-parameter case and only
-   then the finite-tuple case. Done: `Set.Definable.fiber` and `Set.Definable.fiber_finset` live in
-   `ModelTheory.Definability` with the shapes recorded in Design.
-5. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`. Done: it lives in the `Set`
-   scaffolding block of `ModelTheory.Semantics`, with the statement recorded in Design, and that
-   module now imports `Mathlib.Data.Set.Finite.Lattice` because `Set.Finite.biUnion` is not in its
-   earlier import closure.
+4. Parameter splitting, starting with the single-parameter case. Done, as the private
+   `exists_fiber_formula` in `AlgebraicClosure` in the `L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` shape the
+   counting step consumes. The public pair `Set.Definable.fiber` / `Set.Definable.fiber_finset` and
+   their transport lemma `Set.mem_realizationSet_relabel` were written first, had no consumer once
+   the single-parameter step landed, and were removed in review; `ModelTheory.Definability` keeps no
+   splitting API.
+5. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`. Done: it lives in
+   `ModelTheory.AlgebraicClosure` beside the counting step that consumes it, with the statement
+   recorded in Design, and that module now imports `Mathlib.Data.Set.Finite.Lattice` because
+   `Set.Finite.biUnion` is not in its earlier import closure.
 6. Prove `algebraicClosure_idem`, then restate the closure-law facts that
    `lem:strongly-minimal-closure-laws` needs in the pregeometry plan. Done:
    `isAlgebraicOver_of_isAlgebraicOver_union_singleton` and
@@ -442,10 +450,12 @@ splitting plus the finite-family collapse, estimated at 150–300 lines dominate
 bookkeeping, with the single-parameter case as the fallback if the tuple case explodes.
 
 The single-parameter fallback is enough: `Finset.induction` reduces the finite-tuple case to it, so
-the formula-level conjunction over `↥F` that `Definable.fiber_finset` would have required is never
-built, and that conjunction is where the cost would have been. The counting step itself is dominated
-by packaging the two general definability facts, each stated once for arbitrary variable types and
-then consumed in `Fin 1` coordinates.
+the formula-level conjunction over `↥F` that a finite-tuple splitting lemma would have required is
+never built, and that conjunction is where the cost would have been. The counting step itself is
+dominated by packaging the two general definability facts, each stated once for arbitrary variable
+types and then consumed in `Fin 1` coordinates. The facts that turned out to have no consumer — the
+public splitting pair and their relabel transport — were dropped in review rather than carried as
+speculative API.
 
 ### Verification
 
@@ -503,6 +513,7 @@ that check no longer applies.
   identification theorem, and define `dim_A Y := (relMatroid A D).cRk Y` with its
   `InvariantCardinalRank` instance. Supplying the finite Steinitz augmentation is the one proof
   obligation; the shape of the five constructor inputs is the obligation table in Facts above.
-- **Upstream candidates.** Parameter splitting and the finite-family collapse are the kind of
-  Mathlib-level lemmas the project has promoted before; record them for a possible upstream
-  contribution only after a downstream proof uses them.
+- **Upstream candidates.** The finite-family collapse is the kind of Mathlib-level lemma the project
+  has promoted before; record it for a possible upstream contribution only after a downstream proof
+  uses it. Parameter splitting stays private to its single consumer, so it is not an upstream
+  candidate until a second caller appears.

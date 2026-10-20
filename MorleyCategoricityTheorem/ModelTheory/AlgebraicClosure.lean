@@ -3,6 +3,7 @@ Copyright (c) 2026 NoneMore. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
+import Mathlib.Data.Set.Finite.Lattice
 import Mathlib.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
@@ -45,6 +46,8 @@ The element predicate is not named `IsAlgebraic`: that name already belongs to
 - `FirstOrder.Language.isAlgebraicOver_of_finset_subset_algebraicClosure`: the same for a finite set
   of parameters that are already algebraic.
 - `FirstOrder.Language.algebraicClosure_idem`: algebraic closure is idempotent.
+- `Set.Finite.biUnion_fibers`: the finite-family collapse consumed by the counting step of
+  idempotence.
 
 The closure laws that `lem:strongly-minimal-closure-laws` needs are therefore all available here:
 reflexivity (`subset_algebraicClosure`), monotonicity (`algebraicClosure_mono`), idempotence
@@ -58,12 +61,35 @@ reflexivity (`subset_algebraicClosure`), monotonicity (`algebraicClosure_mono`),
 ## Import boundary
 
 The module imports Mathlib's definability layer, the project's low-level `ModelTheory.Definability`
-bridges, and `ModelTheory.Semantics`.  It deliberately does not import `ModelTheory.DefinablyFull`,
-`ModelTheory.ElementaryMaps`, or the type-space modules: the unary definability bridge used below is
-`Set.definable₁_iff_exists_realizationSet₁`, not the `DefinablyFull` realization-set restatement.
+bridges, and `ModelTheory.Semantics`.  It also imports `Mathlib.Data.Set.Finite.Lattice` for
+`Set.Finite.biUnion`, which the finite-family collapse of the counting step needs.  It deliberately
+does not import `ModelTheory.DefinablyFull`, `ModelTheory.ElementaryMaps`, or the type-space modules:
+the unary definability bridge used below is `Set.definable₁_iff_exists_realizationSet₁`, not the
+`DefinablyFull` realization-set restatement.
 -/
 
 universe u v w
+
+namespace Set
+
+/-- Finite-family collapse: a union over a finite index set of sets whose contributing members share
+a common extended-cardinality bound is finite.
+
+The counting constructor `Formula.iExsAtMost` supplies the bound `(F i).encard ≤ n` at every
+parameter `i` where its counting conjunct holds (see `Formula.realize_iExsAtMost`), and
+`Set.finite_of_encard_le_coe` turns that bound into finiteness, so the union over the finitely many
+contributing parameters is finite.  This is the set-theoretic half of "an algebraic family of finite
+sets has finite union", and it is what the counting step of `algebraicClosure_idem` below consumes;
+the index set is an arbitrary finite set so that the caller can restrict it to the fibers the
+counting conjunct accepts.
+
+This is pure set-cardinality scaffolding with a single consumer here; promote it to
+`Mathlib.Data.Set.Card` when a second caller appears. -/
+theorem Finite.biUnion_fibers {ι α : Type*} {I : Set ι} (hI : I.Finite) {F : ι → Set α} {n : ℕ}
+    (hF : ∀ i ∈ I, (F i).encard ≤ n) : (⋃ i ∈ I, F i).Finite :=
+  hI.biUnion fun i hi => finite_of_encard_le_coe (hF i hi)
+
+end Set
 
 namespace FirstOrder
 
@@ -79,7 +105,7 @@ def IsAlgebraicOver (A : Set M) (b : M) : Prop :=
 /-- The algebraic closure of a parameter set: the set of all elements algebraic over it. -/
 def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver L A b}
 
-variable {A B : Set M} {s : Set M} {b : M}
+variable {A B : Set M} {b : M}
 
 /-- Unfolding of membership in the algebraic closure. -/
 @[simp]
@@ -146,21 +172,23 @@ writes `b ∈ acl (acl A)` as `b ∈ acl (A ∪ ↑F)` for a finite `F ⊆ acl A
 one algebraic element at a time and iterate over `F`.
 
 Adjoining a single `c ∈ acl A` is a counting argument.  Split the parameter
-(`Set.Definable.fiber`): a set definable over `A ∪ {c}` becomes the `c`-fiber of a formula over `A`
+(`exists_fiber_formula`): a set definable over `A ∪ {c}` becomes the `c`-fiber of a formula over `A`
 whose two free-variable blocks are the split-off parameter and the element.  Since the fiber through
 `c` is finite, the tuples whose fiber has at most that many elements are the only ones that can
 contribute an element of `acl A`; they form a definable set
 (`Set.definable_setOf_fiber_encard_le`), they sit over the finite `A`-definable set of possible
 values of `c`, and the union of their fibers is finite (`Set.Finite.biUnion_fibers`).  Projecting
-that union (`Set.definable_exists_fiber`) gives the finite `A`-definable set witnessing
+that union (`Set.Definable.exists_fiber`) gives the finite `A`-definable set witnessing
 `b ∈ acl A`. -/
 
 /-- Parameter splitting in the shape the counting argument needs: the `c`-fiber of a formula with
 parameters from `A`.
 
-This is `Set.Definable.fiber` with the two-variable block split into a slot for the split-off
-parameter `c` and a slot for the element, so that `Formula.iExsAtMost` can bound the element slot
-and `Set.definable_exists_fiber` can quantify over the parameter slot. -/
+The split-off parameter `c` occupies its own `Fin 1` block and the original element a second one, so
+that `Formula.iExsAtMost` can bound the element block and `Set.Definable.exists_fiber` can quantify
+over the parameter block.  The split is private because its conclusion is fixed to the
+`L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` coordinates of this one argument; `ModelTheory.Definability`
+deliberately exports no parameter-splitting lemma. -/
 private theorem exists_fiber_formula {A : Set M} {s : Set M} {c : M}
     (h : (A ∪ {c}).Definable₁ L s) :
     ∃ φ : L.Formula (A ⊕ (Fin 1 ⊕ Fin 1)),
@@ -231,7 +259,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     refine (Set.Finite.biUnion_fibers (F := Fib) (n := m) hVfin hVbound).subset ?_
     rintro w ⟨v, hv, hw⟩
     exact Set.mem_iUnion₂.mpr ⟨v, hv, hw⟩
-  have hTdefin : A.Definable L T := Set.definable_exists_fiber hVdefin
+  have hTdefin : A.Definable L T := hVdefin.exists_fiber
   -- an element of `M` is the one-entry tuple of itself, so `U` is the range of `w ↦ w 0` on `T`
   set U : Set M := {x | (fun _ : Fin 1 => x) ∈ T} with hUdef
   refine ⟨U, ?_, ?_, ⟨fun _ : Fin 1 => c, hcV, (hφ b).2 hbs⟩⟩
