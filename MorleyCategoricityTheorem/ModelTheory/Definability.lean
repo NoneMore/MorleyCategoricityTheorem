@@ -7,13 +7,15 @@ import Mathlib.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
-# Definability bridges to realization sets
+# Definability bridges and parameter splitting
 
 This file hosts the correspondence between `Set.Definable` and `Formula.realizationSet` at the
-bottom of the project's model-theory import graph.  Keeping it separate lets foundational modules --
-notably `ModelTheory.AlgebraicClosure` -- stay inside Mathlib's definability layer plus the
-low-level `ModelTheory.Semantics`: `ModelTheory.DefinablyFull`, the previous home of these bridges,
-imports `ModelTheory.ElementaryMaps` and hence the semantic bridges and the type-space layer.
+bottom of the project's model-theory import graph, together with the parameter-splitting lemmas
+that move parameters of a definable set from the parameter set into free variables.  Keeping the
+module separate lets foundational modules -- notably `ModelTheory.AlgebraicClosure` -- stay inside
+Mathlib's definability layer plus the low-level `ModelTheory.Semantics`.  The previous home of these
+bridges, `ModelTheory.DefinablyFull`, imports `ModelTheory.ElementaryMaps` and hence the semantic
+bridges and the type-space layer.
 
 ## Main results
 
@@ -24,10 +26,14 @@ imports `ModelTheory.ElementaryMaps` and hence the semantic bridges and the type
 - `Set.image_fin_one_eq`: the `Fin 1 → M` tuple with a single entry is the image of that entry.
 - `Set.definable₁_iff_exists_realizationSet₁`: the unary `Definable₁` specialization of the first
   bridge, in terms of `Formula.realizationSet₁`.
+- `Set.Definable.fiber`: parameter splitting for one parameter: a set definable over `A ∪ {c}` is
+  the `c`-fiber of a set definable over `A` in two variables.
+- `Set.Definable.fiber_finset`: the finite-tuple form of parameter splitting, for `F : Finset M`.
 
 The first two are the same statements that were previously proved in `ModelTheory.DefinablyFull`;
 they moved here so that the algebraic-closure layer can reuse them without importing the semantic
-bridges.
+bridges.  The parameter-splitting lemmas are general definability facts with the same import
+requirement; the algebraic-closure idempotence proof consumes them from this module.
 -/
 
 universe u v w
@@ -90,5 +96,84 @@ theorem definable₁_iff_exists_realizationSet₁ {s : Set M} :
     rw [hpre, himg, preimage_image_eq _ (fun x y h => congrFun h 0)]
   · rintro ⟨φ, rfl⟩
     exact ⟨φ, by rw [Formula.realizationSet_fin_one_image, image_fin_one_eq]⟩
+
+variable {s : Set M}
+
+/-- Parameter splitting: a set definable over `A ∪ {c}` is the `c`-fiber of a set definable over
+`A` in two variables.
+
+The witness reads a tuple `x : Fin 2 → M` as the pair `(x 0, x 1)`; the split-off parameter `c`
+comes first and the element of the original set second, so the fiber statement is
+`s = {a : M | ![c, a] ∈ t}`. -/
+theorem Definable.fiber {c : M} (h : (A ∪ {c}).Definable₁ L s) :
+    ∃ t : Set (Fin 2 → M), A.Definable L t ∧ {a : M | ![c, a] ∈ t} = s := by
+  classical
+  obtain ⟨φ, rfl⟩ := definable₁_iff_exists_realizationSet₁ (A := A ∪ {c}) (L := L) |>.1 h
+  let g : ↥(A ∪ {c}) ⊕ Fin 1 → ↥A ⊕ Fin 2 := fun x =>
+    match x with
+    | Sum.inl p =>
+      if hp : (p : M) = c then Sum.inr 0
+      else Sum.inl ⟨p, by simpa [Set.mem_union, Set.mem_singleton_iff, hp] using p.2⟩
+    | Sum.inr _ => Sum.inr 1
+  refine ⟨(φ.relabel g).realizationSet (Subtype.val : A → M), ?_, ?_⟩
+  · exact definable_realizationSet _
+  · ext a
+    simp only [mem_ofPred_eq, Formula.mem_realizationSet, Formula.mem_realizationSet₁,
+      Formula.realize_relabel]
+    have hfun : Sum.elim (Subtype.val : A → M) ![c, a] ∘ g =
+        Sum.elim (Subtype.val : ↥(A ∪ {c}) → M) (fun _ : Fin 1 => a) := by
+      funext x
+      rcases x with p | i
+      · by_cases hp : (p : M) = c
+        · simp [g, hp]
+        · simp [g, hp]
+      · simp [g]
+    rw [hfun]
+
+/-- Parameter splitting for a finite tuple of parameters: a set definable over `A ∪ ↑F` is the
+fiber over `F` of a set definable over `A`.
+
+The witness reads a tuple `x : ↥F ⊕ Fin 1 → M` with the parameters on the left and the element on
+the right, so the fiber statement is `s = {a : M | Sum.elim Subtype.val (fun _ => a) ∈ t}`. -/
+theorem Definable.fiber_finset (F : Finset M) (h : (A ∪ (F : Set M)).Definable₁ L s) :
+    ∃ t : Set (↥F ⊕ Fin 1 → M), A.Definable L t ∧
+      {a : M | Sum.elim (Subtype.val : ↥F → M) (fun _ : Fin 1 => a) ∈ t} = s := by
+  classical
+  obtain ⟨φ, rfl⟩ :=
+    definable₁_iff_exists_realizationSet₁ (A := A ∪ (F : Set M)) (L := L) |>.1 h
+  let g : ↥(A ∪ (F : Set M)) ⊕ Fin 1 → ↥A ⊕ (↥F ⊕ Fin 1) := fun x =>
+    match x with
+    | Sum.inl p =>
+      if hp : (p : M) ∈ (F : Set M) then Sum.inr (Sum.inl ⟨p, hp⟩)
+      else Sum.inl ⟨p, by
+        rcases (Set.mem_union _ _ _).1 p.2 with h' | h'
+        · exact h'
+        · exact absurd h' hp⟩
+    | Sum.inr _ => Sum.inr (Sum.inr 0)
+  refine ⟨(φ.relabel g).realizationSet (Subtype.val : A → M), ?_, ?_⟩
+  · exact definable_realizationSet _
+  · ext a
+    simp only [mem_ofPred_eq, Formula.mem_realizationSet, Formula.mem_realizationSet₁,
+      Formula.realize_relabel]
+    have hfun : Sum.elim (Subtype.val : A → M)
+          (Sum.elim (Subtype.val : ↥F → M) (fun _ : Fin 1 => a)) ∘ g =
+        Sum.elim (Subtype.val : ↥(A ∪ (F : Set M)) → M) (fun _ : Fin 1 => a) := by
+      funext x
+      simp only [Function.comp_apply]
+      rcases x with p | i
+      · by_cases hp : (p : M) ∈ (F : Set M)
+        · have hgp : g (Sum.inl p) = Sum.inr (Sum.inl ⟨p, hp⟩) := by
+            simpa only [g] using dite_eq_left hp
+          rw [hgp]
+          simp
+        · have hgp : g (Sum.inl p) = Sum.inl ⟨p, by
+              rcases (Set.mem_union _ _ _).1 p.2 with h' | h'
+              · exact h'
+              · exact absurd h' hp⟩ := by
+            simpa only [g] using dite_eq_right hp
+          rw [hgp]
+          simp
+      · simp [g]
+    rw [hfun]
 
 end Set

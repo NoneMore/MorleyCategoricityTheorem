@@ -255,10 +255,17 @@ Easy layer (landed): `mem_algebraicClosure_iff`, `subset_algebraicClosure`,
 low-level bridges `Set.definable₁_iff_exists_realizationSet₁` and `Set.image_fin_one_eq` in
 `ModelTheory.Definability`.
 
-Idempotence layer (planned, and the reason this capability is not definition-only):
+Idempotence layer (the reason this capability is not definition-only):
 
 - `Definable.fiber`: parameter splitting — `(A ∪ {c}).Definable₁ L s` yields an `A`-definable
-  two-variable set whose `c`-fiber is `s`, plus the finite-tuple version;
+  two-variable set in `Fin 2 → M` whose `c`-fiber is `s`, plus the finite-tuple version
+  `Definable.fiber_finset` for `F : Finset M`, producing an `A`-definable set in `↥F ⊕ Fin 1 → M`
+  whose fiber over `F` is `s`. Both witness maps send each parameter variable either to its
+  `A`-parameter variable or to its tuple slot; `Formula.relabel` and `Formula.realize_relabel`
+  reduce the fiber identity to a pointwise check on that map, so no separate formula surgery is
+  needed. These are general definability facts, so they live in the low-level
+  `ModelTheory.Definability` rather than in `AlgebraicClosure`; the finite-family collapse and
+  idempotence stay with the closure definitions;
 - `Set.Finite.biUnion_fibers`: the finite-family collapse, stated for a finite parameter set and a
   family whose contributing fibers are bounded;
 - `algebraicClosure_idem : algebraicClosure (algebraicClosure A) = algebraicClosure A`, from those
@@ -343,13 +350,14 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 
 ### File plan
 
-1. New `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions, easy layer, then
-   the idempotence layer in the same module (it already imports `Semantics`, so the counting
-   formulas need no further import).
-2. New `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
-   out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁` and
-   `Set.image_fin_one_eq`. `DefinablyFull` imports it; no other existing module changes.
-3. `MorleyCategoricityTheorem.lean`: import both new modules, preserving alphabetical order.
+1. `MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean`: definitions and easy layer
+   (landed), then the finite-family collapse and idempotence in the same module (it already imports
+   `Semantics`, so the counting formulas need no further import).
+2. `MorleyCategoricityTheorem/ModelTheory/Definability.lean`: the realization-set bridges moved
+   out of `ModelTheory/DefinablyFull.lean`, plus `Set.definable₁_iff_exists_realizationSet₁`,
+   `Set.image_fin_one_eq`, and the parameter-splitting lemmas `Set.Definable.fiber` and
+   `Set.Definable.fiber_finset`. `DefinablyFull` imports it; no other existing module changes.
+3. `MorleyCategoricityTheorem.lean`: import both modules, preserving alphabetical order.
 4. No blueprint change.
 5. `Scratch/AlgebraicClosure.lean` and `Scratch/MatroidBridge.lean` are deleted once the module has
    landed; the matroid conclusions above are the design record, and the experiment's code is not
@@ -367,7 +375,8 @@ matroid to exist first. This capability must not depend on Mathlib's matroid mod
 3. Land `AlgebraicClosure` with the two definitions and the easy layer, with the language explicit.
    Run the full verification; this is the increment that releases the node's direct consumers.
 4. Add `Definable.fiber` (parameter splitting), starting with the single-parameter case and only
-   then the finite-tuple case.
+   then the finite-tuple case. Done: `Set.Definable.fiber` and `Set.Definable.fiber_finset` live in
+   `ModelTheory.Definability` with the shapes recorded in Design.
 5. Add `Set.Finite.biUnion_fibers` on top of `Formula.iExsAtMost`.
 6. Prove `algebraicClosure_idem`, then restate the closure-law facts that
    `lem:strongly-minimal-closure-laws` needs in the pregeometry plan.

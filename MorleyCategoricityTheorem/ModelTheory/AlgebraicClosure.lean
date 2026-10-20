@@ -44,9 +44,10 @@ The element predicate is not named `IsAlgebraic`: that name already belongs to
 ## TODO
 
 - Prove idempotence, `L.algebraicClosure (L.algebraicClosure A) = L.algebraicClosure A`, with the
-  parameter-splitting and finite-family-collapse lemmas it needs.  The counting argument is recorded
-  in `docs/plan/algebraic-closure.md`; the closure laws of `lem:strongly-minimal-closure-laws` need
-  the result.
+  finite-family-collapse lemma it needs.  Parameter splitting is available from the low-level
+  `ModelTheory.Definability` module as `Set.Definable.fiber` and `Set.Definable.fiber_finset`, which
+  this module imports.  The counting argument is recorded in `docs/plan/algebraic-closure.md`; the
+  closure laws of `lem:strongly-minimal-closure-laws` need the result.
 - Prove the cardinality bound `|acl(A)| ≤ |A| + ℵ₀` and the strongly-minimal pregeometry.  Both are
   separate capabilities that consume this module.
 
