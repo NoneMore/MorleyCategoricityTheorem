@@ -27,6 +27,10 @@ lake build MorleyCategoricityTheorem
 - Only change `blueprint/` when the work intentionally includes blueprint changes;
   describe the affected nodes or dependencies in the PR.
 
+- Keep Lean docstrings concise: explain mathematical meaning or non-obvious proof ideas,
+  not routine steps or signatures. Keep module summaries selective, and avoid
+  repeating design rationale from `docs/plan/`.
+
 ## Validation
 
 Run the checks relevant to your changes from the repository root:
@@ -55,5 +59,5 @@ CI remains the final gate.
 - Keep dependency-update subjects in the `build(deps): bump ...` form.
 - Release tags are automated; do not create them manually.
 - Do not add AI authorship or co-authorship trailers.
-- Explain what changed and why, any intentional limitations, and validation
-  performed or skipped. Link relevant issues or blueprint nodes when useful.
+- Keep PR descriptions brief: summarize the change, validation, and essential
+  caveats; link plans or issues for details instead of repeating design notes.

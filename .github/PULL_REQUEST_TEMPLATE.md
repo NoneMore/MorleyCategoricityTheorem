@@ -1,6 +1,6 @@
 ## Summary
 
-<!-- What changed, and why? -->
+<!-- Briefly state what changed and why; link details rather than repeating them. -->
 
 ## Validation
 
