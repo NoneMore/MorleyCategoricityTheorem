@@ -281,6 +281,15 @@ theorem realizationSet_relabel (φ : L.Formula (α ⊕ β)) (a : α → M) (f : 
   simp only [mem_realizationSet, Set.mem_preimage, Formula.realize_relabel, Sum.elim_comp_map,
     Function.comp_id]
 
+/-- Relabelling the parameter variables of a unary formula precomposes the parameter assignment.
+
+This is the parameter-variable counterpart of `realizationSet_relabel`. -/
+theorem realizationSet₁_relabel_params {α' : Type*} (φ : L.Formula (α ⊕ Fin 1)) (a : α' → M)
+    (g : α → α') :
+    (φ.relabel (Sum.map g id)).realizationSet₁ a = φ.realizationSet₁ (a ∘ g) := by
+  ext x
+  simp only [mem_realizationSet₁, Formula.realize_relabel, Sum.elim_comp_map, Function.comp_id]
+
 end RealizationSet
 
 /-- Realization of `iExsAtLeast` is equivalent to the existence of an injective family of `n`

@@ -34,6 +34,8 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
 - `ElementaryEmbedding.infinite_realizationSet₁_iff`: the unary specialization of the previous
   statement.
 - `ElementaryEmbedding.mem_realizationSet₁_iff`: the elementwise form of unary formula transport.
+- `ElementaryEmbedding.realizationSet₁_congr`: an equality of unary realization sets is preserved by
+  an elementary embedding, including at target elements outside the image.
 - `Equiv.image_realizationSet₁`: a first-order equivalence transports unary realization sets.
 
 ## Implementation order
@@ -150,6 +152,25 @@ theorem mem_realizationSet₁_iff (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ Fi
   rw [show Sum.elim (e ∘ b) (fun _ : Fin 1 => e x) =
       (e : M → N) ∘ Sum.elim b (fun _ : Fin 1 => x) from (Sum.comp_elim _ _ _).symm]
   exact (e.map_formula φ (Sum.elim b (fun _ : Fin 1 => x))).symm
+
+/-- Two unary formulas realizing the same elements for the same parameter tuple continue to realize
+the same elements for the transported parameter tuple in the target of an elementary embedding.
+
+Unlike `mem_realizationSet₁_iff`, this also covers target elements outside the image of `e`: the
+pointwise equivalence of the two formulas is universally closed and transferred by elementarity. -/
+theorem realizationSet₁_congr (e : M ↪ₑ[L] N) {φ ψ : L.Formula (β ⊕ Fin 1)} {b : β → M}
+    (h : φ.realizationSet₁ b = ψ.realizationSet₁ b) :
+    φ.realizationSet₁ (e ∘ b) = ψ.realizationSet₁ (e ∘ b) := by
+  have hfin : φ.realizationSet b = ψ.realizationSet b := by
+    rw [Formula.realizationSet_fin_one_image, Formula.realizationSet_fin_one_image, h]
+  have hM : ((φ.iff ψ).iAlls (Fin 1)).Realize b := by
+    rw [Formula.realize_iAlls]
+    intro x
+    simpa only [Formula.realize_iff, Formula.mem_realizationSet] using Set.ext_iff.mp hfin x
+  have hN : ((φ.iff ψ).iAlls (Fin 1)).Realize (e ∘ b) := (e.map_formula _ b).mpr hM
+  ext y
+  simpa only [Formula.realize_iff, Formula.mem_realizationSet₁] using
+    (Formula.realize_iAlls.mp hN) (fun _ : Fin 1 => y)
 
 end ExplicitParameters
 
