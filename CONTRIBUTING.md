@@ -27,16 +27,9 @@ lake build MorleyCategoricityTheorem
 - Only change `blueprint/` when the work intentionally includes blueprint changes;
   describe the affected nodes or dependencies in the PR.
 
-## Lean Documentation
-
-- Write docstrings for public definitions and non-obvious results to explain
-  mathematical meaning or useful proof ideas. A single sentence (typically
-  1–3 lines) is the default; expand only when complexity warrants it.
-- Keep module documentation to its scope and main results. Avoid restating
-  declaration signatures, listing every helper, or narrating proof steps.
-- Use `docs/plan/` for detailed design discussions during planning. Move
-  only durable, reader-relevant information into Lean documentation, without
-  duplicating the plan.
+- Keep Lean docstrings concise: explain mathematical meaning or non-obvious proof ideas,
+  not routine steps or signatures. Keep module summaries selective, and avoid
+  repeating design rationale from `docs/plan/`.
 
 ## Validation
 
@@ -66,8 +59,5 @@ CI remains the final gate.
 - Keep dependency-update subjects in the `build(deps): bump ...` form.
 - Release tags are automated; do not create them manually.
 - Do not add AI authorship or co-authorship trailers.
-- Keep PR descriptions short: summarize what changed and why, report
-  validation performed or skipped, and note only relevant limitations or
-  blueprint changes. Prefer a few bullets over file-by-file inventories or
-  proof walkthroughs; link plans, issues, or blueprint nodes for details.
-  Expand only when needed for review.
+- Keep PR descriptions brief: summarize the change, validation, and essential
+  caveats; link plans or issues for details instead of repeating design notes.
