@@ -1,5 +1,11 @@
 # Minimal and Strongly Minimal Unary Definable Sets
 
+## Implementation status
+
+Implemented in [PR #40](https://github.com/NoneMore/MorleyCategoricityTheorem/pull/40): the definitions, arbitrary-target universe bridge, elementary-embedding transport, and presentation-independence API are in [`Minimality.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Minimality.lean). The same PR adds the blueprint `\lean`/`\leanok` annotations for `def:minimality`.
+
+This archived plan preserves the pre-implementation investigation and design. Statements below about unproved obligations, plan-only scope, and future validation describe that earlier stage; they are not remaining tasks. The consumers under **Deferred consumers** are still out of scope.
+
 ## Intent and scope
 
 Formalize blueprint [`def:minimality`](../../../blueprint/src/content.tex): an infinite unary
@@ -61,10 +67,11 @@ The following checks succeeded:
 - A small elementary hull in a language expanded by constants retains every named element.
 
 The checked auxiliary proofs whose axioms were inspected used only `propext`,
-`Classical.choice`, and `Quot.sound`, without `sorryAx`. The full universe bridge and the
-compactness characterization by uniform bounds were not proved. The unchanged library
-passed `lake build MorleyCategoricityTheorem`; this is baseline evidence, not completion
-of the declarations proposed here.
+`Classical.choice`, and `Quot.sound`, without `sorryAx`. At the investigation stage, neither
+the full universe bridge nor the compactness characterization by uniform bounds was proved.
+The bridge was subsequently completed in PR #40; the compactness characterization remains
+outside this capability. The unchanged library passed `lake build MorleyCategoricityTheorem`
+at that time; this was baseline evidence, not implementation validation.
 
 ## Chosen interface
 
@@ -176,7 +183,8 @@ interpretation in a target of type `Type (max u v w)`:
 Mathlib provides `constantsOn.structure`, `withConstantsStructure`,
 `ElementarySubstructure.subtype`, and induced-structure/shrink transports. The core
 constant-retention construction passed a scratch check. The elementary reduct, factorization,
-and the complete shrinking argument remain unverified. `exists_small_elementarySubstructure`
+and the complete shrinking argument were still unverified at that stage and were subsequently
+implemented in PR #40. `exists_small_elementarySubstructure`
 without the constant expansion does not promise to retain the source or splitter parameters.
 
 There is a second route via `exists_elementarySubstructure_card_eq` with a prescribed set
@@ -263,9 +271,9 @@ Acceptance includes:
   finite formula support, and source/target models in different universes.
 - Successful applicable build/import/declaration checks and no changes to `blueprint/`.
 
-For this plan-only change, review Markdown, relative links, and the diff; no Lean module
-is added or changed. The implementation checks above are future completion requirements,
-not claims that the proposed declarations already exist.
+For the original plan-only change, reviewing Markdown, relative links, and the diff was
+sufficient because no Lean module was added or changed. The implementation and its checks
+were subsequently completed in PR #40.
 
 ## Deferred consumers
 
@@ -278,5 +286,5 @@ separate results.
 
 Follow the existing [algebraic-closure plan](algebraic-closure.md) for downstream geometry:
 exchange is on carrier `D`, with `X ⊆ D` and `c ∈ D`; the present capability neither proves
-exchange nor changes its blueprint statement. Any later blueprint declaration mapping
-requires an explicitly authorized blueprint change.
+exchange nor changes its blueprint statement. The declaration mapping for `def:minimality`
+was subsequently added in PR #40; other blueprint changes remain separate work.
