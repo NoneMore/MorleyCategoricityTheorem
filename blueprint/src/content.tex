@@ -197,6 +197,8 @@ write \(S_n^M(A)\) for the space of complete \(n\)-types over \(A\).
 
 \begin{definition}[Algebraicity and algebraic closure]
 \label{def:algebraic-closure}
+\lean{FirstOrder.Language.IsAlgebraicOver, FirstOrder.Language.algebraicClosure}
+\leanok
 Let \(A\) be a parameter set in a structure \(M\).  An element
 \(b\in M\) is algebraic over \(A\) if it belongs to a finite set
 definable with parameters from \(A\).  The algebraic closure
@@ -1047,6 +1049,8 @@ Apply the two forward milestones in order.
 
 \begin{definition}[Minimal and strongly minimal formulas]
 \label{def:minimality}
+\lean{FirstOrder.Language.IsMinimal, FirstOrder.Language.Formula.IsMinimal, FirstOrder.Language.Formula.IsStronglyMinimal}
+\leanok
 Let \(D\) be an infinite unary definable set.  It is minimal in \(M\)
 if every definable subset of \(D\) is finite or cofinite in \(D\), and
 strongly minimal if this remains true in every elementary extension.

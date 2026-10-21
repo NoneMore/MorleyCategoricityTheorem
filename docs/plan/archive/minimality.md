@@ -2,7 +2,7 @@
 
 ## Intent and scope
 
-Formalize blueprint [`def:minimality`](../../blueprint/src/content.tex): an infinite unary
+Formalize blueprint [`def:minimality`](../../../blueprint/src/content.tex): an infinite unary
 definable set `D` is minimal in `M` when every definable subset of `D` is finite or cofinite
 in `D`; a defining formula is strongly minimal when its interpretation remains minimal in
 every elementary extension.
@@ -36,12 +36,12 @@ or strong-minimality definition in that version or in the project. Relevant inte
 |---|---|
 | Mathlib `Set.Definable₁`, `Set.Definable.inter`, `.sdiff`, `.mono` | Unary definability and Boolean operations |
 | Mathlib `Set.definable_iff_finitely_definable` | Finite support for arbitrary ambient parameters |
-| [`Set.definable₁_iff_exists_realizationSet₁`](../../MorleyCategoricityTheorem/ModelTheory/Definability.lean) | Convert a unary definable set to a formula with assigned parameters |
-| [`Formula.realizationSet₁`, `realizationSet_fin_one_equiv`, `infinite_realizationSet_fin_one_iff`](../../MorleyCategoricityTheorem/ModelTheory/Semantics.lean) | Keep the public carrier `Set M` and bridge to `Fin 1 → M` |
+| [`Set.definable₁_iff_exists_realizationSet₁`](../../../MorleyCategoricityTheorem/ModelTheory/Definability.lean) | Convert a unary definable set to a formula with assigned parameters |
+| [`Formula.realizationSet₁`, `realizationSet_fin_one_equiv`, `infinite_realizationSet_fin_one_iff`](../../../MorleyCategoricityTheorem/ModelTheory/Semantics.lean) | Keep the public carrier `Set M` and bridge to `Fin 1 → M` |
 | `Formula.exists_fin_params` in the same semantic module | Extract a finite tuple of parameter values |
-| [`ElementaryEmbedding.encard_realizations_eq_coe_iff`, `infinite_realizations_iff`](../../MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean) | Preserve and reflect finite counts and infinitude across universes |
-| [`Language.IsAlgebraicOver`, `algebraicClosure`](../../MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean) | Existing set-based algebraicity consumers |
-| [`Theory.IsVaughtianPair`](../../MorleyCategoricityTheorem/ModelTheory/VaughtianPair.lean) | Existing formula, finite parameter tuple, and elementary embedding convention |
+| [`ElementaryEmbedding.encard_realizations_eq_coe_iff`, `infinite_realizations_iff`](../../../MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean) | Preserve and reflect finite counts and infinitude across universes |
+| [`Language.IsAlgebraicOver`, `algebraicClosure`](../../../MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean) | Existing set-based algebraicity consumers |
+| [`Theory.IsVaughtianPair`](../../../MorleyCategoricityTheorem/ModelTheory/VaughtianPair.lean) | Existing formula, finite parameter tuple, and elementary embedding convention |
 
 `Formula.exists_fin_params` returns `L.Formula (α ⊕ Fin n)`, with the realized variables
 first. The public realization-set convention is parameters first, so conversion to
@@ -240,7 +240,7 @@ capability's changes outside `blueprint/`.
 ## Verification and completion
 
 During implementation, use Lean LSP/scratch checks for declaration shapes and proof
-exploration. Required build gates follow [CONTRIBUTING.md](../../CONTRIBUTING.md):
+exploration. Required build gates follow [CONTRIBUTING.md](../../../CONTRIBUTING.md):
 
 ```bash
 lake build MorleyCategoricityTheorem
@@ -270,7 +270,7 @@ not claims that the proposed declarations already exist.
 ## Deferred consumers
 
 The local existence theorem should reuse `IsOmegaStable.false_of_formula_splitting` from
-[OmegaStable](../../MorleyCategoricityTheorem/ModelTheory/OmegaStable.lean), with an infinite
+[OmegaStable](../../../MorleyCategoricityTheorem/ModelTheory/OmegaStable.lean), with an infinite
 root realization set. It needs model infinitude explicitly: the current Lean definition of
 omega-stability permits finite models, while the blueprint assumes infinite models globally.
 The minimal-to-strong upgrade and uniform finite bounds without Vaughtian pairs remain
