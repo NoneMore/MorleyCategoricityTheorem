@@ -42,9 +42,13 @@ determines it.
   the whole ambient model.
 - `FirstOrder.Language.definable₁_iff_exists_fin_realizationSet₁`: a unary set definable over the
   whole model is a realization set with a finite parameter tuple.
+- `FirstOrder.Language.Formula.realizationSet₁_sdiff`: the difference of two unary realization sets
+  is again a unary realization set, on the combined parameter type.
 - `FirstOrder.Language.Formula.IsStronglyMinimal`: the canonical-target strong minimality predicate.
 - `FirstOrder.Language.Formula.IsStronglyMinimal.realizationSet₁_infinite`: a strongly minimal formula
   has an infinite source realization set.
+- `FirstOrder.Language.Formula.IsStronglyMinimal.isMinimal`: strong minimality implies minimality
+  after an elementary embedding into an arbitrary target universe.
 -/
 
 universe u v w w' p
@@ -275,7 +279,7 @@ universe-lifted copy of the source. -/
 theorem IsStronglyMinimal.realizationSet₁_infinite (h : φ.IsStronglyMinimal a) :
     (φ.realizationSet₁ a).Infinite := by
   let N := ULift.{max u v w, w} M
-  letI : L.Structure N := Equiv.inducedStructure (Equiv.ulift.symm : M ≃ N)
+  let : L.Structure N := Equiv.inducedStructure (Equiv.ulift.symm : M ≃ N)
   let e : M ↪ₑ[L] N :=
     (Equiv.inducedStructureEquiv (Equiv.ulift.symm : M ≃ N)).toElementaryEmbedding
   have h1 : (φ.realizationSet₁ (e ∘ a)).Infinite := (h N e).realizationSet₁_infinite
@@ -283,6 +287,26 @@ theorem IsStronglyMinimal.realizationSet₁_infinite (h : φ.IsStronglyMinimal a
     (infinite_realizationSet_fin_one_iff φ (e ∘ a)).mpr h1
   exact (infinite_realizationSet_fin_one_iff φ a).mp
     ((ElementaryEmbedding.infinite_realizations_iff e φ a).mp h2)
+
+/-- The set difference of two unary realization sets is again a unary realization set, on the
+combined parameter type. -/
+theorem realizationSet₁_sdiff {M : Type w} [L.Structure M] {γ₁ γ₂ : Type*}
+    (φ : L.Formula (γ₁ ⊕ Fin 1)) (ψ : L.Formula (γ₂ ⊕ Fin 1)) (p : γ₁ → M) (q : γ₂ → M) :
+    ((Formula.relabel (Sum.map Sum.inl id) φ) ⊓
+        (Formula.relabel (Sum.map Sum.inr id) ψ).not).realizationSet₁ (Sum.elim p q) =
+      φ.realizationSet₁ p \ ψ.realizationSet₁ q := by
+  ext y
+  simp only [Formula.mem_realizationSet₁, Formula.realize_inf, Formula.realize_not,
+    Formula.realize_relabel, Set.mem_sdiff]
+  have h1 : (Sum.elim (Sum.elim p q) (fun _ : Fin 1 => y)) ∘ Sum.map Sum.inl id =
+      Sum.elim p (fun _ : Fin 1 => y) := by
+    funext i
+    rcases i with i | j <;> rfl
+  have h2 : (Sum.elim (Sum.elim p q) (fun _ : Fin 1 => y)) ∘ Sum.map Sum.inr id =
+      Sum.elim q (fun _ : Fin 1 => y) := by
+    funext i
+    rcases i with i | j <;> rfl
+  rw [h1, h2]
 
 /-- **Arbitrary-target interface of strong minimality.**  A formula that is strongly minimal in the
 canonical universe is minimal after any elementary embedding `e : M ↪ₑ[L] N`, whatever the universe
@@ -305,8 +329,9 @@ theorem IsStronglyMinimal.isMinimal {N : Type w'} [L.Structure N] (e : M ↪ₑ[
   simp only [not_or, Set.not_finite] at hcon
   obtain ⟨hSinf, hDSinf⟩ := hcon
   obtain ⟨n, ψ, b, rfl⟩ := definable₁_iff_exists_fin_realizationSet₁.mp hSdef
+  -- A small elementary hull of `N` containing the image of `e` and the parameters of `ψ`.
   let L' : Language.{max u w, v} := L.sum (constantsOn (M ⊕ Fin n))
-  letI : (constantsOn (M ⊕ Fin n)).Structure N := constantsOn.structure (Sum.elim e b)
+  let : (constantsOn (M ⊕ Fin n)).Structure N := constantsOn.structure (Sum.elim e b)
   obtain ⟨P, hP⟩ := exists_small_elementarySubstructure L' (M := N)
   have hmem : ∀ x : M, e x ∈ P := by
     intro x
@@ -320,190 +345,75 @@ theorem IsStronglyMinimal.isMinimal {N : Type w'} [L.Structure N] (e : M ↪ₑ[
       (Sum.inr (Sum.inr i) : L'.Constants)
     change Sum.elim e b (Sum.inr i : M ⊕ Fin n) ∈ (P : Set N) at h'
     simpa using h'
-  letI hPL' : L'.Structure ↥P := (P : L'.Substructure N).inducedStructure
-  letI hPL : L.Structure ↥P := (LHom.sumInl : L →ᴸ L').reduct ↥P
-  let ePfun : M → ↥P := fun x => ⟨e x, hmem x⟩
-  have hePval : ∀ x : M, (ePfun x : N) = e x := fun x => rfl
+  let : L'.Structure ↥P := (P : L'.Substructure N).inducedStructure
+  let : L.Structure ↥P := (LHom.sumInl : L →ᴸ L').reduct ↥P
+  -- Corestricting `e` along the hull keeps it elementary.
   let eP : M ↪ₑ[L] ↥P :=
-    { toFun := ePfun
+    { toFun := fun x => ⟨e x, hmem x⟩
       map_formula' := fun k χ x => by
-        have h1 : ((LHom.sumInl : L →ᴸ L').onFormula χ).Realize (ePfun ∘ x) ↔
-            χ.Realize (ePfun ∘ x) :=
-          (LHom.sumInl : L →ᴸ L').realize_onFormula χ
-        have h2 : ((LHom.sumInl : L →ᴸ L').onFormula χ).Realize
-              ((P.subtype : ↥P ↪ₑ[L'] N) ∘ (ePfun ∘ x)) ↔
-            ((LHom.sumInl : L →ᴸ L').onFormula χ).Realize (ePfun ∘ x) :=
-          (P.subtype : ↥P ↪ₑ[L'] N).map_formula _ _
-        have h3 : ((LHom.sumInl : L →ᴸ L').onFormula χ).Realize (e ∘ x) ↔
-            χ.Realize (e ∘ x) :=
-          (LHom.sumInl : L →ᴸ L').realize_onFormula χ
-        exact h1.symm.trans (h2.symm.trans (h3.trans (e.map_formula χ x))) }
+        have h := (P.subtype : ↥P ↪ₑ[L'] N).map_formula ((LHom.sumInl : L →ᴸ L').onFormula χ)
+          (fun i => ⟨e (x i), hmem (x i)⟩)
+        simp only [LHom.realize_onFormula] at h
+        exact h.symm.trans (e.map_formula χ x) }
   let c : Fin n → ↥P := fun i => ⟨b i, hmemb i⟩
-  have hcval : ∀ i, (c i : N) = b i := fun i => rfl
+  have hc : (Subtype.val : ↥P → N) ∘ c = b := funext fun i => rfl
+  have hec : (Subtype.val : ↥P → N) ∘ (eP ∘ a) = e ∘ a := funext fun i => rfl
+  have hsc : (Subtype.val : ↥P → N) ∘ Sum.elim (eP ∘ a) c = Sum.elim (e ∘ a) b :=
+    funext fun i => by rcases i with i | j <;> rfl
+  -- Realization inside the hull agrees with realization in `N`.
   have mem_ψ : ∀ x : ↥P, x ∈ ψ.realizationSet₁ c ↔ (x : N) ∈ ψ.realizationSet₁ b := by
     intro x
-    have h1 : x ∈ ψ.realizationSet₁ c ↔
-        ((LHom.sumInl : L →ᴸ L').onFormula ψ).Realize (Sum.elim c (fun _ : Fin 1 => x)) := by
-      simp only [Formula.mem_realizationSet₁]
-      exact ((LHom.sumInl : L →ᴸ L').realize_onFormula ψ).symm
-    have h2 : ((LHom.sumInl : L →ᴸ L').onFormula ψ).Realize
-          (Sum.elim c (fun _ : Fin 1 => x)) ↔
-        ((LHom.sumInl : L →ᴸ L').onFormula ψ).Realize
-          ((P.subtype : ↥P ↪ₑ[L'] N) ∘ Sum.elim c (fun _ : Fin 1 => x)) :=
-      ((P.subtype : ↥P ↪ₑ[L'] N).map_formula _ _).symm
-    have h3 : ((LHom.sumInl : L →ᴸ L').onFormula ψ).Realize
-          ((P.subtype : ↥P ↪ₑ[L'] N) ∘ Sum.elim c (fun _ : Fin 1 => x)) ↔
-        ((LHom.sumInl : L →ᴸ L').onFormula ψ).Realize
-          (Sum.elim b (fun _ : Fin 1 => (x : N))) := by
-      have harg : (⇑(P.subtype : ↥P ↪ₑ[L'] N)) ∘ Sum.elim c (fun _ : Fin 1 => x) =
-          Sum.elim b (fun _ : Fin 1 => (x : N)) := by
-        funext i
-        rcases i with i | j <;> rfl
-      rw [harg]
-    have h4 : ((LHom.sumInl : L →ᴸ L').onFormula ψ).Realize
-          (Sum.elim b (fun _ : Fin 1 => (x : N))) ↔ (x : N) ∈ ψ.realizationSet₁ b := by
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula ψ
-    exact h1.trans (h2.trans (h3.trans h4))
+    simpa only [LHom.realizationSet₁_onFormula, hc, ElementarySubstructure.coe_subtype] using
+      ElementaryEmbedding.mem_realizationSet₁_iff (L := L') (P.subtype : ↥P ↪ₑ[L'] N)
+        ((LHom.sumInl : L →ᴸ L').onFormula ψ) c x
   have mem_φ : ∀ x : ↥P,
       x ∈ φ.realizationSet₁ (eP ∘ a) ↔ (x : N) ∈ φ.realizationSet₁ (e ∘ a) := by
     intro x
-    have h1 : x ∈ φ.realizationSet₁ (eP ∘ a) ↔
-        ((LHom.sumInl : L →ᴸ L').onFormula φ).Realize
-          (Sum.elim (eP ∘ a) (fun _ : Fin 1 => x)) := by
-      simp only [Formula.mem_realizationSet₁]
-      exact ((LHom.sumInl : L →ᴸ L').realize_onFormula φ).symm
-    have h2 : ((LHom.sumInl : L →ᴸ L').onFormula φ).Realize
-          (Sum.elim (eP ∘ a) (fun _ : Fin 1 => x)) ↔
-        ((LHom.sumInl : L →ᴸ L').onFormula φ).Realize
-          ((P.subtype : ↥P ↪ₑ[L'] N) ∘ Sum.elim (eP ∘ a) (fun _ : Fin 1 => x)) :=
-      ((P.subtype : ↥P ↪ₑ[L'] N).map_formula _ _).symm
-    have h3 : ((LHom.sumInl : L →ᴸ L').onFormula φ).Realize
-          ((P.subtype : ↥P ↪ₑ[L'] N) ∘ Sum.elim (eP ∘ a) (fun _ : Fin 1 => x)) ↔
-        ((LHom.sumInl : L →ᴸ L').onFormula φ).Realize
-          (Sum.elim (e ∘ a) (fun _ : Fin 1 => (x : N))) := by
-      have harg : (⇑(P.subtype : ↥P ↪ₑ[L'] N)) ∘ Sum.elim (eP ∘ a) (fun _ : Fin 1 => x) =
-          Sum.elim (e ∘ a) (fun _ : Fin 1 => (x : N)) := by
-        funext i
-        rcases i with i | j <;> rfl
-      rw [harg]
-    have h4 : ((LHom.sumInl : L →ᴸ L').onFormula φ).Realize
-          (Sum.elim (e ∘ a) (fun _ : Fin 1 => (x : N))) ↔
-        (x : N) ∈ φ.realizationSet₁ (e ∘ a) := by
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula φ
-    exact h1.trans (h2.trans (h3.trans h4))
+    simpa only [LHom.realizationSet₁_onFormula, hec, ElementarySubstructure.coe_subtype] using
+      ElementaryEmbedding.mem_realizationSet₁_iff (L := L') (P.subtype : ↥P ↪ₑ[L'] N)
+        ((LHom.sumInl : L →ᴸ L').onFormula φ) (eP ∘ a) x
   have hsub : ψ.realizationSet₁ c ⊆ φ.realizationSet₁ (eP ∘ a) := by
     intro x hx
     rw [mem_ψ x] at hx
     rw [mem_φ x]
     exact hSD hx
   have hSPinf : (ψ.realizationSet₁ c).Infinite := by
-    have hψ' : ((LHom.sumInl : L →ᴸ L').onFormula ψ).realizationSet₁ c =
-        ψ.realizationSet₁ c := by
-      ext y
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula (M := ↥P) ψ
-    rw [← hψ']
-    rw [← ElementaryEmbedding.infinite_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L'] N)
-      ((LHom.sumInl : L →ᴸ L').onFormula ψ) c]
-    have hcomp : (⇑(P.subtype : ↥P ↪ₑ[L'] N)) ∘ c = b := by
-      funext i
-      rfl
-    rw [hcomp]
-    have hset : ((LHom.sumInl : L →ᴸ L').onFormula ψ).realizationSet₁ b =
-        ψ.realizationSet₁ b := by
-      ext y
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula (M := N) ψ
-    rw [hset]
-    exact hSinf
-  have hDPinf : (φ.realizationSet₁ (eP ∘ a)).Infinite := by
-    have hφ' : ((LHom.sumInl : L →ᴸ L').onFormula φ).realizationSet₁ (eP ∘ a) =
-        φ.realizationSet₁ (eP ∘ a) := by
-      ext y
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula (M := ↥P) φ
-    rw [← hφ']
-    rw [← ElementaryEmbedding.infinite_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L'] N)
-      ((LHom.sumInl : L →ᴸ L').onFormula φ) (eP ∘ a)]
-    have hcomp : (⇑(P.subtype : ↥P ↪ₑ[L'] N)) ∘ (eP ∘ a) = e ∘ a := rfl
-    rw [hcomp]
-    have hset : ((LHom.sumInl : L →ᴸ L').onFormula φ).realizationSet₁ (e ∘ a) =
-        φ.realizationSet₁ (e ∘ a) := by
-      ext y
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula (M := N) φ
-    rw [hset]
-    exact (Formula.infinite_realizationSet_fin_one_iff φ (e ∘ a)).mp hXd
-  let g₁ : β ⊕ Fin 1 → (β ⊕ Fin n) ⊕ Fin 1 := Sum.map Sum.inl id
-  let g₂ : Fin n ⊕ Fin 1 → (β ⊕ Fin n) ⊕ Fin 1 := Sum.map Sum.inr id
-  let θ : L.Formula ((β ⊕ Fin n) ⊕ Fin 1) := (Formula.relabel g₁ φ) ⊓ (Formula.relabel g₂ ψ).not
-  have hθdef : θ = (Formula.relabel g₁ φ) ⊓ (Formula.relabel g₂ ψ).not := rfl
-  have hθN : θ.realizationSet₁ (Sum.elim (e ∘ a) b) =
-      φ.realizationSet₁ (e ∘ a) \ ψ.realizationSet₁ b := by
-    ext y
-    simp only [hθdef, Formula.mem_realizationSet₁, Formula.realize_inf, Formula.realize_not,
-      Formula.realize_relabel, Set.mem_sdiff]
-    have h1 : (Sum.elim (Sum.elim (e ∘ a) b) (fun _ : Fin 1 => y)) ∘ g₁ =
-        Sum.elim (e ∘ a) (fun _ : Fin 1 => y) := by
-      funext i
-      rcases i with i | j <;> rfl
-    have h2 : (Sum.elim (Sum.elim (e ∘ a) b) (fun _ : Fin 1 => y)) ∘ g₂ =
-        Sum.elim b (fun _ : Fin 1 => y) := by
-      funext i
-      rcases i with i | j <;> rfl
-    rw [h1, h2]
-  have hθP : θ.realizationSet₁ (Sum.elim (eP ∘ a) c) =
-      φ.realizationSet₁ (eP ∘ a) \ ψ.realizationSet₁ c := by
-    ext y
-    simp only [hθdef, Formula.mem_realizationSet₁, Formula.realize_inf, Formula.realize_not,
-      Formula.realize_relabel, Set.mem_sdiff]
-    have h1 : (Sum.elim (Sum.elim (eP ∘ a) c) (fun _ : Fin 1 => y)) ∘ g₁ =
-        Sum.elim (eP ∘ a) (fun _ : Fin 1 => y) := by
-      funext i
-      rcases i with i | j <;> rfl
-    have h2 : (Sum.elim (Sum.elim (eP ∘ a) c) (fun _ : Fin 1 => y)) ∘ g₂ =
-        Sum.elim c (fun _ : Fin 1 => y) := by
-      funext i
-      rcases i with i | j <;> rfl
-    rw [h1, h2]
+    have h' := (ElementaryEmbedding.infinite_realizationSet₁_iff (L := L')
+      (P.subtype : ↥P ↪ₑ[L'] N) ((LHom.sumInl : L →ᴸ L').onFormula ψ) c).mp (by
+        simpa only [LHom.realizationSet₁_onFormula, hc, ElementarySubstructure.coe_subtype]
+          using hSinf)
+    simpa only [LHom.realizationSet₁_onFormula] using h'
+  -- The difference of the two pieces is again a unary realization set, so its infinitude
+  -- transports along the hull as well.
+  let θ : L.Formula ((β ⊕ Fin n) ⊕ Fin 1) :=
+    (Formula.relabel (Sum.map Sum.inl id) φ) ⊓ (Formula.relabel (Sum.map Sum.inr id) ψ).not
+  have hθdef : θ = (Formula.relabel (Sum.map Sum.inl id) φ) ⊓
+      (Formula.relabel (Sum.map Sum.inr id) ψ).not := rfl
   have hDPSinf : (φ.realizationSet₁ (eP ∘ a) \ ψ.realizationSet₁ c).Infinite := by
-    rw [← hθP]
-    have hθ' : ((LHom.sumInl : L →ᴸ L').onFormula θ).realizationSet₁ (Sum.elim (eP ∘ a) c) =
-        θ.realizationSet₁ (Sum.elim (eP ∘ a) c) := by
-      ext y
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula (M := ↥P) θ
-    rw [← hθ']
-    rw [← ElementaryEmbedding.infinite_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L'] N)
-      ((LHom.sumInl : L →ᴸ L').onFormula θ) (Sum.elim (eP ∘ a) c)]
-    have hcomp : (⇑(P.subtype : ↥P ↪ₑ[L'] N)) ∘ Sum.elim (eP ∘ a) c =
-        Sum.elim (e ∘ a) b := by
-      funext i
-      rcases i with i | j <;> rfl
-    rw [hcomp]
-    have hset : ((LHom.sumInl : L →ᴸ L').onFormula θ).realizationSet₁ (Sum.elim (e ∘ a) b) =
-        θ.realizationSet₁ (Sum.elim (e ∘ a) b) := by
-      ext y
-      simp only [Formula.mem_realizationSet₁]
-      exact (LHom.sumInl : L →ᴸ L').realize_onFormula θ
-    rw [hset, hθN]
-    exact hDSinf
+    have hN : (((LHom.sumInl : L →ᴸ L').onFormula θ).realizationSet₁
+        (Sum.elim (e ∘ a) b)).Infinite := by
+      simpa only [LHom.realizationSet₁_onFormula, hθdef, Formula.realizationSet₁_sdiff]
+        using hDSinf
+    have hP := (ElementaryEmbedding.infinite_realizationSet₁_iff (L := L')
+      (P.subtype : ↥P ↪ₑ[L'] N) ((LHom.sumInl : L →ᴸ L').onFormula θ)
+      (Sum.elim (eP ∘ a) c)).mp (by
+        simpa only [hsc, ElementarySubstructure.coe_subtype] using hN)
+    simpa only [LHom.realizationSet₁_onFormula, hθdef, Formula.realizationSet₁_sdiff,
+      ElementarySubstructure.coe_subtype] using hP
   have hnotmin : ¬ L.IsMinimal (φ.realizationSet₁ (eP ∘ a)) := by
     intro hmin
     rcases hmin.finite_or_sdiff_finite (Formula.realizationSet₁_definable ψ c) hsub with
       hfin | hfin
     · exact hSPinf.not_finite hfin
     · exact hDPSinf.not_finite hfin
+  -- Transport the hull into the canonical universe and apply strong minimality there.
   let P' : Type (max u v w) := Shrink ↥P
   let σ : ↥P ≃ P' := equivShrink ↥P
-  letI : L.Structure P' := Equiv.inducedStructure σ
+  let : L.Structure P' := Equiv.inducedStructure σ
   have hσe : ↥P ≃[L] P' := Equiv.inducedStructureEquiv σ
-  have hstrong := h P' (hσe.toElementaryEmbedding.comp eP)
   have himg : L.IsMinimal ((hσe : ↥P → P') '' φ.realizationSet₁ (eP ∘ a)) := by
     rw [Equiv.image_realizationSet₁ hσe φ (eP ∘ a)]
-    exact hstrong
+    exact h P' (hσe.toElementaryEmbedding.comp eP)
   exact hnotmin (isMinimal_of_image_equiv hσe himg)
 
 end Formula

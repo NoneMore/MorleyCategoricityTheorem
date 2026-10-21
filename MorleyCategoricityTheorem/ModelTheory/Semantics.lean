@@ -579,6 +579,25 @@ theorem realize_onSentence_equivSentence {A : Set M} {B : Set N} (g : A → B)
   rw [LHom.realize_onSentence, Formula.realize_equivSentence]
   rfl
 
+section ReductRealizationSet
+
+variable {L' : Language.{u', v'}} {M : Type w} [L.Structure M] [L'.Structure M]
+variable {α : Type*}
+
+/-- Expanding the language and then reducing back does not change a unary realization set: the
+transported formula realizes exactly the tuples realizing the original one.
+
+This is the realization-set form of `LHom.realize_onFormula`, used to compare an `L`-formula with
+its image in an expansion of `L`. -/
+theorem realizationSet₁_onFormula (ϕ : L →ᴸ L') [ϕ.IsExpansionOn M]
+    (φ : L.Formula (α ⊕ Fin 1)) (b : α → M) :
+    (ϕ.onFormula φ).realizationSet₁ b = φ.realizationSet₁ b := by
+  ext x
+  simp only [Formula.mem_realizationSet₁]
+  exact ϕ.realize_onFormula φ
+
+end ReductRealizationSet
+
 end LHom
 
 end Language

@@ -33,6 +33,7 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
   simultaneously.
 - `ElementaryEmbedding.infinite_realizationSet₁_iff`: the unary specialization of the previous
   statement.
+- `ElementaryEmbedding.mem_realizationSet₁_iff`: the elementwise form of unary formula transport.
 - `Equiv.image_realizationSet₁`: a first-order equivalence transports unary realization sets.
 
 ## Implementation order
@@ -138,6 +139,18 @@ theorem infinite_realizationSet₁_iff (e : M ↪ₑ[L] N) (φ : L.Formula (β �
     ← Formula.infinite_realizationSet_fin_one_iff φ b]
   exact infinite_realizations_iff e φ b
 
+/-- An elementary embedding preserves unary realization: an element realizes a formula with
+transported parameters exactly when its image realizes the transported formula.
+
+This is the elementwise form of `Equiv.image_realizationSet₁` and the reason `realizationSet₁` can be
+compared across an elementary embedding at all. -/
+theorem mem_realizationSet₁_iff (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) (x : M) :
+    x ∈ φ.realizationSet₁ b ↔ e x ∈ φ.realizationSet₁ (e ∘ b) := by
+  simp only [Formula.mem_realizationSet₁]
+  rw [show Sum.elim (e ∘ b) (fun _ : Fin 1 => e x) =
+      (e : M → N) ∘ Sum.elim b (fun _ : Fin 1 => x) from (Sum.comp_elim _ _ _).symm]
+  exact (e.map_formula φ (Sum.elim b (fun _ : Fin 1 => x))).symm
+
 end ExplicitParameters
 
 
@@ -171,7 +184,7 @@ theorem image_realizationSet₁ (f : M ≃[L] N) (φ : L.Formula (β ⊕ Fin 1))
       funext i
       rcases i with i | j
       · rfl
-      · simpa using f.apply_symm_apply y
+      · simp
     refine (f.toElementaryEmbedding.map_formula φ
       (Sum.elim b (fun _ : Fin 1 => f.symm y))).mp ?_
     rw [hcomp]
