@@ -9,84 +9,30 @@ import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
-# Algebraic closure over definable sets
+# Algebraic closure
 
-An element `b` of an `L`-structure `M` is *algebraic over* a parameter set `A : Set M` when it lies
-in a finite set definable with parameters from `A`; the algebraic closure `algebraicClosure A` is
-the set of all such elements.  This is blueprint node `def:algebraic-closure`, and it is the
-semantic layer's only notion of parameter-definable finiteness.
-
-Both public objects are transparent by design.  `L.IsAlgebraicOver A b` is a plain `Prop` with body
-`∃ s, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s`, and `L.algebraicClosure A` is the plain set
-`{b | L.IsAlgebraicOver A b}`.  Callers unfold both.  The bundled `L.DefinableSet` would be the
-wrong carrier here: algebraicity is not itself a definable set, only witnessed by one.
-
-The language is an explicit argument of both objects, since `A : Set M` and `b : M` do not determine
-`L`, so callers write `L.algebraicClosure A`.  It is implicit in the lemmas about them: every lemma
-statement mentions `L.algebraicClosure`, `L.IsAlgebraicOver`, or `L.Formula`, so `L` is inferred from
-the goal and callers apply the lemmas directly instead of naming it.
-
-The element predicate is not named `IsAlgebraic`: that name already belongs to
-`FirstOrder.Language.IsAlgebraic`, which says that the language has no relation symbols.
+`L.IsAlgebraicOver A b` means that `b` belongs to a finite `A`-definable set.
+`L.algebraicClosure A` is the set of such elements (blueprint
+`def:algebraic-closure`).
 
 ## Main results
 
-- `FirstOrder.Language.IsAlgebraicOver` and `FirstOrder.Language.algebraicClosure`: the notion of
-  algebraicity and the closure it generates.
-- `FirstOrder.Language.mem_algebraicClosure_iff`: unfolding of membership.
-- `FirstOrder.Language.subset_algebraicClosure`: a parameter set is contained in its closure.
-- `FirstOrder.Language.algebraicClosure_mono`: the closure is monotone in the parameter set.
-- `FirstOrder.Language.mem_algebraicClosure_iff_exists_finset`: finite character, so only finitely
-  many parameters matter.
-- `FirstOrder.Language.isAlgebraicOver_iff_exists_realizationSet₁`: `b` is algebraic over `A`
-  exactly when some formula with parameters from `A` has a finite unary realization set containing
-  `b`; the unary form is the primary statement.
-- `FirstOrder.Language.isAlgebraicOver_iff_exists_formula`: the `Fin 1 → M` form of the same
-  characterization, for consumers that work with `Formula.realizationSet` directly.
-- `FirstOrder.Language.isAlgebraicOver_of_isAlgebraicOver_union_singleton`: adjoining a single
-  element that is already algebraic over the base does not enlarge the algebraic closure.
-- `FirstOrder.Language.isAlgebraicOver_of_finset_subset_algebraicClosure`: the same for a finite set
-  of parameters that are already algebraic.
-- `FirstOrder.Language.algebraicClosure_idem`: algebraic closure is idempotent.
-- `Set.Finite.biUnion_fibers`: the finite-family collapse consumed by the counting step of
-  idempotence.
+- `subset_algebraicClosure`, `algebraicClosure_mono`,
+  `mem_algebraicClosure_iff_exists_finset`: basic closure laws and finite character.
+- `isAlgebraicOver_iff_exists_realizationSet₁`,
+  `isAlgebraicOver_iff_exists_formula`: formula characterizations.
+- `isAlgebraicOver_of_isAlgebraicOver_union_singleton`,
+  `isAlgebraicOver_of_finset_subset_algebraicClosure`,
+  `algebraicClosure_idem`: idempotence via counting finite fibers.
 
-The closure laws that `lem:strongly-minimal-closure-laws` needs are therefore all available here:
-reflexivity (`subset_algebraicClosure`), monotonicity (`algebraicClosure_mono`), idempotence
-(`algebraicClosure_idem`), and finite character (`mem_algebraicClosure_iff_exists_finset`).
-
-## TODO
-
-- Prove the cardinality bound `|acl(A)| ≤ |A| + ℵ₀` and the strongly-minimal pregeometry.  Both are
-  separate capabilities that consume this module.
-
-## Import boundary
-
-The module imports Mathlib's definability layer, the project's low-level `ModelTheory.Definability`
-bridges, and `ModelTheory.Semantics`.  It also imports `Mathlib.Data.Set.Finite.Lattice` for
-`Set.Finite.biUnion`, which the finite-family collapse of the counting step needs.  It deliberately
-does not import `ModelTheory.DefinablyFull`, `ModelTheory.ElementaryMaps`, or the type-space modules:
-the unary definability bridge used below is `Set.definable₁_iff_exists_realizationSet₁`, not the
-`DefinablyFull` realization-set restatement.
+The cardinality bound and strongly-minimal pregeometry are deferred.
 -/
 
 universe u v w
 
 namespace Set
 
-/-- Finite-family collapse: a union over a finite index set of sets whose contributing members share
-a common extended-cardinality bound is finite.
-
-The counting constructor `Formula.iExsAtMost` supplies the bound `(F i).encard ≤ n` at every
-parameter `i` where its counting conjunct holds (see `Formula.realize_iExsAtMost`), and
-`Set.finite_of_encard_le_coe` turns that bound into finiteness, so the union over the finitely many
-contributing parameters is finite.  This is the set-theoretic half of "an algebraic family of finite
-sets has finite union", and it is what the counting step of `algebraicClosure_idem` below consumes;
-the index set is an arbitrary finite set so that the caller can restrict it to the fibers the
-counting conjunct accepts.
-
-This is pure set-cardinality scaffolding with a single consumer here; promote it to
-`Mathlib.Data.Set.Card` when a second caller appears. -/
+/-- A finite union of fibers with uniformly bounded `encard` is finite. -/
 theorem Finite.biUnion_fibers {ι α : Type*} {I : Set ι} (hI : I.Finite) {F : ι → Set α} {n : ℕ}
     (hF : ∀ i ∈ I, (F i).encard ≤ n) : (⋃ i ∈ I, F i).Finite :=
   hI.biUnion fun i hi => finite_of_encard_le_coe (hF i hi)
@@ -99,12 +45,11 @@ namespace Language
 
 variable (L : Language.{u, v}) {M : Type w} [L.Structure M]
 
-/-- `b` is algebraic over the parameter set `A` if it lies in a finite set definable with parameters
-from `A`. -/
+/-- `b` is algebraic over `A` if it belongs to a finite `A`-definable set. -/
 def IsAlgebraicOver (A : Set M) (b : M) : Prop :=
   ∃ s : Set M, s.Finite ∧ A.Definable₁ L s ∧ b ∈ s
 
-/-- The algebraic closure of a parameter set: the set of all elements algebraic over it. -/
+/-- The set of elements algebraic over `A`. -/
 def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver L A b}
 
 -- Re-declare the language implicitly for the lemmas: every statement below mentions `L` through
@@ -112,22 +57,22 @@ def algebraicClosure (A : Set M) : Set M := {b | IsAlgebraicOver L A b}
 variable {L : Language.{u, v}} {M : Type w} [L.Structure M]
 variable {A B : Set M} {b : M}
 
-/-- Unfolding of membership in the algebraic closure. -/
+/-- Membership in the algebraic closure unfolds to algebraicity. -/
 @[simp]
 theorem mem_algebraicClosure_iff : b ∈ L.algebraicClosure A ↔ L.IsAlgebraicOver A b :=
   Iff.rfl
 
-/-- Parameter sets are contained in their algebraic closure (reflexivity). -/
+/-- Every parameter is algebraic over its parameter set. -/
 theorem subset_algebraicClosure : A ⊆ L.algebraicClosure A := by
   intro a ha
   exact ⟨{a}, Set.finite_singleton a, Set.Definable.singleton_of_mem L ha, rfl⟩
 
-/-- Algebraic closure is monotone in the parameter set. -/
+/-- Algebraic closure is monotone in its parameters. -/
 theorem algebraicClosure_mono (hAB : A ⊆ B) : L.algebraicClosure A ⊆ L.algebraicClosure B := by
   rintro b ⟨s, hfin, hdef, hb⟩
   exact ⟨s, hfin, Set.Definable.mono hdef hAB, hb⟩
 
-/-- Finite character: only finitely many parameters matter. -/
+/-- Algebraicity depends on only finitely many parameters. -/
 theorem mem_algebraicClosure_iff_exists_finset :
     b ∈ L.algebraicClosure A ↔
       ∃ A₀ : Finset M, (A₀ : Set M) ⊆ A ∧ b ∈ L.algebraicClosure (A₀ : Set M) := by
@@ -138,10 +83,7 @@ theorem mem_algebraicClosure_iff_exists_finset :
   · rintro ⟨A₀, hA₀, ⟨s, hfin, hdef, hb⟩⟩
     exact ⟨s, hfin, Set.Definable.mono hdef hA₀, hb⟩
 
-/-- The unary formula-level form: `b` is algebraic over `A` iff some formula with parameters from
-`A` has a finite unary realization set containing `b`.
-
-This is the primary form; `isAlgebraicOver_iff_exists_formula` rewrites it to `Fin 1 → M` tuples. -/
+/-- Characterize algebraicity by a finite unary formula realization set. -/
 theorem isAlgebraicOver_iff_exists_realizationSet₁ :
     L.IsAlgebraicOver A b ↔
       ∃ φ : L.Formula (A ⊕ Fin 1),
@@ -154,8 +96,7 @@ theorem isAlgebraicOver_iff_exists_realizationSet₁ :
   · rintro ⟨φ, hfin, hb⟩
     exact ⟨_, hfin, Set.definable₁_iff_exists_realizationSet₁.2 ⟨φ, rfl⟩, hb⟩
 
-/-- The `Fin 1 → M` form of `isAlgebraicOver_iff_exists_realizationSet₁`, for consumers that work
-with `Formula.realizationSet` directly. -/
+/-- Characterize algebraicity using `Fin 1 → M` realization tuples. -/
 theorem isAlgebraicOver_iff_exists_formula :
     L.IsAlgebraicOver A b ↔
       ∃ φ : L.Formula (A ⊕ Fin 1),
@@ -172,28 +113,12 @@ theorem isAlgebraicOver_iff_exists_formula :
 
 /-! ### Idempotence
 
-Idempotence is the only closure law that is not immediate from the definition.  Finite character
-writes `b ∈ acl (acl A)` as `b ∈ acl (A ∪ ↑F)` for a finite `F ⊆ acl A`, so it suffices to adjoin
-one algebraic element at a time and iterate over `F`.
+Finite character reduces `b ∈ acl (acl A)` to finitely many algebraic
+parameters. To eliminate one such parameter, bound the fibers of a definable
+family by a counting formula and project their finite union.
+-/
 
-Adjoining a single `c ∈ acl A` is a counting argument.  Split the parameter
-(`exists_fiber_formula`): a set definable over `A ∪ {c}` becomes the `c`-fiber of a formula over `A`
-whose two free-variable blocks are the split-off parameter and the element.  Since the fiber through
-`c` is finite, the tuples whose fiber has at most that many elements are the only ones that can
-contribute an element of `acl A`; they form a definable set
-(`Set.definable_setOf_fiber_encard_le`), they sit over the finite `A`-definable set of possible
-values of `c`, and the union of their fibers is finite (`Set.Finite.biUnion_fibers`).  Projecting
-that union (`Set.Definable.exists_fiber`) gives the finite `A`-definable set witnessing
-`b ∈ acl A`. -/
-
-/-- Parameter splitting in the shape the counting argument needs: the `c`-fiber of a formula with
-parameters from `A`.
-
-The split-off parameter `c` occupies its own `Fin 1` block and the original element a second one, so
-that `Formula.iExsAtMost` can bound the element block and `Set.Definable.exists_fiber` can quantify
-over the parameter block.  The split is private because its conclusion is fixed to the
-`L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` coordinates of this one argument; `ModelTheory.Definability`
-deliberately exports no parameter-splitting lemma. -/
+/-- Express an `(A ∪ {c})`-definable set as a `c`-fiber over `A`. -/
 private theorem exists_fiber_formula {A : Set M} {s : Set M} {c : M}
     (h : (A ∪ {c}).Definable₁ L s) :
     ∃ φ : L.Formula (A ⊕ (Fin 1 ⊕ Fin 1)),
@@ -214,13 +139,11 @@ private theorem exists_fiber_formula {A : Set M} {s : Set M} {c : M}
   · by_cases hp : (p : M) = c <;> simp [g, hp]
   · simp [g]
 
-/-- Adjoining a single element that is already algebraic over the base does not enlarge the
-algebraic closure: `b ∈ acl (A ∪ {c})` implies `b ∈ acl A` when `c ∈ acl A`.
+/-- Adjoining an element algebraic over `A` does not enlarge its closure.
 
-This is the counting step of idempotence.  A finite set definable over `A ∪ {c}` is the `c`-fiber
-of an `A`-definable family; the tuples of that family whose fiber is bounded by the size of the
-fiber through `c` form a finite `A`-definable set, and the projection of the bounded fibers over it
-is finite, `A`-definable, and contains everything algebraic over `A ∪ {c}`. -/
+The proof bounds the relevant fibers of an `A`-definable family and
+projects their finite union.
+-/
 theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     (hc : L.IsAlgebraicOver A c) (hb : L.IsAlgebraicOver (A ∪ {c}) b) :
     L.IsAlgebraicOver A b := by
@@ -279,9 +202,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     rw [hset]
     exact hTdefin
 
-/-- Adjoining finitely many elements that are already algebraic over the base does not enlarge the
-algebraic closure: `b ∈ acl (A ∪ ↑F)` implies `b ∈ acl A` for finite `F ⊆ acl A`, hence
-`acl (A ∪ ↑F) = acl A` by monotonicity. -/
+/-- Eliminate finitely many algebraic parameters by induction. -/
 theorem isAlgebraicOver_of_finset_subset_algebraicClosure {b : M} :
     ∀ F : Finset M, (F : Set M) ⊆ L.algebraicClosure A →
       L.IsAlgebraicOver (A ∪ (F : Set M)) b → L.IsAlgebraicOver A b := by
@@ -307,10 +228,7 @@ theorem isAlgebraicOver_of_finset_subset_algebraicClosure {b : M} :
     exact ih hF' (isAlgebraicOver_of_isAlgebraicOver_union_singleton
       (algebraicClosure_mono Set.subset_union_left hc) hb)
 
-/-- Algebraic closure is idempotent: closing a parameter set twice gives the same set.
-
-This is the closure law that `lem:strongly-minimal-closure-laws` needs before exchange, so it is
-proved here rather than deferred to the pregeometry layer. -/
+/-- Algebraic closure is idempotent. -/
 theorem algebraicClosure_idem (A : Set M) :
     L.algebraicClosure (L.algebraicClosure A) = L.algebraicClosure A := by
   refine Set.Subset.antisymm ?_ (algebraicClosure_mono subset_algebraicClosure)

@@ -20,10 +20,7 @@ unary set is either finite or of full cardinality.
   language and an infinite theory, every uncountable cardinal admits a model with
   no intermediate infinite definable sets.
 
-The realization-set bridges used below, `Set.definable_iff_exists_realizationSet` and
-`Set.definable_realizationSet`, live in `ModelTheory.Definability`: they belong under this
-module's semantic layer rather than inside it, because the algebraic-closure layer needs them
-without the semantic bridges imported here.
+The realization-set bridges used below live in `ModelTheory.Definability`.
 -/
 
 universe u v w z

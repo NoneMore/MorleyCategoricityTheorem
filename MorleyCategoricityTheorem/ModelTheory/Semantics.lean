@@ -32,8 +32,7 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   `FirstOrder.Language.Formula.finOneRealizationsEquiv`: the subtype-level forms of the unary shape
   conversion, respectively with and without parameters, identifying a `Fin 1`-tuple with its only
   entry.
-- `Set.image_fin_one_eq`: the set-level half of the unary shape conversion, writing the tuples with
-  a single entry as the image of that entry; it pairs with `Formula.realizationSet_fin_one_image`.
+- `Set.image_fin_one_eq`: the set-level unary shape conversion.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast_iff_exists_injective`: normalize realization of
   `iExsAtLeast` into an injective family `Fin n → (β → M)` of elements of the realization set
   `φ.realizationSet v`.
@@ -120,11 +119,7 @@ theorem le_encard_iff_exists_injection_fin {α : Type*} (s : Set α) (n : ℕ) :
       ENat.card_coe_set_eq] using ENat.card_le_card_of_injective
         (f := fun i : Fin n ↦ ⟨f i, hf i⟩) (fun _ _ hi ↦ hfi (Subtype.ext_iff.mp hi))
 
-/-- The tuples with a single entry are the image of that entry under the canonical identification of
-`M` with `Fin 1 → M`.
-
-This is the set-level half of the unary shape conversion whose formula-level half is
-`Formula.realizationSet_fin_one_image`. -/
+/-- Identify unary tuples with the image of their single entry. -/
 theorem image_fin_one_eq {M : Type w} (s : Set M) :
     (fun x : M => fun _ : Fin 1 => x) '' s = {x : Fin 1 → M | x 0 ∈ s} := by
   ext x
