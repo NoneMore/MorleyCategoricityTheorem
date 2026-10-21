@@ -27,4 +27,8 @@ Follow `CONTRIBUTING.md` for contribution workflow and validation.
 
 - Run applicable checks from `CONTRIBUTING.md`; LSP diagnostics alone are not
   a substitute for required build checks.
+- Before claiming a requested Lean change is complete, confirm the intended
+  declarations or edits are present in the final source and covered by the
+  verification performed. A passing build of unchanged or unrelated code is not
+  evidence of completion.
 - Report what changed, which checks ran, and which checks could not run and why.
