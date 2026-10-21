@@ -76,7 +76,7 @@ is free in `FirstOrder.Language` (`IntermediateField.algebraicClosure` is a diff
   `isAlgebraicOver_iff_exists_formula` (the `Fin 1 → M` restatement).
 - Idempotence layer: `isAlgebraicOver_of_isAlgebraicOver_union_singleton` (the single-parameter
   counting step), `isAlgebraicOver_of_finset_subset_algebraicClosure` (`Finset.induction` over it),
-  and `algebraicClosure_idem`.
+  `algebraicClosure_idem`, and the absorption form `algebraicClosure_union_eq`.
 
 Low-level lemmas live where their content belongs. `ModelTheory.Definability` holds the
 realization-set bridges (`Set.definable_iff_exists_realizationSet`,
@@ -84,10 +84,11 @@ realization-set bridges (`Set.definable_iff_exists_realizationSet`,
 the counting-definability facts `Set.definable_setOf_fiber_encard_le` and
 `Set.Definable.exists_fiber`. `ModelTheory.Semantics` holds the set-level unary identity
 `Set.image_fin_one_eq` beside its formula-level counterpart
-`Formula.realizationSet_fin_one_image`, and `ModelTheory.AlgebraicClosure` holds
-`Set.Finite.biUnion_fibers` beside its only consumer. The bridges were split out of
-`ModelTheory.DefinablyFull`, which imports `ElementaryMaps`; `DefinablyFull` imports the bridge
-module, so no declaration moved out of reach.
+`Formula.realizationSet_fin_one_image`. `ModelTheory.AlgebraicClosure` keeps the finite-family
+collapse at its single use site, applying `Set.Finite.biUnion` with
+`Set.finite_of_encard_le_coe` directly rather than exporting a one-use wrapper. The bridges were
+split out of `ModelTheory.DefinablyFull`, which imports `ElementaryMaps`; `DefinablyFull` imports
+the bridge module, so no declaration moved out of reach.
 
 The unary shape is the primary statement because `Formula.realizationSet₁` and
 `Formula.realizationSet_fin_one_image` already carry the `Fin 1` bookkeeping; the `Fin 1 → M` form
@@ -114,7 +115,7 @@ contains `b`, and `ψ(M)` sits inside the union of the fibers `φ(M, ȳ)` over t
 family of finite sets has finite union", and `def:counting-formulas` already provides the
 constructors it consumes.
 
-Two pieces of infrastructure are private to the capability:
+One piece of infrastructure is private to the capability:
 
 - **Parameter splitting** (`exists_fiber_formula`): `(A ∪ {c}).Definable₁ L s` yields a formula of
   type `L.Formula (A ⊕ (Fin 1 ⊕ Fin 1))` whose `c`-fiber is `s`, which is the shape
@@ -122,10 +123,12 @@ Two pieces of infrastructure are private to the capability:
   this is a relabelling along a map that keeps the `A`-parameters in place and moves the rest into
   the tuple. It stays private: the counting step is the only consumer, and it needs the formula
   shape rather than a set-shaped splitting lemma.
-- **Finite-family collapse** (`Set.Finite.biUnion_fibers`): `hI : I.Finite` and
-  `hF : ∀ i ∈ I, (F i).encard ≤ n` give `(⋃ i ∈ I, F i).Finite`, via
-  `Set.finite_of_encard_le_coe` under `Set.Finite.biUnion`. The "contributing" formulation lets the
-  caller exclude the fibers that the counting conjunct rejects.
+
+The finite-family collapse is inlined instead of named: `hVfin.biUnion` with
+`Set.finite_of_encard_le_coe` is applied at its only use site, where the "contributing" formulation
+lets the caller exclude the fibers that the counting conjunct rejects. The unary `Fin 1`/`M` shape
+conversions go through one private `finOne_eta` helper built on `Equiv.funUnique`, so the round trip
+appears once rather than at each call site.
 
 Two design points: the step is single-parameter and iteration is `Finset.induction`, which keeps the
 argument in `Fin 1` coordinates and avoids conjoining one formula per parameter; and the bound is
@@ -193,7 +196,8 @@ before using `Matroid.closure` for model-theoretic closure.
 
 The pregeometry plan defines `cl_A X = D ∩ acl (A ∪ X)` and should cite the `acl`-level laws rather
 than reprove them: reflexive `subset_algebraicClosure`, monotone `algebraicClosure_mono`, idempotent
-`algebraicClosure_idem`, finite character `mem_algebraicClosure_iff_exists_finset`. Note that `cl_A`
+`algebraicClosure_idem`, finite character `mem_algebraicClosure_iff_exists_finset`, and absorption
+`algebraicClosure_union_eq` (`B ⊆ acl A → acl (A ∪ B) = acl A`). Note that `cl_A`
 is idempotent only for `X ⊆ D`: without that restriction the inclusion
 `cl_A X ⊆ cl_A (cl_A X)` can fail, because an element of `acl (A ∪ X) ∩ D` may need parameters
 outside `D`. No `cl_A`-level restatement belongs to this capability.
@@ -205,8 +209,8 @@ of formulas in that capability rather than weakening this definition.
 Matroid packaging: after exchange, package `cl_A` with `IndepMatroid.ofFinitaryCardAugment` (which
 also supplies `Finitary`), prove the closure identification, and define
 `dim_A Y := (relMatroid A D).cRk Y` with its `InvariantCardinalRank` instance; the finite Steinitz
-augmentation is the one proof obligation. The finite-family collapse is an upstream candidate for
-`Mathlib.Data.Set.Card` once a second caller appears; parameter splitting stays private.
+augmentation is the one proof obligation. Parameter splitting and the unary shape helper stay
+private; promoting either needs a second caller.
 
 Wire the `\lean{}` label of `def:algebraic-closure` to the names above in an authorized blueprint
 change; renaming later would orphan the reference.

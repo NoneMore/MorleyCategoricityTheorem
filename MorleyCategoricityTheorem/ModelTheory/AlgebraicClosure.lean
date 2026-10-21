@@ -24,20 +24,12 @@ import MorleyCategoricityTheorem.ModelTheory.Semantics
 - `isAlgebraicOver_of_isAlgebraicOver_union_singleton`,
   `isAlgebraicOver_of_finset_subset_algebraicClosure`,
   `algebraicClosure_idem`: idempotence via counting finite fibers.
+- `algebraicClosure_union_eq`: absorption of an already-algebraic parameter set.
 
 The cardinality bound and strongly-minimal pregeometry are deferred.
 -/
 
 universe u v w
-
-namespace Set
-
-/-- A finite union of fibers with uniformly bounded `encard` is finite. -/
-theorem Finite.biUnion_fibers {ι α : Type*} {I : Set ι} (hI : I.Finite) {F : ι → Set α} {n : ℕ}
-    (hF : ∀ i ∈ I, (F i).encard ≤ n) : (⋃ i ∈ I, F i).Finite :=
-  hI.biUnion fun i hi => finite_of_encard_le_coe (hF i hi)
-
-end Set
 
 namespace FirstOrder
 
@@ -118,6 +110,10 @@ parameters. To eliminate one such parameter, bound the fibers of a definable
 family by a counting formula and project their finite union.
 -/
 
+/-- A `Fin 1`-tuple is determined by its only entry. -/
+private theorem finOne_eta (w : Fin 1 → M) : (fun _ : Fin 1 => w 0) = w :=
+  (Equiv.funUnique (Fin 1) M).symm_apply_apply w
+
 /-- Express an `(A ∪ {c})`-definable set as a `c`-fiber over `A`. -/
 private theorem exists_fiber_formula {A : Set M} {s : Set M} {c : M}
     (h : (A ∪ {c}).Definable₁ L s) :
@@ -157,15 +153,18 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
     fun v => {w | φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hFibdef
   -- the tuples whose fiber is small: they sit over the finite set `S`, hence are finite
   set V : Set (Fin 1 → M) := {v | v 0 ∈ S} ∩ {v | (Fib v).encard ≤ m} with hVdef
-  have hFibc : Fib (fun _ : Fin 1 => c) = {w : Fin 1 → M | w 0 ∈ s} := by
+  have hFibc : Fib (fun _ : Fin 1 => c) = (fun x : M => fun _ : Fin 1 => x) '' s := by
     ext w
-    have hw : w = fun _ : Fin 1 => w 0 := funext fun i => by rw [Fin.eq_zero i]
-    simp only [hFibdef, Set.mem_ofPred_eq]
-    rw [hw]
-    exact hφ (w 0)
+    rw [hFibdef, Set.mem_ofPred_eq, Set.mem_image]
+    constructor
+    · intro h
+      rw [← finOne_eta w] at h
+      exact ⟨w 0, (hφ (w 0)).1 h, finOne_eta w⟩
+    · rintro ⟨x, hx, rfl⟩
+      exact (hφ x).2 hx
   have hFibc_encard : (Fib (fun _ : Fin 1 => c)).encard = (m : ℕ∞) := by
     have hinj : Set.InjOn (fun x : M => fun _ : Fin 1 => x) s := fun _ _ _ _ h => congrFun h 0
-    rw [hFibc, ← Set.image_fin_one_eq, Set.InjOn.encard_image hinj, hm]
+    rw [hFibc, Set.InjOn.encard_image hinj, hm]
   have hVbound : ∀ v ∈ V, (Fib v).encard ≤ (m : ℕ∞) := by
     intro v hv
     rw [hVdef] at hv
@@ -182,9 +181,9 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
   -- the elements that are algebraic over `A` through this family, in tuple coordinates
   set T : Set (Fin 1 → M) :=
     {w | ∃ v : Fin 1 → M, v ∈ V ∧
-      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))} with hTdef
+      φ.Realize (Sum.elim (Subtype.val : A → M) (Sum.elim v w))}
   have hTfin : T.Finite := by
-    refine (Set.Finite.biUnion_fibers hVfin hVbound).subset ?_
+    refine (hVfin.biUnion fun v hv => Set.finite_of_encard_le_coe (hVbound v hv)).subset ?_
     rintro w ⟨v, hv, hw⟩
     exact Set.mem_iUnion₂.mpr ⟨v, hv, hw⟩
   have hTdefin : A.Definable L T := hVdefin.exists_fiber
@@ -197,8 +196,7 @@ theorem isAlgebraicOver_of_isAlgebraicOver_union_singleton {A : Set M} {c b : M}
   · show A.Definable L {w : Fin 1 → M | w 0 ∈ U}
     have hset : {w : Fin 1 → M | w 0 ∈ U} = T := by
       ext w
-      have hw : (fun _ : Fin 1 => w 0) = w := funext fun i => by rw [Fin.eq_zero i]
-      simp only [Set.mem_ofPred_eq, hUdef, hw]
+      simp only [Set.mem_ofPred_eq, hUdef, finOne_eta w]
     rw [hset]
     exact hTdefin
 
@@ -238,6 +236,15 @@ theorem algebraicClosure_idem (A : Set M) :
   obtain ⟨F, hF, hbF⟩ := hb
   exact isAlgebraicOver_of_finset_subset_algebraicClosure F hF
     (algebraicClosure_mono Set.subset_union_right hbF)
+
+/-- Absorbing a set of already-algebraic parameters does not enlarge the closure. -/
+theorem algebraicClosure_union_eq (hB : B ⊆ L.algebraicClosure A) :
+    L.algebraicClosure (A ∪ B) = L.algebraicClosure A := by
+  refine Set.Subset.antisymm ?_ (algebraicClosure_mono Set.subset_union_left)
+  intro b hb
+  have h : A ∪ B ⊆ L.algebraicClosure A := Set.union_subset subset_algebraicClosure hB
+  have hb' : b ∈ L.algebraicClosure (L.algebraicClosure A) := algebraicClosure_mono h hb
+  rwa [algebraicClosure_idem] at hb'
 
 end Language
 
