@@ -10,6 +10,11 @@ Follow `CONTRIBUTING.md` for contribution workflow and validation.
 - Declare variables explicitly (`autoImplicit` is disabled).
 - Follow nearby Mathlib naming and namespaces; keep imports minimal and acyclic.
 - Document public definitions and non-obvious results by mathematical purpose.
+  Prefer short declaration docstrings (usually one sentence, 1–3 lines);
+  explain subtle hypotheses or proof ideas only when they help readers.
+  Do not restate the theorem signature or narrate routine proof steps.
+- Keep module docstrings focused on scope and key results. Do not repeat
+  detailed design rationale already recorded in `docs/plan/`.
 - Prefer `lean-lsp-mcp` over edit-build cycles for proof exploration.
 
 ## Project Boundaries
@@ -22,6 +27,12 @@ Follow `CONTRIBUTING.md` for contribution workflow and validation.
   `git restore`, `git reset --hard`, `git stash`, or `git checkout --`.
 - Do not commit, push, open PRs, or rewrite history unless requested. Stage only
   the intended files.
+
+## Pull Requests
+
+- Keep PR descriptions brief: what changed and why, validation, and only
+  essential caveats. Link to plans or issues instead of copying design notes,
+  exhaustive declaration lists, or proof walkthroughs.
 
 ## Completion
 

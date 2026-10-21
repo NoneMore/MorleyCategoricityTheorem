@@ -1,11 +1,14 @@
+<!-- Be concise: summarize the change, not every file or declaration.
+Link plans or issues for detailed design rationale. -->
+
 ## Summary
 
-<!-- What changed, and why? -->
+<!-- What changed and why? Usually 1–3 bullets. -->
 
 ## Validation
 
-<!-- Commands or CI checks run; explain any relevant checks not run. -->
+<!-- Checks run; mention any relevant checks skipped. -->
 
 ## Notes (if applicable)
 
-<!-- Known limitations, intentional sorry, blueprint changes, linked issues. -->
+<!-- Only essential limitations or blueprint changes. Remove if unused. -->
