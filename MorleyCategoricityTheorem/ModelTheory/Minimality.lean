@@ -44,11 +44,20 @@ determines it.
   whole model is a realization set with a finite parameter tuple.
 - `FirstOrder.Language.Formula.realizationSet₁_sdiff`: the difference of two unary realization sets
   is again a unary realization set, on the combined parameter type.
+- `FirstOrder.Language.Formula.realizationSet₁_congr`: equal unary realization sets remain equal in
+  every elementary target, even when the two presentations use different parameter types.
+- `FirstOrder.Language.Formula.isMinimal_congr` and
+  `FirstOrder.Language.Formula.isStronglyMinimal_congr`: minimality and strong minimality depend only
+  on the unary set defined, not on the defining presentation.
 - `FirstOrder.Language.Formula.IsStronglyMinimal`: the canonical-target strong minimality predicate.
 - `FirstOrder.Language.Formula.IsStronglyMinimal.realizationSet₁_infinite`: a strongly minimal formula
   has an infinite source realization set.
 - `FirstOrder.Language.Formula.IsStronglyMinimal.isMinimal`: strong minimality implies minimality
   after an elementary embedding into an arbitrary target universe.
+- `FirstOrder.Language.Formula.IsStronglyMinimal.isMinimal_source`: strong minimality implies
+  minimality in the source model.
+- `FirstOrder.Language.Formula.IsStronglyMinimal.comp`: strong minimality is preserved along
+  elementary embeddings.
 -/
 
 universe u v w w' p
@@ -308,6 +317,39 @@ theorem realizationSet₁_sdiff {M : Type w} [L.Structure M] {γ₁ γ₂ : Type
     rcases i with i | j <;> rfl
   rw [h1, h2]
 
+/-- Equality of the unary sets defined by two formula presentations is preserved by every elementary
+embedding, even when the two presentations use different parameter types.
+
+The proof combines the two parameter types, universally closes the equivalence of the defining
+formulas, and transfers that sentence along the elementary embedding. -/
+theorem realizationSet₁_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) {N : Type w'} [L.Structure N]
+    (e : M ↪ₑ[L] N) : φ.realizationSet₁ (e ∘ a) = ψ.realizationSet₁ (e ∘ c) := by
+  have hfin : φ.realizationSet a = ψ.realizationSet c := by
+    rw [Formula.realizationSet_fin_one_image, Formula.realizationSet_fin_one_image, h]
+  let θ : L.Formula ((β ⊕ γ) ⊕ Fin 1) :=
+    (φ.relabel (Sum.map Sum.inl id)).iff (ψ.relabel (Sum.map Sum.inr id))
+  have hM : (θ.iAlls (Fin 1)).Realize (Sum.elim a c) := by
+    rw [Formula.realize_iAlls]
+    intro x
+    simp only [θ, Formula.realize_iff, Formula.realize_relabel, Sum.elim_comp_map,
+      Sum.elim_comp_inl, Sum.elim_comp_inr, Function.comp_id]
+    exact Set.ext_iff.mp hfin x
+  have hN : (θ.iAlls (Fin 1)).Realize (Sum.elim (e ∘ a) (e ∘ c)) := by
+    have h' : (θ.iAlls (Fin 1)).Realize ((e : M → N) ∘ Sum.elim a c) :=
+      (e.map_formula (θ.iAlls (Fin 1)) (Sum.elim a c)).mpr hM
+    rwa [Sum.comp_elim] at h'
+  ext y
+  have hy := (Formula.realize_iAlls.mp hN) (fun _ : Fin 1 => y)
+  simp only [θ, Formula.realize_iff, Formula.realize_relabel, Sum.elim_comp_map,
+    Sum.elim_comp_inl, Sum.elim_comp_inr, Function.comp_id] at hy
+  exact hy
+
+/-- Minimality depends only on the unary set, not on the chosen presentation. -/
+theorem isMinimal_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) : φ.IsMinimal a ↔ ψ.IsMinimal c := by
+  simp only [Formula.isMinimal_iff, h]
+
 /-- **Arbitrary-target interface of strong minimality.**  A formula that is strongly minimal in the
 canonical universe is minimal after any elementary embedding `e : M ↪ₑ[L] N`, whatever the universe
 of `N`.
@@ -415,6 +457,43 @@ theorem IsStronglyMinimal.isMinimal {N : Type w'} [L.Structure N] (e : M ↪ₑ[
     rw [Equiv.image_realizationSet₁ hσe φ (eP ∘ a)]
     exact h P' (hσe.toElementaryEmbedding.comp eP)
   exact hnotmin (isMinimal_of_image_equiv hσe himg)
+
+/-- Strong minimality implies minimality in the source model, by applying the arbitrary-target
+interface to the identity embedding. -/
+theorem IsStronglyMinimal.isMinimal_source (h : φ.IsStronglyMinimal a) : φ.IsMinimal a :=
+  h.isMinimal (N := M) (ElementaryEmbedding.refl L M)
+
+/-- Strong minimality is preserved along elementary embeddings: interpreting a strongly minimal
+formula in a target universe with the transported parameters is again strongly minimal. -/
+theorem IsStronglyMinimal.comp {N : Type w'} [L.Structure N] (e : M ↪ₑ[L] N)
+    (h : φ.IsStronglyMinimal a) : φ.IsStronglyMinimal (e ∘ a) := by
+  intro N' _ e'
+  exact h.isMinimal (e'.comp e)
+
+/-- Strong minimality depends only on the unary set, not on the chosen presentation, even when the
+two presentations use different parameter types. -/
+theorem isStronglyMinimal_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) :
+    φ.IsStronglyMinimal a ↔ ψ.IsStronglyMinimal c := by
+  constructor
+  · intro hφ N _ e
+    rw [Formula.isMinimal_iff, ← realizationSet₁_congr h e]
+    exact hφ N e
+  · intro hψ N _ e
+    rw [Formula.isMinimal_iff, realizationSet₁_congr h e]
+    exact hψ N e
+
+/-- A representative application: two source presentations of the same strongly minimal set, with
+different parameter types, remain strongly minimal in a target universe `N` of an unrelated universe
+level; the defining dichotomy then holds for a definable subset presented with target parameters
+`b : γ → N`, which need not lie in the image of `e`. -/
+example {N : Type w'} [L.Structure N] (e : M ↪ₑ[L] N) (h : φ.IsStronglyMinimal a)
+    {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (hpres : φ.realizationSet₁ a = ψ.realizationSet₁ c) (b : γ → N)
+    (hsub : ψ.realizationSet₁ b ⊆ ψ.realizationSet₁ (e ∘ c)) :
+    (ψ.realizationSet₁ b).Finite ∨ (ψ.realizationSet₁ (e ∘ c) \ ψ.realizationSet₁ b).Finite :=
+  (((isStronglyMinimal_congr hpres).mp h).comp e).isMinimal_source.finite_or_sdiff_finite
+    (Formula.realizationSet₁_definable ψ b) hsub
 
 end Formula
 
