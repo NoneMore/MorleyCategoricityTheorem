@@ -1,5 +1,6 @@
 import Mathlib.ModelTheory.Definability
 import Mathlib.ModelTheory.Satisfiability
+import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.LanguageMap
 import MorleyCategoricityTheorem.ModelTheory.ElementaryChain
 import MorleyCategoricityTheorem.ModelTheory.ElementaryMaps
@@ -12,46 +13,17 @@ unary set is either finite or of full cardinality.
 
 ## Main results
 
-- `Set.definable_iff_exists_realizationSet`: reformulation of
-  `Set.definable_iff_exists_formula_sum` in which the witnessing formula is exactly the formula whose
-  realization set is the definable set.
-- `Set.definable_realizationSet`: the realization set of a formula with parameters indexed by `A` is
-  definable over `A`.
 - `Theory.exists_elementaryExtension_card_eq_with_full_unary_realizations`:
   one-step elementary extension of cardinality `κ` that fully realizes every
   infinite unary formula with parameters from the base model.
 - `Theory.exists_large_model_no_small_infinite_definable_sets`: for a countable
   language and an infinite theory, every uncountable cardinal admits a model with
   no intermediate infinite definable sets.
+
+The realization-set bridges used below live in `ModelTheory.Definability`.
 -/
 
 universe u v w z
-
-namespace Set
-
-open FirstOrder FirstOrder.Language
-
-variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {A : Set M} {α β : Type*}
-
-/-- A set is definable with parameters in `A` exactly when it is the realization set of a formula
-whose parameter variables are indexed by `A`.
-
-This restates `Set.definable_iff_exists_formula_sum` through `Formula.realizationSet`, so that the
-witnessing formula of a definable set is the formula whose realization set it is. -/
-theorem definable_iff_exists_realizationSet {s : Set (α → M)} :
-    A.Definable L s ↔ ∃ φ : L.Formula (A ⊕ α), s = φ.realizationSet (Subtype.val : A → M) := by
-  rw [definable_iff_exists_formula_sum]
-  rfl
-
-/-- The realization set of a formula with parameters drawn from `A` is definable over `A`.
-
-The formula itself is the witness; use this bridge to pass from the unbundled realization-set
-representation to `L.DefinableSet` when the Boolean-algebra structure is needed. -/
-theorem definable_realizationSet (φ : L.Formula (A ⊕ β)) :
-    A.Definable L (φ.realizationSet (Subtype.val : A → M)) :=
-  definable_iff_exists_realizationSet.mpr ⟨φ, rfl⟩
-
-end Set
 
 namespace FirstOrder
 
