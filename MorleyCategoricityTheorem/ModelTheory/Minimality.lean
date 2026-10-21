@@ -69,18 +69,10 @@ theorem isMinimal_iff (D : Set M) :
   constructor
   · rintro ⟨hDinf, hDdef, hDichotomy⟩
     refine ⟨hDinf, hDdef, fun S hS => ?_⟩
-    have hDS : (Set.univ : Set M).Definable₁ L (D ∩ S) := by
-      have hDdef' : (Set.univ : Set M).Definable L {x : Fin 1 → M | x 0 ∈ D} := hDdef
-      have hS' : (Set.univ : Set M).Definable L {x : Fin 1 → M | x 0 ∈ S} := hS
-      simpa only [Set.Definable₁, Set.mem_inter_iff, Set.ofPred_and] using hDdef'.inter hS'
-    rcases hDichotomy (D ∩ S) hDS Set.inter_subset_left with h | h
-    · exact Or.inl h
-    · exact Or.inr (by rwa [Set.inter_comm D S, Set.sdiff_inter_self_eq_sdiff] at h)
+    simpa using hDichotomy (D ∩ S) (hDdef.inter hS) Set.inter_subset_left
   · rintro ⟨hDinf, hDdef, hSplit⟩
     refine ⟨hDinf, hDdef, fun S hS hSD => ?_⟩
-    rcases hSplit S hS with h | h
-    · exact Or.inl (by rwa [Set.inter_eq_right.mpr hSD] at h)
-    · exact Or.inr h
+    simpa [Set.inter_eq_right.mpr hSD] using hSplit S hS
 
 /-- A minimal set is infinite. -/
 theorem IsMinimal.infinite (hD : L.IsMinimal D) : D.Infinite :=
@@ -134,20 +126,20 @@ theorem isMinimal_iff (φ : L.Formula (β ⊕ Fin 1)) (a : β → M) :
 /-- The realization set of a minimal formula with assigned parameters is infinite. -/
 theorem IsMinimal.realizationSet₁_infinite (h : φ.IsMinimal a) :
     (φ.realizationSet₁ a).Infinite :=
-  h.1
+  h.infinite
 
 /-- The realization set of a minimal formula with assigned parameters is definable with parameters
 from the ambient model. -/
 theorem IsMinimal.realizationSet₁_definable (h : φ.IsMinimal a) :
     (Set.univ : Set M).Definable₁ L (φ.realizationSet₁ a) :=
-  h.2.1
+  h.definable
 
 /-- Every definable subset of the realization set of a minimal formula is finite or cofinite in
 that realization set. -/
 theorem IsMinimal.finite_or_sdiff_finite (h : φ.IsMinimal a) {S : Set M}
     (hS : (Set.univ : Set M).Definable₁ L S) (hSD : S ⊆ φ.realizationSet₁ a) :
     S.Finite ∨ (φ.realizationSet₁ a \ S).Finite :=
-  h.2.2 S hS hSD
+  Language.IsMinimal.finite_or_sdiff_finite h hS hSD
 
 /-- An infinite definable subset of the realization set of a minimal formula is cofinite in it. -/
 theorem IsMinimal.sdiff_finite_of_infinite (h : φ.IsMinimal a) {S : Set M}
