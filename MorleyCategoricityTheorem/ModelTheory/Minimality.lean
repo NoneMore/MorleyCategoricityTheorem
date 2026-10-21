@@ -45,10 +45,11 @@ tested.  Minimality is therefore a property of a set in a model, not of a formul
 - `FirstOrder.Language.Formula.realizationSet₁_sdiff`: the difference of two unary realization sets
   is again a unary realization set, on the combined parameter type.
 - `FirstOrder.Language.Formula.realizationSet₁_congr`: equal unary realization sets remain equal in
-  every elementary target, even when the two presentations use different parameter types.
+  every elementary target, even when the two presentations use parameter types in different
+  universes.
 - `FirstOrder.Language.Formula.isMinimal_congr` and
   `FirstOrder.Language.Formula.isStronglyMinimal_congr`: minimality and strong minimality depend only
-  on the unary set defined, not on the defining presentation.
+  on the unary set defined, not on the defining presentation, even across parameter universes.
 - `FirstOrder.Language.Formula.IsStronglyMinimal.realizationSet₁_infinite`: a strongly minimal formula
   has an infinite source realization set.
 - `FirstOrder.Language.Formula.IsStronglyMinimal.isMinimal`: strong minimality implies minimality
@@ -59,7 +60,7 @@ tested.  Minimality is therefore a property of a set in a model, not of a formul
   elementary embeddings.
 -/
 
-universe u v w w' p
+universe u v w w' p q
 
 namespace FirstOrder
 
@@ -312,11 +313,11 @@ theorem realizationSet₁_sdiff {M : Type w} [L.Structure M] {γ₁ γ₂ : Type
   rw [h1, h2]
 
 /-- Equality of the unary sets defined by two formula presentations is preserved by every elementary
-embedding, even when the two presentations use different parameter types.
+embedding, even when the two presentations use different parameter types in different universes.
 
 Both presentations are first moved to the combined parameter type `β ⊕ γ` by tagging each parameter
 injection into the sum; `ElementaryEmbedding.realizationSet₁_congr` then transports the equality. -/
-theorem realizationSet₁_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+theorem realizationSet₁_congr {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
     (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) {N : Type w'} [L.Structure N]
     (e : M ↪ₑ[L] N) : φ.realizationSet₁ (e ∘ a) = ψ.realizationSet₁ (e ∘ c) := by
   have h' : (φ.relabel (Sum.map Sum.inl id)).realizationSet₁ (Sum.elim a c) =
@@ -326,8 +327,9 @@ theorem realizationSet₁_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c
   have h'' := ElementaryEmbedding.realizationSet₁_congr e h'
   rwa [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params] at h''
 
-/-- Minimality depends only on the unary set, not on the chosen presentation. -/
-theorem isMinimal_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+/-- Minimality depends only on the unary set, not on the chosen presentation, even when the two
+presentations use parameter types in different universes. -/
+theorem isMinimal_congr {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
     (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) : φ.IsMinimal a ↔ ψ.IsMinimal c := by
   simp only [Formula.isMinimal_iff, h]
 
@@ -452,8 +454,8 @@ theorem IsStronglyMinimal.comp {N : Type w'} [L.Structure N] (e : M ↪ₑ[L] N)
   exact h.isMinimal (e'.comp e)
 
 /-- Strong minimality depends only on the unary set, not on the chosen presentation, even when the
-two presentations use different parameter types. -/
-theorem isStronglyMinimal_congr {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+two presentations use parameter types in different universes. -/
+theorem isStronglyMinimal_congr {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
     (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) :
     φ.IsStronglyMinimal a ↔ ψ.IsStronglyMinimal c :=
   forall_congr' fun _ => forall_congr' fun _ => forall_congr' fun e =>
@@ -464,12 +466,24 @@ different parameter types, remain strongly minimal in a target universe `N` of a
 level; the defining dichotomy then holds for a definable subset presented with target parameters
 `b : γ → N`, which need not lie in the image of `e`. -/
 example {N : Type w'} [L.Structure N] (e : M ↪ₑ[L] N) (h : φ.IsStronglyMinimal a)
-    {γ : Type p} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
     (hpres : φ.realizationSet₁ a = ψ.realizationSet₁ c) (b : γ → N)
     (hsub : ψ.realizationSet₁ b ⊆ ψ.realizationSet₁ (e ∘ c)) :
     (ψ.realizationSet₁ b).Finite ∨ (ψ.realizationSet₁ (e ∘ c) \ ψ.realizationSet₁ b).Finite :=
   (((isStronglyMinimal_congr hpres).mp h).comp e).isMinimal_source.finite_or_sdiff_finite
     (Formula.realizationSet₁_definable ψ b) hsub
+
+/-- Regression test for independent parameter universes: presentation independence applies when the
+two parameter index types live at different universe levels, here the subtype presentation
+`↥A : Type w` compared with its finite-parameter normalization indexed by `Fin n : Type 0`. -/
+example (A : Set M) {φ' : L.Formula (↥A ⊕ Fin 1)} {a' : ↥A → M}
+    {n : ℕ} {ψ' : L.Formula (Fin n ⊕ Fin 1)} {c' : Fin n → M}
+    (h : φ'.realizationSet₁ a' = ψ'.realizationSet₁ c') {N : Type w'} [L.Structure N]
+    (e : M ↪ₑ[L] N) :
+    φ'.realizationSet₁ (e ∘ a') = ψ'.realizationSet₁ (e ∘ c') ∧
+      (φ'.IsMinimal a' ↔ ψ'.IsMinimal c') ∧
+      (φ'.IsStronglyMinimal a' ↔ ψ'.IsStronglyMinimal c') :=
+  ⟨realizationSet₁_congr h e, isMinimal_congr h, isStronglyMinimal_congr h⟩
 
 end Formula
 
