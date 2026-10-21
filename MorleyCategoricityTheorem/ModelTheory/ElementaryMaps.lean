@@ -31,6 +31,9 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
   natural-number cardinality of a formula fiber.
 - `ElementaryEmbedding.infinite_realizations_iff`: source and target realization sets are infinite
   simultaneously.
+- `ElementaryEmbedding.infinite_realizationSet₁_iff`: the unary specialization of the previous
+  statement.
+- `Equiv.image_realizationSet₁`: a first-order equivalence transports unary realization sets.
 
 ## Implementation order
 
@@ -127,9 +130,54 @@ theorem infinite_realizations_iff [Finite α] (e : M ↪ₑ[L] N)
   simp [Set.encard_eq_top_iff.symm.trans ENat.eq_top_iff_forall_ge,
     ← Formula.realize_iExsAtLeast]
 
+/-- A unary realization set is infinite in the target of an elementary embedding exactly when it is
+infinite in the source. -/
+theorem infinite_realizationSet₁_iff (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
+    (φ.realizationSet₁ (e ∘ b)).Infinite ↔ (φ.realizationSet₁ b).Infinite := by
+  rw [← Formula.infinite_realizationSet_fin_one_iff φ (e ∘ b),
+    ← Formula.infinite_realizationSet_fin_one_iff φ b]
+  exact infinite_realizations_iff e φ b
+
 end ExplicitParameters
 
+
 end ElementaryEmbedding
+
+namespace Equiv
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'} {β : Type x'}
+variable [L.Structure M] [L.Structure N]
+
+/-- A first-order equivalence maps unary realization sets to unary realization sets with transported
+parameters. -/
+theorem image_realizationSet₁ (f : M ≃[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
+    (f : M → N) '' φ.realizationSet₁ b = φ.realizationSet₁ (f ∘ b) := by
+  ext y
+  constructor
+  · rintro ⟨x, hx, rfl⟩
+    rw [Formula.mem_realizationSet₁] at hx ⊢
+    have hcomp : (⇑f.toElementaryEmbedding) ∘ Sum.elim b (fun _ : Fin 1 => x) =
+        Sum.elim (f ∘ b) (fun _ : Fin 1 => f x) := by
+      funext i
+      rcases i with i | j <;> rfl
+    rw [← hcomp]
+    exact (f.toElementaryEmbedding.map_formula φ (Sum.elim b (fun _ => x))).mpr hx
+  · intro hy
+    rw [Formula.mem_realizationSet₁] at hy
+    refine ⟨f.symm y, ?_, f.apply_symm_apply y⟩
+    rw [Formula.mem_realizationSet₁]
+    have hcomp : (⇑f.toElementaryEmbedding) ∘ Sum.elim b (fun _ : Fin 1 => f.symm y) =
+        Sum.elim (f ∘ b) (fun _ : Fin 1 => y) := by
+      funext i
+      rcases i with i | j
+      · rfl
+      · simpa using f.apply_symm_apply y
+    refine (f.toElementaryEmbedding.map_formula φ
+      (Sum.elim b (fun _ : Fin 1 => f.symm y))).mp ?_
+    rw [hcomp]
+    exact hy
+
+end Equiv
 
 end Language
 
