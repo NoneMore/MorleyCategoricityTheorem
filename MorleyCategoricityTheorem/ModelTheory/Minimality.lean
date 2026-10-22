@@ -42,15 +42,6 @@ tested.  Minimality is therefore a property of a set in a model, not of a formul
   an infinite definable set: not minimal exactly when such a definable split exists.
 - `FirstOrder.Language.isMinimal_of_image_equiv`: minimality is reflected along a first-order
   equivalence.
-- `FirstOrder.Language.Formula.realizationSet₁_definable`: a unary realization set is definable over
-  the whole ambient model.
-- `FirstOrder.Language.definable₁_iff_exists_fin_realizationSet₁`: a unary set definable over the
-  whole model is a realization set with a finite parameter tuple.
-- `FirstOrder.Language.Formula.realizationSet₁_sdiff`: the difference of two unary realization sets
-  is again a unary realization set, on the combined parameter type.
-- `FirstOrder.Language.Formula.realizationSet₁_congr`: equal unary realization sets remain equal in
-  every elementary target, even when the two presentations use parameter types in different
-  universes.
 - `FirstOrder.Language.Formula.exists_formula_split_of_not_isMinimal`: the formula-level split of a
   non-minimal unary formula into two unary formulas with infinite realization sets.
 - `FirstOrder.Language.Formula.isMinimal_congr` and
@@ -200,48 +191,6 @@ theorem IsMinimal.sdiff_finite_of_infinite (h : φ.IsMinimal a) {S : Set M}
 
 end Formula
 
-variable {β : Type p}
-
-/-- A unary realization set of a formula with assigned parameters is definable with parameters from
-the whole ambient model. -/
-theorem Formula.realizationSet₁_definable (φ : L.Formula (β ⊕ Fin 1)) (a : β → M) :
-    (Set.univ : Set M).Definable₁ L (φ.realizationSet₁ a) := by
-  rw [Set.definable₁_iff_exists_realizationSet₁]
-  let g : β ⊕ Fin 1 → (Set.univ : Set M) ⊕ Fin 1 :=
-    Sum.map (fun i => ⟨a i, Set.mem_univ _⟩) id
-  refine ⟨Formula.relabel g φ, ?_⟩
-  ext x
-  have h : (Sum.elim (fun y : {y : M // y ∈ (Set.univ : Set M)} => y.1)
-        (fun _ : Fin 1 => x)) ∘ g = Sum.elim a (fun _ : Fin 1 => x) := by
-    funext i
-    rcases i with i | j <;> rfl
-  simp only [Formula.mem_realizationSet₁, Formula.realize_relabel, h]
-
-/-- A unary set is definable over the whole model exactly when it is the unary realization set of a
-one-variable formula with a finite tuple of parameters. -/
-theorem definable₁_iff_exists_fin_realizationSet₁ {s : Set M} :
-    (Set.univ : Set M).Definable₁ L s ↔
-      ∃ (n : ℕ) (φ : L.Formula (Fin n ⊕ Fin 1)) (b : Fin n → M), s = φ.realizationSet₁ b := by
-  constructor
-  · intro hs
-    obtain ⟨A0, -, hA0⟩ := Set.definable_iff_finitely_definable.mp hs
-    obtain ⟨θ, hθ⟩ := hA0
-    obtain ⟨n, b, φ', hφ'⟩ := Formula.exists_fin_params θ
-    refine ⟨n, Formula.relabel (Equiv.sumComm (Fin 1) (Fin n)) φ', fun i => (b i : M), ?_⟩
-    ext x
-    simp only [Formula.mem_realizationSet₁, Formula.realize_relabel]
-    rw [show (Sum.elim (fun i => (b i : M)) (fun _ : Fin 1 => x)) ∘
-        Equiv.sumComm (Fin 1) (Fin n) = Sum.elim (fun _ : Fin 1 => x) (fun i => (b i : M)) from by
-      funext i
-      rcases i with i | j <;> rfl]
-    rw [← hφ' (fun _ : Fin 1 => x)]
-    have hx : ((fun _ : Fin 1 => x) ∈ ({y : Fin 1 → M | y 0 ∈ s} : Set (Fin 1 → M))) ↔ x ∈ s :=
-      Iff.rfl
-    rw [← hx, hθ]
-    rfl
-  · rintro ⟨n, φ, b, rfl⟩
-    exact Formula.realizationSet₁_definable φ b
-
 /-- Minimality is reflected along a first-order equivalence: if the image of `D` under `f` is
 minimal, then `D` is minimal. -/
 theorem isMinimal_of_image_equiv {L : Language.{u, v}} {M : Type w} {N : Type w'}
@@ -344,35 +293,6 @@ theorem IsStronglyMinimal.realizationSet₁_infinite (h : φ.IsStronglyMinimal a
     (infinite_realizationSet_fin_one_iff φ (e ∘ a)).mpr h1
   exact (infinite_realizationSet_fin_one_iff φ a).mp
     ((ElementaryEmbedding.infinite_realizations_iff e φ a).mp h2)
-
-/-- The set difference of two unary realization sets is the unary realization set of the conjunction
-of the first formula with the negated second, on the combined parameter type.
-
-This is a corollary of the atomic Boolean lemmas `realizationSet₁_inf` and `realizationSet₁_not`
-together with the parameter relabelling lemma `realizationSet₁_relabel_params`. -/
-theorem realizationSet₁_sdiff {M : Type w} [L.Structure M] {γ₁ γ₂ : Type*}
-    (φ : L.Formula (γ₁ ⊕ Fin 1)) (ψ : L.Formula (γ₂ ⊕ Fin 1)) (p : γ₁ → M) (q : γ₂ → M) :
-    ((Formula.relabel (Sum.map Sum.inl id) φ) ⊓
-        (Formula.relabel (Sum.map Sum.inr id) ψ).not).realizationSet₁ (Sum.elim p q) =
-      φ.realizationSet₁ p \ ψ.realizationSet₁ q := by
-  rw [Set.sdiff_eq, realizationSet₁_inf, realizationSet₁_not,
-    realizationSet₁_relabel_params, realizationSet₁_relabel_params]
-  rfl
-
-/-- Equality of the unary sets defined by two formula presentations is preserved by every elementary
-embedding, even when the two presentations use different parameter types in different universes.
-
-Both presentations are first moved to the combined parameter type `β ⊕ γ` by tagging each parameter
-injection into the sum; `ElementaryEmbedding.realizationSet₁_congr` then transports the equality. -/
-theorem realizationSet₁_congr {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
-    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) {N : Type w'} [L.Structure N]
-    (e : M ↪ₑ[L] N) : φ.realizationSet₁ (e ∘ a) = ψ.realizationSet₁ (e ∘ c) := by
-  have h' : (φ.relabel (Sum.map Sum.inl id)).realizationSet₁ (Sum.elim a c) =
-      (ψ.relabel (Sum.map Sum.inr id)).realizationSet₁ (Sum.elim a c) := by
-    rw [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params]
-    exact h
-  have h'' := ElementaryEmbedding.realizationSet₁_congr e h'
-  rwa [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params] at h''
 
 /-- Minimality depends only on the unary set, not on the chosen presentation, even when the two
 presentations use parameter types in different universes. -/

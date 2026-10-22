@@ -36,6 +36,8 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
 - `ElementaryEmbedding.mem_realizationSet₁_iff`: the elementwise form of unary formula transport.
 - `ElementaryEmbedding.realizationSet₁_congr`: an equality of unary realization sets is preserved by
   an elementary embedding, including at target elements outside the image.
+- `Formula.realizationSet₁_congr`: equal unary realization sets presented with parameter types in
+  different universes remain equal in every elementary target.
 - `Equiv.image_realizationSet₁`: a first-order equivalence transports unary realization sets.
 
 ## Implementation order
@@ -212,6 +214,28 @@ theorem image_realizationSet₁ (f : M ≃[L] N) (φ : L.Formula (β ⊕ Fin 1))
     exact hy
 
 end Equiv
+
+namespace Formula
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {β : Type*}
+variable {φ : L.Formula (β ⊕ Fin 1)} {a : β → M}
+
+/-- Equality of the unary sets defined by two formula presentations is preserved by every elementary
+embedding, even when the two presentations use different parameter types in different universes.
+
+Both presentations are first moved to the combined parameter type `β ⊕ γ` by tagging each parameter
+injection into the sum; `ElementaryEmbedding.realizationSet₁_congr` then transports the equality. -/
+theorem realizationSet₁_congr {γ : Type*} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) {N : Type w'} [L.Structure N]
+    (e : M ↪ₑ[L] N) : φ.realizationSet₁ (e ∘ a) = ψ.realizationSet₁ (e ∘ c) := by
+  have h' : (φ.relabel (Sum.map Sum.inl id)).realizationSet₁ (Sum.elim a c) =
+      (ψ.relabel (Sum.map Sum.inr id)).realizationSet₁ (Sum.elim a c) := by
+    rw [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params]
+    exact h
+  have h'' := ElementaryEmbedding.realizationSet₁_congr e h'
+  rwa [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params] at h''
+
+end Formula
 
 end Language
 

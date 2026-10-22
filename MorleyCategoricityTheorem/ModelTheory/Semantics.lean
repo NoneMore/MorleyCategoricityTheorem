@@ -33,6 +33,8 @@ free parameters are indexed by `α`, and the quantified tuple is indexed by a fi
   conversion, respectively with and without parameters, identifying a `Fin 1`-tuple with its only
   entry.
 - `Set.image_fin_one_eq`: the set-level unary shape conversion.
+- `FirstOrder.Language.Formula.realizationSet₁_sdiff`: the set difference of two unary realization
+  sets is again a unary realization set, on the combined parameter type.
 - `FirstOrder.Language.Formula.realize_iExsAtLeast_iff_exists_injective`: normalize realization of
   `iExsAtLeast` into an injective family `Fin n → (β → M)` of elements of the realization set
   `φ.realizationSet v`.
@@ -303,6 +305,20 @@ theorem realizationSet₁_not (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
     φ.not.realizationSet₁ a = (φ.realizationSet₁ a)ᶜ := by
   ext x
   simp
+
+/-- The set difference of two unary realization sets is the unary realization set of the conjunction
+of the first formula with the negated second, on the combined parameter type.
+
+This is a corollary of the atomic Boolean lemmas `realizationSet₁_inf` and `realizationSet₁_not`
+together with the parameter relabelling lemma `realizationSet₁_relabel_params`. -/
+theorem realizationSet₁_sdiff {γ₁ γ₂ : Type*}
+    (φ : L.Formula (γ₁ ⊕ Fin 1)) (ψ : L.Formula (γ₂ ⊕ Fin 1)) (p : γ₁ → M) (q : γ₂ → M) :
+    ((Formula.relabel (Sum.map Sum.inl id) φ) ⊓
+        (Formula.relabel (Sum.map Sum.inr id) ψ).not).realizationSet₁ (Sum.elim p q) =
+      φ.realizationSet₁ p \ ψ.realizationSet₁ q := by
+  rw [Set.sdiff_eq, realizationSet₁_inf, realizationSet₁_not,
+    realizationSet₁_relabel_params, realizationSet₁_relabel_params]
+  rfl
 
 end RealizationSet
 

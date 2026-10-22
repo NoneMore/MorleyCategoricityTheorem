@@ -17,6 +17,10 @@ without importing the higher model-theory layers.
 - `Set.definable_iff_exists_realizationSet`, `Set.definable_realizationSet`:
   realization-set bridges.
 - `Set.definable₁_iff_exists_realizationSet₁`: unary bridge.
+- `Formula.realizationSet₁_definable`: a unary realization set is definable over the whole ambient
+  model.
+- `definable₁_iff_exists_fin_realizationSet₁`: a unary set definable over the whole model is a
+  realization set with a finite parameter tuple.
 - `Set.definable_setOf_fiber_encard_le`, `Set.Definable.exists_fiber`:
   bounded-fiber definability and existential projection, used for
   algebraic-closure idempotence.
@@ -103,3 +107,53 @@ theorem Definable.exists_fiber {α β : Type*} [Finite α] {V : Set (α → M)}
   simp only [Set.mem_ofPred_eq, Formula.mem_realizationSet, Sum.elim_comp_inr, Sum.elim_swap]
 
 end Set
+
+namespace FirstOrder
+
+namespace Language
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {β : Type*}
+
+/-- A unary realization set of a formula with assigned parameters is definable with parameters from
+the whole ambient model. -/
+theorem Formula.realizationSet₁_definable (φ : L.Formula (β ⊕ Fin 1)) (a : β → M) :
+    (Set.univ : Set M).Definable₁ L (φ.realizationSet₁ a) := by
+  rw [Set.definable₁_iff_exists_realizationSet₁]
+  let g : β ⊕ Fin 1 → (Set.univ : Set M) ⊕ Fin 1 :=
+    Sum.map (fun i => ⟨a i, Set.mem_univ _⟩) id
+  refine ⟨Formula.relabel g φ, ?_⟩
+  ext x
+  have h : (Sum.elim (fun y : {y : M // y ∈ (Set.univ : Set M)} => y.1)
+        (fun _ : Fin 1 => x)) ∘ g = Sum.elim a (fun _ : Fin 1 => x) := by
+    funext i
+    rcases i with i | j <;> rfl
+  simp only [Formula.mem_realizationSet₁, Formula.realize_relabel, h]
+
+/-- A unary set is definable over the whole model exactly when it is the unary realization set of a
+one-variable formula with a finite tuple of parameters. -/
+theorem definable₁_iff_exists_fin_realizationSet₁ {s : Set M} :
+    (Set.univ : Set M).Definable₁ L s ↔
+      ∃ (n : ℕ) (φ : L.Formula (Fin n ⊕ Fin 1)) (b : Fin n → M), s = φ.realizationSet₁ b := by
+  constructor
+  · intro hs
+    obtain ⟨A0, -, hA0⟩ := Set.definable_iff_finitely_definable.mp hs
+    obtain ⟨θ, hθ⟩ := hA0
+    obtain ⟨n, b, φ', hφ'⟩ := Formula.exists_fin_params θ
+    refine ⟨n, Formula.relabel (Equiv.sumComm (Fin 1) (Fin n)) φ', fun i => (b i : M), ?_⟩
+    ext x
+    simp only [Formula.mem_realizationSet₁, Formula.realize_relabel]
+    rw [show (Sum.elim (fun i => (b i : M)) (fun _ : Fin 1 => x)) ∘
+        Equiv.sumComm (Fin 1) (Fin n) = Sum.elim (fun _ : Fin 1 => x) (fun i => (b i : M)) from by
+      funext i
+      rcases i with i | j <;> rfl]
+    rw [← hφ' (fun _ : Fin 1 => x)]
+    have hx : ((fun _ : Fin 1 => x) ∈ ({y : Fin 1 → M | y 0 ∈ s} : Set (Fin 1 → M))) ↔ x ∈ s :=
+      Iff.rfl
+    rw [← hx, hθ]
+    rfl
+  · rintro ⟨n, φ, b, rfl⟩
+    exact Formula.realizationSet₁_definable φ b
+
+end Language
+
+end FirstOrder
