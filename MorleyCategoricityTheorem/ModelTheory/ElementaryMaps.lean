@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
 import Mathlib.ModelTheory.ElementaryMaps
+import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
@@ -39,6 +40,8 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
 - `Formula.realizationSet₁_congr`: equal unary realization sets presented with parameter types in
   different universes remain equal in every elementary target.
 - `Equiv.image_realizationSet₁`: a first-order equivalence transports unary realization sets.
+- `Equiv.definable₁_image_iff`: a first-order equivalence transports unary definability over the
+  whole model.
 
 ## Implementation order
 
@@ -188,30 +191,31 @@ variable [L.Structure M] [L.Structure N]
 parameters. -/
 theorem image_realizationSet₁ (f : M ≃[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
     (f : M → N) '' φ.realizationSet₁ b = φ.realizationSet₁ (f ∘ b) := by
-  ext y
-  constructor
-  · rintro ⟨x, hx, rfl⟩
-    rw [Formula.mem_realizationSet₁] at hx ⊢
-    have hcomp : (⇑f.toElementaryEmbedding) ∘ Sum.elim b (fun _ : Fin 1 => x) =
-        Sum.elim (f ∘ b) (fun _ : Fin 1 => f x) := by
-      funext i
-      rcases i with i | j <;> rfl
-    rw [← hcomp]
-    exact (f.toElementaryEmbedding.map_formula φ (Sum.elim b (fun _ => x))).mpr hx
-  · intro hy
-    rw [Formula.mem_realizationSet₁] at hy
+  refine Set.Subset.antisymm ?_ ?_
+  · rintro _ ⟨x, hx, rfl⟩
+    exact (ElementaryEmbedding.mem_realizationSet₁_iff f.toElementaryEmbedding φ b x).mp hx
+  · intro y hy
     refine ⟨f.symm y, ?_, f.apply_symm_apply y⟩
-    rw [Formula.mem_realizationSet₁]
-    have hcomp : (⇑f.toElementaryEmbedding) ∘ Sum.elim b (fun _ : Fin 1 => f.symm y) =
-        Sum.elim (f ∘ b) (fun _ : Fin 1 => y) := by
-      funext i
-      rcases i with i | j
-      · rfl
-      · simp
-    refine (f.toElementaryEmbedding.map_formula φ
-      (Sum.elim b (fun _ : Fin 1 => f.symm y))).mp ?_
-    rw [hcomp]
-    exact hy
+    exact (ElementaryEmbedding.mem_realizationSet₁_iff f.toElementaryEmbedding φ b
+      (f.symm y)).mpr (by simpa using hy)
+
+/-- A first-order equivalence transports unary definability over the whole model. -/
+theorem definable₁_image_iff (f : M ≃[L] N) {D : Set M} :
+    (Set.univ : Set N).Definable₁ L ((f : M → N) '' D) ↔ (Set.univ : Set M).Definable₁ L D := by
+  have himg : (f.symm : N → M) '' ((f : M → N) '' D) = D := by
+    rw [Set.image_image]
+    simp
+  constructor
+  · intro hD
+    obtain ⟨φ, hφ⟩ := Set.definable₁_iff_exists_realizationSet₁.mp hD
+    have hD' : D = φ.realizationSet₁ ((f.symm : N → M) ∘ Subtype.val) := by
+      rw [← himg, hφ, image_realizationSet₁]
+    rw [hD']
+    exact Formula.realizationSet₁_definable φ _
+  · intro hD
+    obtain ⟨φ, hφ⟩ := Set.definable₁_iff_exists_realizationSet₁.mp hD
+    rw [hφ, image_realizationSet₁]
+    exact Formula.realizationSet₁_definable φ _
 
 end Equiv
 

@@ -196,51 +196,13 @@ minimal, then `D` is minimal. -/
 theorem isMinimal_of_image_equiv {L : Language.{u, v}} {M : Type w} {N : Type w'}
     [L.Structure M] [L.Structure N] (f : M ≃[L] N) {D : Set M}
     (h : L.IsMinimal ((f : M → N) '' D)) : L.IsMinimal D := by
-  have hfin_pre : ∀ {T : Set M}, ((f : M → N) '' T).Finite → T.Finite := by
-    intro T hT
-    have hsub : T ⊆ (f.symm : N → M) '' ((f : M → N) '' T) := by
-      intro x hx
-      exact ⟨f x, ⟨x, hx, rfl⟩, f.symm_apply_apply x⟩
-    exact (hT.image f.symm).subset hsub
-  have hdef_image : ∀ {T : Set M}, (Set.univ : Set M).Definable₁ L T →
-      (Set.univ : Set N).Definable₁ L ((f : M → N) '' T) := by
-    intro T hT
-    obtain ⟨m, χ, c, rfl⟩ := definable₁_iff_exists_fin_realizationSet₁.mp hT
-    rw [Equiv.image_realizationSet₁ f χ c]
-    exact Formula.realizationSet₁_definable χ (f ∘ c)
-  have hdef_pre : (Set.univ : Set N).Definable₁ L ((f : M → N) '' D) →
-      (Set.univ : Set M).Definable₁ L D := by
-    intro hD
-    obtain ⟨m, χ, c, hc⟩ := definable₁_iff_exists_fin_realizationSet₁.mp hD
-    have hDD : D = (f.symm : N → M) '' ((f : M → N) '' D) := by
-      ext x
-      constructor
-      · intro hx
-        exact ⟨f x, ⟨x, hx, rfl⟩, f.symm_apply_apply x⟩
-      · rintro ⟨y, ⟨z, hz, rfl⟩, hxy⟩
-        rw [← hxy, f.symm_apply_apply]
-        exact hz
-    rw [hDD, hc, Equiv.image_realizationSet₁ f.symm χ c]
-    exact Formula.realizationSet₁_definable χ (f.symm ∘ c)
-  refine ⟨?_, hdef_pre h.definable, ?_⟩
-  · exact fun hD => h.infinite (hD.image f)
-  · intro S hS hSD
-    have hS' : (Set.univ : Set N).Definable₁ L ((f : M → N) '' S) := hdef_image hS
-    have hSD' : ((f : M → N) '' S) ⊆ ((f : M → N) '' D) := Set.image_mono hSD
-    have hdiff : ((f : M → N) '' D) \ ((f : M → N) '' S) = (f : M → N) '' (D \ S) := by
-      ext y
-      constructor
-      · rintro ⟨⟨x, hxD, rfl⟩, hyS⟩
-        exact ⟨x, ⟨hxD, fun hxS => hyS ⟨x, hxS, rfl⟩⟩, rfl⟩
-      · rintro ⟨x, ⟨hxD, hxS⟩, rfl⟩
-        refine ⟨⟨x, hxD, rfl⟩, ?_⟩
-        rintro ⟨z, hzS, hzx⟩
-        have : z = x := f.injective hzx
-        rw [this] at hzS
-        exact hxS hzS
-    rcases h.finite_or_sdiff_finite hS' hSD' with hfin | hfin
-    · exact Or.inl (hfin_pre hfin)
-    · exact Or.inr (hfin_pre (by rwa [hdiff] at hfin))
+  refine ⟨fun hD => h.infinite (hD.image f), (Equiv.definable₁_image_iff f).mp h.definable, ?_⟩
+  intro S hS hSD
+  rcases h.finite_or_sdiff_finite ((Equiv.definable₁_image_iff f).mpr hS) (Set.image_mono hSD) with
+    hfin | hfin
+  · exact Or.inl ((Set.finite_image_iff f.injective.injOn).mp hfin)
+  · exact Or.inr ((Set.finite_image_iff f.injective.injOn).mp
+      (by rwa [← Set.image_sdiff f.injective] at hfin))
 
 namespace Formula
 
