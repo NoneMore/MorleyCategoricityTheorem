@@ -8,6 +8,7 @@ import MorleyCategoricityTheorem.ModelTheory.Equivalence
 import MorleyCategoricityTheorem.ModelTheory.IsolatedTypes
 import MorleyCategoricityTheorem.ModelTheory.LanguageEmbedding
 import MorleyCategoricityTheorem.ModelTheory.LanguageMap
+import MorleyCategoricityTheorem.ModelTheory.Minimality
 import MorleyCategoricityTheorem.ModelTheory.OmegaStable
 import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding
 import MorleyCategoricityTheorem.ModelTheory.Satisfiability
