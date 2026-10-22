@@ -57,7 +57,7 @@ tested.  Minimality is therefore a property of a set in a model, not of a formul
   elementary embeddings.
 -/
 
-universe u v w w' p q
+universe u v w w' p
 
 namespace FirstOrder
 
@@ -164,6 +164,9 @@ theorem isMinimal_iff (φ : L.Formula (β ⊕ Fin 1)) (a : β → M) :
     φ.IsMinimal a ↔ L.IsMinimal (φ.realizationSet₁ a) :=
   Iff.rfl
 
+/- The following four lemmas exist so that the set-level API is reachable by dot notation from a
+formula-level hypothesis: `φ.IsMinimal a` is definitionally `L.IsMinimal (φ.realizationSet₁ a)`,
+and the `Language.IsMinimal` namespace has no `realizationSet₁_*` names. -/
 /-- The realization set of a minimal formula with assigned parameters is infinite. -/
 theorem IsMinimal.realizationSet₁_infinite (h : φ.IsMinimal a) :
     (φ.realizationSet₁ a).Infinite :=
@@ -258,9 +261,9 @@ theorem IsStronglyMinimal.realizationSet₁_infinite (h : φ.IsStronglyMinimal a
 
 /-- Minimality depends only on the unary set, not on the chosen presentation, even when the two
 presentations use parameter types in different universes. -/
-theorem isMinimal_congr {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
-    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) : φ.IsMinimal a ↔ ψ.IsMinimal c := by
-  simp only [Formula.isMinimal_iff, h]
+theorem isMinimal_congr {γ : Type*} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) : φ.IsMinimal a ↔ ψ.IsMinimal c :=
+  iff_of_eq (congrArg L.IsMinimal h)
 
 /-- **Arbitrary-target interface of strong minimality.**  A formula that is strongly minimal in the
 canonical universe is minimal after any elementary embedding `e : M ↪ₑ[L] N`, whatever the universe
@@ -384,7 +387,7 @@ theorem IsStronglyMinimal.comp {N : Type w'} [L.Structure N] (e : M ↪ₑ[L] N)
 
 /-- Strong minimality depends only on the unary set, not on the chosen presentation, even when the
 two presentations use parameter types in different universes. -/
-theorem isStronglyMinimal_congr {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+theorem isStronglyMinimal_congr {γ : Type*} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
     (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) :
     φ.IsStronglyMinimal a ↔ ψ.IsStronglyMinimal c :=
   forall_congr' fun _ => forall_congr' fun _ => forall_congr' fun e =>
@@ -395,7 +398,7 @@ different parameter types, remain strongly minimal in a target universe `N` of a
 level; the defining dichotomy then holds for a definable subset presented with target parameters
 `b : γ → N`, which need not lie in the image of `e`. -/
 example {N : Type w'} [L.Structure N] (e : M ↪ₑ[L] N) (h : φ.IsStronglyMinimal a)
-    {γ : Type q} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    {γ : Type*} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
     (hpres : φ.realizationSet₁ a = ψ.realizationSet₁ c) (b : γ → N)
     (hsub : ψ.realizationSet₁ b ⊆ ψ.realizationSet₁ (e ∘ c)) :
     (ψ.realizationSet₁ b).Finite ∨ (ψ.realizationSet₁ (e ∘ c) \ ψ.realizationSet₁ b).Finite :=
