@@ -290,6 +290,20 @@ theorem realizationSet₁_relabel_params {α' : Type*} (φ : L.Formula (α ⊕ F
   ext x
   simp only [mem_realizationSet₁, Formula.realize_relabel, Sum.elim_comp_map, Function.comp_id]
 
+/-- Conjunction of unary formulas intersects their realization sets. -/
+@[simp]
+theorem realizationSet₁_inf (φ ψ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    (φ ⊓ ψ).realizationSet₁ a = φ.realizationSet₁ a ∩ ψ.realizationSet₁ a := by
+  ext x
+  simp
+
+/-- Negation of a unary formula complements its realization set. -/
+@[simp]
+theorem realizationSet₁_not (φ : L.Formula (α ⊕ Fin 1)) (a : α → M) :
+    φ.not.realizationSet₁ a = (φ.realizationSet₁ a)ᶜ := by
+  ext x
+  simp
+
 end RealizationSet
 
 /-- Realization of `iExsAtLeast` is equivalent to the existence of an injective family of `n`

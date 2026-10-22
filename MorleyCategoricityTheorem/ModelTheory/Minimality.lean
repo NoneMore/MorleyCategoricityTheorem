@@ -292,25 +292,19 @@ theorem IsStronglyMinimal.realizationSet₁_infinite (h : φ.IsStronglyMinimal a
   exact (infinite_realizationSet_fin_one_iff φ a).mp
     ((ElementaryEmbedding.infinite_realizations_iff e φ a).mp h2)
 
-/-- The set difference of two unary realization sets is again a unary realization set, on the
-combined parameter type. -/
+/-- The set difference of two unary realization sets is the unary realization set of the conjunction
+of the first formula with the negated second, on the combined parameter type.
+
+This is a corollary of the atomic Boolean lemmas `realizationSet₁_inf` and `realizationSet₁_not`
+together with the parameter relabelling lemma `realizationSet₁_relabel_params`. -/
 theorem realizationSet₁_sdiff {M : Type w} [L.Structure M] {γ₁ γ₂ : Type*}
     (φ : L.Formula (γ₁ ⊕ Fin 1)) (ψ : L.Formula (γ₂ ⊕ Fin 1)) (p : γ₁ → M) (q : γ₂ → M) :
     ((Formula.relabel (Sum.map Sum.inl id) φ) ⊓
         (Formula.relabel (Sum.map Sum.inr id) ψ).not).realizationSet₁ (Sum.elim p q) =
       φ.realizationSet₁ p \ ψ.realizationSet₁ q := by
-  ext y
-  simp only [Formula.mem_realizationSet₁, Formula.realize_inf, Formula.realize_not,
-    Formula.realize_relabel, Set.mem_sdiff]
-  have h1 : (Sum.elim (Sum.elim p q) (fun _ : Fin 1 => y)) ∘ Sum.map Sum.inl id =
-      Sum.elim p (fun _ : Fin 1 => y) := by
-    funext i
-    rcases i with i | j <;> rfl
-  have h2 : (Sum.elim (Sum.elim p q) (fun _ : Fin 1 => y)) ∘ Sum.map Sum.inr id =
-      Sum.elim q (fun _ : Fin 1 => y) := by
-    funext i
-    rcases i with i | j <;> rfl
-  rw [h1, h2]
+  rw [Set.sdiff_eq, realizationSet₁_inf, realizationSet₁_not,
+    realizationSet₁_relabel_params, realizationSet₁_relabel_params]
+  rfl
 
 /-- Equality of the unary sets defined by two formula presentations is preserved by every elementary
 embedding, even when the two presentations use different parameter types in different universes.
