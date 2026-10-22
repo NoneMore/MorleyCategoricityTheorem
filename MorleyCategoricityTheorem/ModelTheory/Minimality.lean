@@ -36,6 +36,10 @@ tested.  Minimality is therefore a property of a set in a model, not of a formul
 - `FirstOrder.Language.IsMinimal.sdiff_finite_of_infinite`: an infinite definable subset of a
   minimal set is cofinite in it.
 - `FirstOrder.Language.not_isMinimal_of_finite`: a finite set is not minimal.
+- `FirstOrder.Language.IsMinimal.not_exists_definable_split`: the split form of minimality: a
+  minimal set admits no definable split into two infinite pieces.
+- `FirstOrder.Language.not_isMinimal_iff_exists_definable_split`: the failure form of minimality for
+  an infinite definable set: not minimal exactly when such a definable split exists.
 - `FirstOrder.Language.isMinimal_of_image_equiv`: minimality is reflected along a first-order
   equivalence.
 - `FirstOrder.Language.Formula.realizationSet₁_definable`: a unary realization set is definable over
@@ -47,6 +51,8 @@ tested.  Minimality is therefore a property of a set in a model, not of a formul
 - `FirstOrder.Language.Formula.realizationSet₁_congr`: equal unary realization sets remain equal in
   every elementary target, even when the two presentations use parameter types in different
   universes.
+- `FirstOrder.Language.Formula.exists_formula_split_of_not_isMinimal`: the formula-level split of a
+  non-minimal unary formula into two unary formulas with infinite realization sets.
 - `FirstOrder.Language.Formula.isMinimal_congr` and
   `FirstOrder.Language.Formula.isStronglyMinimal_congr`: minimality and strong minimality depend only
   on the unary set defined, not on the defining presentation, even across parameter universes.
@@ -124,9 +130,33 @@ theorem IsMinimal.sdiff_finite_of_infinite (hD : L.IsMinimal D) {S : Set M}
     (D \ S).Finite :=
   (hD.finite_or_sdiff_finite hS hSD).resolve_left hSinf.not_finite
 
+/-- A minimal set admits no definable split into two infinite pieces. -/
+theorem IsMinimal.not_exists_definable_split (hD : L.IsMinimal D) :
+    ¬ ∃ S : Set M, (Set.univ : Set M).Definable₁ L S ∧ S ⊆ D ∧
+      S.Infinite ∧ (D \ S).Infinite := by
+  rintro ⟨S, hS, hSD, hSinf, hDSinf⟩
+  exact hSinf ((hD.finite_or_sdiff_finite hS hSD).resolve_right hDSinf)
+
 /-- A finite set is not minimal. -/
 theorem not_isMinimal_of_finite (hD : D.Finite) : ¬ L.IsMinimal D :=
   fun h => h.infinite.not_finite hD
+
+/-- Failure form of minimality for an infinite definable set: a definable split with both sides
+infinite exists exactly when the set is not minimal.
+
+Infinitude and definability cannot be dropped, because a finite set is never minimal yet admits no
+such split. -/
+theorem not_isMinimal_iff_exists_definable_split (hinf : D.Infinite)
+    (hdef : (Set.univ : Set M).Definable₁ L D) :
+    ¬ L.IsMinimal D ↔ ∃ S : Set M, (Set.univ : Set M).Definable₁ L S ∧ S ⊆ D ∧
+      S.Infinite ∧ (D \ S).Infinite := by
+  simp only [IsMinimal, hinf, hdef, true_and]
+  constructor
+  · intro h
+    push Not at h
+    exact h
+  · rintro ⟨S, hS, hSD, hSinf, hDSinf⟩ hcon
+    exact hSinf ((hcon S hS hSD).resolve_right hDSinf)
 
 namespace Formula
 
@@ -267,6 +297,29 @@ namespace Formula
 
 variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {β : Type p}
 variable {φ : L.Formula (β ⊕ Fin 1)} {a : β → M}
+
+/-- A non-minimal unary formula splits, at the formula level, into two unary formulas whose
+realization sets are infinite.
+
+This is the split shape consumed by `Theory.IsOmegaStable.false_of_formula_splitting`.  The
+parameter type `↥Set.univ` ranges over the whole model, which is exactly the parameter world that
+`IsMinimal` tests. -/
+theorem exists_formula_split_of_not_isMinimal
+    {φ : L.Formula (↥(Set.univ : Set M) ⊕ Fin 1)}
+    (hinf : (φ.realizationSet₁ Subtype.val).Infinite)
+    (h : ¬ φ.IsMinimal Subtype.val) :
+    ∃ ψ : L.Formula (↥(Set.univ : Set M) ⊕ Fin 1),
+      (φ.realizationSet₁ Subtype.val ∩ ψ.realizationSet₁ Subtype.val).Infinite ∧
+      (φ.realizationSet₁ Subtype.val \ ψ.realizationSet₁ Subtype.val).Infinite := by
+  obtain ⟨S, hSdef, hSD, hSinf, hDSinf⟩ :=
+    (not_isMinimal_iff_exists_definable_split hinf
+      (Formula.realizationSet₁_definable φ Subtype.val)).mp h
+  obtain ⟨ψ, hψ⟩ := Set.definable₁_iff_exists_realizationSet₁.mp hSdef
+  refine ⟨ψ, ?_, ?_⟩
+  · rw [← hψ, Set.inter_eq_right.mpr hSD]
+    exact hSinf
+  · rw [← hψ]
+    exact hDSinf
 
 /-- A one-variable formula with assigned parameters is strongly minimal when its interpretation is
 minimal in every elementary extension (blueprint `def:minimality`).
