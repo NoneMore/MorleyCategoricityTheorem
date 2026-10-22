@@ -16,7 +16,7 @@ apk add --no-cache \
   'graphviz=12.2.0-r0' \
   'graphviz-dev=12.2.0-r0' \
   'gcc=14.2.0-r4' \
-  'musl-dev=1.2.5-r11'
+  'musl-dev=1.2.5-r12'
 
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
 git config --global --add safe.directory "$(pwd)"
