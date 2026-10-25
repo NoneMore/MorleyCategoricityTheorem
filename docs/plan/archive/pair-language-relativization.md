@@ -1,10 +1,20 @@
 # Pair Language and Formula Relativization
 
+## Implementation status
+
+Implemented in [PR #42](https://github.com/NoneMore/MorleyCategoricityTheorem/pull/42): the pair
+language, the pair structures, relativization `φ ↦ φ^U`, and its semantics are in
+[`PairLanguage.lean`](../../../MorleyCategoricityTheorem/ModelTheory/PairLanguage.lean).
+
+This archived plan preserves the pre-implementation investigation and design. Statements below
+about unproved obligations, plan-only scope, and future validation describe that earlier stage;
+they are not remaining tasks. Elementary-pair axiomatization remains a separate capability.
+
 ## Intent and scope
 
 Implement the reusable pair-language infrastructure needed by the blueprint's
-[`def:pair-language`](../../blueprint/src/content.tex) and
-[`lem:pair-relativization`](../../blueprint/src/content.tex). Given an
+[`def:pair-language`](../../../blueprint/src/content.tex) and
+[`lem:pair-relativization`](../../../blueprint/src/content.tex). Given an
 `L`-structure `M` and an `L`-substructure `S`, form the language
 `L₀ = L ∪ {U}` and the pair structure `(M, S)`, with `U` interpreted as
 the underlying set of `S`. Relativization `φ ↦ φ^U` restricts each
@@ -16,7 +26,7 @@ and ordinary formulas, including a transport theorem for arbitrary
 is a specialization, **not** the fundamental proof.
 
 This capability ends at formula relativization. In particular,
-[`lem:elementary-pair-axiomatization`](../../blueprint/src/content.tex) is
+[`lem:elementary-pair-axiomatization`](../../../blueprint/src/content.tex) is
 a separate blueprint node and is not included here. No edits to
 `blueprint/` are authorized by this plan.
 
