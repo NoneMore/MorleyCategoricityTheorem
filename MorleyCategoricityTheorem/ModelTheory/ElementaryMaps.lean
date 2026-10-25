@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
 import Mathlib.ModelTheory.ElementaryMaps
+import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 
 /-!
@@ -31,6 +32,16 @@ of a formula under an assigned parameter tuple: for `φ : L.Formula (β ⊕ α)`
   natural-number cardinality of a formula fiber.
 - `ElementaryEmbedding.infinite_realizations_iff`: source and target realization sets are infinite
   simultaneously.
+- `ElementaryEmbedding.infinite_realizationSet₁_iff`: the unary specialization of the previous
+  statement.
+- `ElementaryEmbedding.mem_realizationSet₁_iff`: the elementwise form of unary formula transport.
+- `ElementaryEmbedding.realizationSet₁_congr`: an equality of unary realization sets is preserved by
+  an elementary embedding, including at target elements outside the image.
+- `Formula.realizationSet₁_congr`: equal unary realization sets presented with parameter types in
+  different universes remain equal in every elementary target.
+- `Equiv.image_realizationSet₁`: a first-order equivalence transports unary realization sets.
+- `Equiv.definable₁_image_iff`: a first-order equivalence transports unary definability over the
+  whole model.
 
 ## Implementation order
 
@@ -127,9 +138,108 @@ theorem infinite_realizations_iff [Finite α] (e : M ↪ₑ[L] N)
   simp [Set.encard_eq_top_iff.symm.trans ENat.eq_top_iff_forall_ge,
     ← Formula.realize_iExsAtLeast]
 
+/-- A unary realization set is infinite in the target of an elementary embedding exactly when it is
+infinite in the source. -/
+theorem infinite_realizationSet₁_iff (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
+    (φ.realizationSet₁ (e ∘ b)).Infinite ↔ (φ.realizationSet₁ b).Infinite := by
+  rw [← Formula.infinite_realizationSet_fin_one_iff φ (e ∘ b),
+    ← Formula.infinite_realizationSet_fin_one_iff φ b]
+  exact infinite_realizations_iff e φ b
+
+/-- An elementary embedding preserves unary realization: an element realizes a formula with
+transported parameters exactly when its image realizes the transported formula.
+
+This is the elementwise form of `Equiv.image_realizationSet₁` and the reason `realizationSet₁` can be
+compared across an elementary embedding at all. -/
+theorem mem_realizationSet₁_iff (e : M ↪ₑ[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) (x : M) :
+    x ∈ φ.realizationSet₁ b ↔ e x ∈ φ.realizationSet₁ (e ∘ b) := by
+  simp only [Formula.mem_realizationSet₁]
+  rw [show Sum.elim (e ∘ b) (fun _ : Fin 1 => e x) =
+      (e : M → N) ∘ Sum.elim b (fun _ : Fin 1 => x) from (Sum.comp_elim _ _ _).symm]
+  exact (e.map_formula φ (Sum.elim b (fun _ : Fin 1 => x))).symm
+
+/-- Two unary formulas realizing the same elements for the same parameter tuple continue to realize
+the same elements for the transported parameter tuple in the target of an elementary embedding.
+
+Unlike `mem_realizationSet₁_iff`, this also covers target elements outside the image of `e`: the
+pointwise equivalence of the two formulas is universally closed and transferred by elementarity. -/
+theorem realizationSet₁_congr (e : M ↪ₑ[L] N) {φ ψ : L.Formula (β ⊕ Fin 1)} {b : β → M}
+    (h : φ.realizationSet₁ b = ψ.realizationSet₁ b) :
+    φ.realizationSet₁ (e ∘ b) = ψ.realizationSet₁ (e ∘ b) := by
+  have hfin : φ.realizationSet b = ψ.realizationSet b := by
+    rw [Formula.realizationSet_fin_one_image, Formula.realizationSet_fin_one_image, h]
+  have hM : ((φ.iff ψ).iAlls (Fin 1)).Realize b := by
+    rw [Formula.realize_iAlls]
+    intro x
+    simpa only [Formula.realize_iff, Formula.mem_realizationSet] using Set.ext_iff.mp hfin x
+  have hN : ((φ.iff ψ).iAlls (Fin 1)).Realize (e ∘ b) := (e.map_formula _ b).mpr hM
+  ext y
+  simpa only [Formula.realize_iff, Formula.mem_realizationSet₁] using
+    (Formula.realize_iAlls.mp hN) (fun _ : Fin 1 => y)
+
 end ExplicitParameters
 
+
 end ElementaryEmbedding
+
+namespace Equiv
+
+variable {L : Language.{u, v}} {M : Type w} {N : Type w'} {β : Type x'}
+variable [L.Structure M] [L.Structure N]
+
+/-- A first-order equivalence maps unary realization sets to unary realization sets with transported
+parameters. -/
+theorem image_realizationSet₁ (f : M ≃[L] N) (φ : L.Formula (β ⊕ Fin 1)) (b : β → M) :
+    (f : M → N) '' φ.realizationSet₁ b = φ.realizationSet₁ (f ∘ b) := by
+  refine Set.Subset.antisymm ?_ ?_
+  · rintro _ ⟨x, hx, rfl⟩
+    exact (ElementaryEmbedding.mem_realizationSet₁_iff f.toElementaryEmbedding φ b x).mp hx
+  · intro y hy
+    refine ⟨f.symm y, ?_, f.apply_symm_apply y⟩
+    exact (ElementaryEmbedding.mem_realizationSet₁_iff f.toElementaryEmbedding φ b
+      (f.symm y)).mpr (by simpa using hy)
+
+/-- A first-order equivalence transports unary definability over the whole model. -/
+theorem definable₁_image_iff (f : M ≃[L] N) {D : Set M} :
+    (Set.univ : Set N).Definable₁ L ((f : M → N) '' D) ↔ (Set.univ : Set M).Definable₁ L D := by
+  have himg : (f.symm : N → M) '' ((f : M → N) '' D) = D := by
+    rw [Set.image_image]
+    simp
+  constructor
+  · intro hD
+    obtain ⟨φ, hφ⟩ := Set.definable₁_iff_exists_realizationSet₁.mp hD
+    have hD' : D = φ.realizationSet₁ ((f.symm : N → M) ∘ Subtype.val) := by
+      rw [← himg, hφ, image_realizationSet₁]
+    rw [hD']
+    exact Formula.realizationSet₁_definable φ _
+  · intro hD
+    obtain ⟨φ, hφ⟩ := Set.definable₁_iff_exists_realizationSet₁.mp hD
+    rw [hφ, image_realizationSet₁]
+    exact Formula.realizationSet₁_definable φ _
+
+end Equiv
+
+namespace Formula
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {β : Type*}
+variable {φ : L.Formula (β ⊕ Fin 1)} {a : β → M}
+
+/-- Equality of the unary sets defined by two formula presentations is preserved by every elementary
+embedding, even when the two presentations use different parameter types in different universes.
+
+Both presentations are first moved to the combined parameter type `β ⊕ γ` by tagging each parameter
+injection into the sum; `ElementaryEmbedding.realizationSet₁_congr` then transports the equality. -/
+theorem realizationSet₁_congr {γ : Type*} {ψ : L.Formula (γ ⊕ Fin 1)} {c : γ → M}
+    (h : φ.realizationSet₁ a = ψ.realizationSet₁ c) {N : Type w'} [L.Structure N]
+    (e : M ↪ₑ[L] N) : φ.realizationSet₁ (e ∘ a) = ψ.realizationSet₁ (e ∘ c) := by
+  have h' : (φ.relabel (Sum.map Sum.inl id)).realizationSet₁ (Sum.elim a c) =
+      (ψ.relabel (Sum.map Sum.inr id)).realizationSet₁ (Sum.elim a c) := by
+    rw [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params]
+    exact h
+  have h'' := ElementaryEmbedding.realizationSet₁_congr e h'
+  rwa [Formula.realizationSet₁_relabel_params, Formula.realizationSet₁_relabel_params] at h''
+
+end Formula
 
 end Language
 

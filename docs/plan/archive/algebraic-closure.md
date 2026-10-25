@@ -1,5 +1,9 @@
 # Algebraic Closure Over Definable Sets
 
+## Implementation status
+
+The algebraic-closure definitions and laws are implemented in [`AlgebraicClosure.lean`](../../../MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean). [PR #40](https://github.com/NoneMore/MorleyCategoricityTheorem/pull/40) subsequently adds `\lean`/`\leanok` annotations for `def:algebraic-closure` in the [blueprint](../../../blueprint/src/content.tex). The design and original implementation boundaries below are preserved as historical context; blueprint wiring is no longer pending.
+
 ## Intent
 
 Give the semantic layer a first-class notion of model-theoretic algebraicity: a predicate "`b` is
@@ -182,8 +186,8 @@ before using `Matroid.closure` for model-theoretic closure.
   class.
 - No matroid, pregeometry, dimension, `ClosureOperator`, notation, or `DefinableSet`-valued API
   without a concrete caller; no exchange or cardinality bound in this capability.
-- No `blueprint/` change here; the `\lean{}` label for `def:algebraic-closure` is a later authorized
-  change.
+- The original algebraic-closure implementation did not change `blueprint/`; PR #40 added
+  the `\lean{}`/`\leanok` annotations separately.
 
 ## Deferred follow-ups
 
@@ -212,8 +216,8 @@ also supplies `Finitary`), prove the closure identification, and define
 augmentation is the one proof obligation. Parameter splitting and the unary shape helper stay
 private; promoting either needs a second caller.
 
-Wire the `\lean{}` label of `def:algebraic-closure` to the names above in an authorized blueprint
-change; renaming later would orphan the reference.
+The `\lean{}` label of `def:algebraic-closure` was wired to the names above in PR #40;
+renaming these declarations later would orphan the blueprint reference.
 
 ## Verification
 
@@ -226,4 +230,5 @@ lake exe checkdecls blueprint/lean_decls
 `mk_all --check` and `checkdecls` run unconditionally in the "Validate Lean" CI job, including for
 documentation-only pull requests. Completion: both objects exist with the bodies above and no
 `sorry`; the API above is proved; the modules import only the permitted modules; the root import
-file reflects the new modules and `mk_all --check` passes; `blueprint/` is untouched.
+file reflects the new modules and `mk_all --check` passes; `blueprint/` was untouched by
+the original algebraic-closure implementation (the annotation was added in PR #40).
