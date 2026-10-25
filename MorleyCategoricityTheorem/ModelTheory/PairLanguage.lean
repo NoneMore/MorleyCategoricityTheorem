@@ -152,6 +152,19 @@ theorem relativize_all {n : ℕ} (φ : L.BoundedFormula α (n + 1)) :
         (((pairPredicate L).boundedFormula₁ (Term.var (Sum.inr (Fin.last n)))).imp φ.relativize) :=
   rfl
 
+/-- Coercing both components of a `Sum.elim` of subtype-valued tuples agrees with coercing the
+`Sum.elim`. -/
+private theorem sum_elim_coe {S : L.Substructure M} {n : ℕ} (v : α → S) (xs : Fin n → S) :
+    Sum.elim (fun a => (v a : M)) (fun i => (xs i : M)) = Subtype.val ∘ Sum.elim v xs := by
+  funext s
+  cases s <;> rfl
+
+/-- Coercing a subtype-valued tuple after `Fin.snoc` agrees with `Fin.snoc` of the coerced tuple. -/
+private theorem snoc_coe {S : L.Substructure M} {n : ℕ} (xs : Fin n → S) (b : S) :
+    (fun i => (((Fin.snoc xs b : Fin (n + 1) → S) i) : M)) =
+      Fin.snoc (fun i => ((xs i : S) : M)) ((b : S) : M) :=
+  Fin.comp_snoc Subtype.val xs b
+
 /-- `φ^U` holds in the pair structure `(M, S)` at a tuple from `S` exactly when `φ` holds of that
 tuple in `S`. -/
 theorem realize_relativize {S : L.Substructure M} :
@@ -159,6 +172,7 @@ theorem realize_relativize {S : L.Substructure M} :
       @BoundedFormula.Realize (PairLanguage L) M (pairStructure S) α n φ.relativize
           (fun a => (v a : M)) (fun i => (xs i : M)) ↔
         φ.Realize v xs := by
+  -- Local instances: `LHom.realize_onTerm` needs the pair structure and its expansion property.
   let inst : (PairLanguage L).Structure M := pairStructure S
   have hExp : (LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M :=
     pairStructure_isExpansionOn_sumInl S
@@ -169,54 +183,33 @@ theorem realize_relativize {S : L.Substructure M} :
     exact Iff.rfl
   | equal t₁ t₂ =>
     intro v xs
-    have hv : Sum.elim (fun a => (v a : M)) (fun i => (xs i : M)) =
-        Subtype.val ∘ Sum.elim v xs := by
-      ext s
-      cases s <;> rfl
     show (LHom.sumInl.onTerm t₁).realize
           (Sum.elim (fun a => (v a : M)) (fun i => (xs i : M))) =
         (LHom.sumInl.onTerm t₂).realize
           (Sum.elim (fun a => (v a : M)) (fun i => (xs i : M))) ↔
         t₁.realize (Sum.elim v xs) = t₂.realize (Sum.elim v xs)
-    simp only [LHom.realize_onTerm, hv, realize_term_substructure]
-    exact Subtype.coe_injective.eq_iff
+    simp only [sum_elim_coe, LHom.realize_onTerm, realize_term_substructure,
+      Subtype.coe_injective.eq_iff]
   | rel R ts =>
     intro v xs
-    have hv : Sum.elim (fun a => (v a : M)) (fun i => (xs i : M)) =
-        Subtype.val ∘ Sum.elim v xs := by
-      ext s
-      cases s <;> rfl
     show Structure.RelMap (pairRelationInl R)
         (fun i => (LHom.sumInl.onTerm (ts i)).realize
           (Sum.elim (fun a => (v a : M)) (fun i => (xs i : M)))) ↔
         Structure.RelMap R fun i => (ts i).realize (Sum.elim v xs)
-    simp only [LHom.realize_onTerm, hv, realize_term_substructure]
+    simp only [sum_elim_coe, LHom.realize_onTerm, realize_term_substructure]
     exact Iff.rfl
   | imp φ ψ ihφ ihψ =>
     intro v xs
-    rw [relativize_imp, BoundedFormula.realize_imp, BoundedFormula.realize_imp, ihφ v xs,
-      ihψ v xs]
+    exact imp_congr (ihφ v xs) (ihψ v xs)
   | all φ ih =>
     intro v xs
     rw [relativize_all, BoundedFormula.realize_all, BoundedFormula.realize_all]
     simp only [BoundedFormula.realize_imp, realize_guard, Fin.snoc_last]
     constructor
-    · intro h b
-      have hb := h ↑b b.2
-      have hcomp : (fun i => (((Fin.snoc xs b : Fin _ → S) i) : M)) =
-          Fin.snoc (fun i => ((xs i : S) : M)) ((b : S) : M) := by
-        funext i
-        refine Fin.lastCases ?_ ?_ i <;> simp
-      rw [← hcomp] at hb
-      exact (ih v (Fin.snoc xs b)).mp hb
-    · intro h a ha
-      have h1 := (ih v (Fin.snoc xs ⟨a, ha⟩)).mpr (h ⟨a, ha⟩)
-      have hcomp : (fun i => (((Fin.snoc xs (⟨a, ha⟩ : S) : Fin _ → S) i) : M)) =
-          Fin.snoc (fun i => ((xs i : S) : M)) a := by
-        funext i
-        refine Fin.lastCases ?_ ?_ i <;> simp
-      rw [hcomp] at h1
-      exact h1
+    · rintro h b
+      exact (ih v (Fin.snoc xs b)).mp (by simpa only [snoc_coe] using h ↑b b.2)
+    · rintro h a ha
+      simpa only [snoc_coe] using (ih v (Fin.snoc xs ⟨a, ha⟩)).mpr (h ⟨a, ha⟩)
 
 end BoundedFormula
 
