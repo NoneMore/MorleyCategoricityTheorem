@@ -3,10 +3,8 @@ Copyright (c) 2026 NoneMore. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
-import Mathlib.ModelTheory.Definability
-import Mathlib.ModelTheory.Skolem
-import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.ElementaryMaps
+import MorleyCategoricityTheorem.ModelTheory.SkolemHull
 
 /-!
 # Minimal unary definable sets
@@ -287,76 +285,43 @@ theorem IsStronglyMinimal.isMinimal {N : Type w'} [L.Structure N] (e : M ↪ₑ[
   obtain ⟨hSinf, hDSinf⟩ := hcon
   obtain ⟨n, ψ, b, rfl⟩ := definable₁_iff_exists_fin_realizationSet₁.mp hSdef
   -- A small elementary hull of `N` containing the image of `e` and the parameters of `ψ`.
-  let L' : Language.{max u w, v} := L.sum (constantsOn (M ⊕ Fin n))
-  let : (constantsOn (M ⊕ Fin n)).Structure N := constantsOn.structure (Sum.elim e b)
-  obtain ⟨P, hP⟩ := exists_small_elementarySubstructure L' (M := N)
-  have hmem : ∀ x : M, e x ∈ P := by
-    intro x
-    have h' := Substructure.constants_mem (S := (P : L'.Substructure N))
-      (Sum.inr (Sum.inl x) : L'.Constants)
-    change Sum.elim e b (Sum.inl x : M ⊕ Fin n) ∈ (P : Set N) at h'
-    simpa using h'
-  have hmemb : ∀ i : Fin n, b i ∈ P := by
-    intro i
-    have h' := Substructure.constants_mem (S := (P : L'.Substructure N))
-      (Sum.inr (Sum.inr i) : L'.Constants)
-    change Sum.elim e b (Sum.inr i : M ⊕ Fin n) ∈ (P : Set N) at h'
-    simpa using h'
-  let : L'.Structure ↥P := (P : L'.Substructure N).inducedStructure
-  let : L.Structure ↥P := (LHom.sumInl : L →ᴸ L').reduct ↥P
-  -- Corestricting `e` along the hull keeps it elementary.
-  let eP : M ↪ₑ[L] ↥P :=
-    { toFun := fun x => ⟨e x, hmem x⟩
-      map_formula' := fun k χ x => by
-        have h := (P.subtype : ↥P ↪ₑ[L'] N).map_formula ((LHom.sumInl : L →ᴸ L').onFormula χ)
-          (fun i => ⟨e (x i), hmem (x i)⟩)
-        simp only [LHom.realize_onFormula] at h
-        exact h.symm.trans (e.map_formula χ x) }
-  let c : Fin n → ↥P := fun i => ⟨b i, hmemb i⟩
-  have hc : (Subtype.val : ↥P → N) ∘ c = b := funext fun i => rfl
-  have hec : (Subtype.val : ↥P → N) ∘ (eP ∘ a) = e ∘ a := funext fun i => rfl
-  have hsc : (Subtype.val : ↥P → N) ∘ Sum.elim (eP ∘ a) c = Sum.elim (e ∘ a) b :=
-    funext fun i => by rcases i with i | j <;> rfl
+  obtain ⟨P, eP, c, heP, hc, hP⟩ := e.exists_small_factorization (L := L) b
+  have hc' : (Subtype.val : ↥P → N) ∘ c = b := funext hc
+  have heP' : (Subtype.val : ↥P → N) ∘ (eP ∘ a) = e ∘ a := funext fun i => heP (a i)
+  have hsc : (Subtype.val : ↥P → N) ∘ Sum.elim (eP ∘ a) c = Sum.elim (e ∘ a) b := by
+    rw [Sum.comp_elim, heP', hc']
   -- Realization inside the hull agrees with realization in `N`.
   have mem_ψ : ∀ x : ↥P, x ∈ ψ.realizationSet₁ c ↔ (x : N) ∈ ψ.realizationSet₁ b := by
     intro x
-    simpa only [LHom.realizationSet₁_onFormula, hc, ElementarySubstructure.coe_subtype] using
-      ElementaryEmbedding.mem_realizationSet₁_iff (L := L') (P.subtype : ↥P ↪ₑ[L'] N)
-        ((LHom.sumInl : L →ᴸ L').onFormula ψ) c x
+    simpa only [hc', ElementarySubstructure.coe_subtype] using
+      ElementaryEmbedding.mem_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L] N) ψ c x
   have mem_φ : ∀ x : ↥P,
       x ∈ φ.realizationSet₁ (eP ∘ a) ↔ (x : N) ∈ φ.realizationSet₁ (e ∘ a) := by
     intro x
-    simpa only [LHom.realizationSet₁_onFormula, hec, ElementarySubstructure.coe_subtype] using
-      ElementaryEmbedding.mem_realizationSet₁_iff (L := L') (P.subtype : ↥P ↪ₑ[L'] N)
-        ((LHom.sumInl : L →ᴸ L').onFormula φ) (eP ∘ a) x
+    simpa only [heP', ElementarySubstructure.coe_subtype] using
+      ElementaryEmbedding.mem_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L] N) φ (eP ∘ a) x
   have hsub : ψ.realizationSet₁ c ⊆ φ.realizationSet₁ (eP ∘ a) := by
     intro x hx
     rw [mem_ψ x] at hx
     rw [mem_φ x]
     exact hSD hx
-  have hSPinf : (ψ.realizationSet₁ c).Infinite := by
-    have h' := (ElementaryEmbedding.infinite_realizationSet₁_iff (L := L')
-      (P.subtype : ↥P ↪ₑ[L'] N) ((LHom.sumInl : L →ᴸ L').onFormula ψ) c).mp (by
-        simpa only [LHom.realizationSet₁_onFormula, hc, ElementarySubstructure.coe_subtype]
-          using hSinf)
-    simpa only [LHom.realizationSet₁_onFormula] using h'
+  have hSPinf : (ψ.realizationSet₁ c).Infinite :=
+    (ElementaryEmbedding.infinite_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L] N) ψ c).mp
+      (by simpa only [ElementarySubstructure.coe_subtype, hc'] using hSinf)
   -- The difference of the two pieces is again a unary realization set, so its infinitude
   -- transports along the hull as well.
-  let θ : L.Formula ((β ⊕ Fin n) ⊕ Fin 1) :=
-    (Formula.relabel (Sum.map Sum.inl id) φ) ⊓ (Formula.relabel (Sum.map Sum.inr id) ψ).not
-  have hθdef : θ = (Formula.relabel (Sum.map Sum.inl id) φ) ⊓
-      (Formula.relabel (Sum.map Sum.inr id) ψ).not := rfl
   have hDPSinf : (φ.realizationSet₁ (eP ∘ a) \ ψ.realizationSet₁ c).Infinite := by
-    have hN : (((LHom.sumInl : L →ᴸ L').onFormula θ).realizationSet₁
+    have hN : (((Formula.relabel (Sum.map Sum.inl id) φ) ⊓
+        (Formula.relabel (Sum.map Sum.inr id) ψ).not).realizationSet₁
         (Sum.elim (e ∘ a) b)).Infinite := by
-      simpa only [LHom.realizationSet₁_onFormula, hθdef, Formula.realizationSet₁_sdiff]
-        using hDSinf
-    have hP := (ElementaryEmbedding.infinite_realizationSet₁_iff (L := L')
-      (P.subtype : ↥P ↪ₑ[L'] N) ((LHom.sumInl : L →ᴸ L').onFormula θ)
-      (Sum.elim (eP ∘ a) c)).mp (by
-        simpa only [hsc, ElementarySubstructure.coe_subtype] using hN)
-    simpa only [LHom.realizationSet₁_onFormula, hθdef, Formula.realizationSet₁_sdiff,
-      ElementarySubstructure.coe_subtype] using hP
+      simpa only [Formula.realizationSet₁_sdiff] using hDSinf
+    have hPinf := (ElementaryEmbedding.infinite_realizationSet₁_iff (P.subtype : ↥P ↪ₑ[L] N)
+      ((Formula.relabel (Sum.map Sum.inl id) φ) ⊓
+        (Formula.relabel (Sum.map Sum.inr id) ψ).not)
+      (Sum.elim (eP ∘ a) c)).mp
+      (by simpa only [ElementarySubstructure.coe_subtype, hsc] using hN)
+    simpa only [Formula.realizationSet₁_sdiff] using hPinf
+
   have hnotmin : ¬ L.IsMinimal (φ.realizationSet₁ (eP ∘ a)) := by
     intro hmin
     rcases hmin.finite_or_sdiff_finite (Formula.realizationSet₁_definable ψ c) hsub with
