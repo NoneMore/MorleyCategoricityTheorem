@@ -36,7 +36,7 @@ condition for the reduct language to the one for the richer language, using
   substructure of `N`.
 -/
 
-universe u v u' v' w w' p z
+universe u v u' v' w w' p
 
 namespace FirstOrder
 
@@ -44,35 +44,7 @@ namespace Language
 
 variable {L : Language.{u, v}}
 
-/-! ### Passing to a reduct language -/
-
-/-- Realization of a bounded formula with no constant symbols is realization of the corresponding
-`Fin n`-indexed formula. -/
-theorem BoundedFormula.realize_toFormula_relabel_emptySum {M : Type w} [L.Structure M]
-    {n : ℕ} (φ : L.BoundedFormula Empty n) (y : Fin n → M) :
-    ((φ.toFormula).relabel (Equiv.emptySum Empty (Fin n))).Realize y ↔ φ.Realize default y := by
-  rw [Formula.realize_relabel, BoundedFormula.realize_toFormula]
-  have h1 : ((y ∘ Equiv.emptySum Empty (Fin n)) ∘ Sum.inl) = (default : Empty → M) := by
-    funext i
-    exact isEmptyElim i
-  have h2 : ((y ∘ Equiv.emptySum Empty (Fin n)) ∘ Sum.inr) = y := by
-    funext i
-    simp
-  rw [h1, h2]
-
-/-- The `Fin n`-indexed formula expressing `∃ y, φ(x, y)`. -/
-theorem BoundedFormula.realize_ex_toFormula_relabel_emptySum {X : Type z} [L.Structure X] {n : ℕ}
-    (φ : L.BoundedFormula Empty (n + 1)) (v : Fin n → X) :
-    (((φ.ex).toFormula).relabel (Equiv.emptySum Empty (Fin n))).Realize v ↔
-      ∃ y : X, φ.Realize default (Fin.snoc v y) := by
-  have h1 : ((v ∘ Equiv.emptySum Empty (Fin n)) ∘ Sum.inl) = (default : Empty → X) := by
-    funext i
-    exact isEmptyElim i
-  have h2 : ((v ∘ Equiv.emptySum Empty (Fin n)) ∘ Sum.inr) = v := by
-    funext i
-    simp
-  simp only [Formula.realize_relabel, BoundedFormula.realize_toFormula, BoundedFormula.realize_ex,
-    h1, h2]
+/-! ### The Tarski–Vaught condition -/
 
 /-- An elementary substructure satisfies the Tarski–Vaught condition: a formula with one free
 variable that holds of a tuple from the hull and an arbitrary element is already satisfied by some
@@ -82,50 +54,36 @@ theorem Substructure.IsElementary.exists_realize {M : Type w} [L.Structure M]
     {n : ℕ} {φ : L.BoundedFormula Empty (n + 1)} {x : Fin n → S} {a : M}
     (h : φ.Realize default (Fin.snoc (fun i => (x i : M)) a)) :
     ∃ b : S, φ.Realize default (Fin.snoc (fun i => (x i : M)) (b : M)) := by
-  classical
-  -- the formula `∃ y, φ(x, y)` at the level of `Fin n`-indexed formulas
-  let ψ : L.Formula (Fin n) := (φ.ex).toFormula.relabel (Equiv.emptySum Empty (Fin n))
-  let φ' : L.Formula (Fin (n + 1)) :=
-    (φ.toFormula).relabel (Equiv.emptySum Empty (Fin (n + 1)))
-  have hψM : ∀ v : Fin n → M, ψ.Realize v ↔ ∃ y : M, φ.Realize default (Fin.snoc v y) :=
-    fun v => BoundedFormula.realize_ex_toFormula_relabel_emptySum φ v
-  have hψS : ∀ v : Fin n → S, ψ.Realize v ↔ ∃ y : S, φ.Realize default (Fin.snoc v y) :=
-    fun v => BoundedFormula.realize_ex_toFormula_relabel_emptySum φ v
-  have hx : ψ.Realize ((Subtype.val : S → M) ∘ x) := (hψM _).mpr ⟨a, h⟩
-  have hx' : ψ.Realize x := (hS ψ x).mp hx
-  obtain ⟨b, hb⟩ := (hψS x).mp hx'
+  let S' : L.ElementarySubstructure M := ⟨S, hS⟩
+  -- `Empty`-indexed assignments are unique, so coercing one along `S'.subtype` changes nothing
+  have hcoe : (⇑S'.subtype ∘ (default : Empty → ↥S')) = (default : Empty → M) :=
+    Subsingleton.elim _ _
+  -- `∃ y, φ(x, y)` holds in `M`, hence in the hull, which yields the desired witness
+  have hexM : (φ.ex).Realize (⇑S'.subtype ∘ (default : Empty → ↥S')) (⇑S'.subtype ∘ x) := by
+    rw [hcoe]
+    exact BoundedFormula.realize_ex.mpr ⟨a, h⟩
+  obtain ⟨b, hb⟩ :=
+    BoundedFormula.realize_ex.mp ((S'.subtype.map_boundedFormula (φ.ex) default x).mp hexM)
+  -- and `φ(x, b)` holds in the hull, hence in `M`
   refine ⟨b, ?_⟩
-  -- elementarity at the lifted tuple in the hull
-  have hconvM : ∀ y : Fin (n + 1) → M, φ'.Realize y ↔ φ.Realize default y :=
-    fun y => BoundedFormula.realize_toFormula_relabel_emptySum φ y
-  have hconvS : ∀ y : Fin (n + 1) → S, φ'.Realize y ↔ φ.Realize default y :=
-    fun y => BoundedFormula.realize_toFormula_relabel_emptySum φ y
-  have h3 : φ'.Realize (Fin.snoc ((Subtype.val : S → M) ∘ x) (b : M)) := by
-    rw [← Fin.comp_snoc]
-    exact (hS φ' (Fin.snoc x b)).mpr ((hconvS _).mpr hb)
-  exact (hconvM _).mp h3
+  have hφM : φ.Realize (⇑S'.subtype ∘ (default : Empty → ↥S'))
+      (⇑S'.subtype ∘ Fin.snoc x b) :=
+    (S'.subtype.map_boundedFormula φ default (Fin.snoc x b)).mpr hb
+  rw [Fin.comp_snoc, hcoe] at hφM
+  exact hφM
+
+/-! ### Passing to a reduct language -/
 
 /-- The reduct of an elementary substructure to a smaller language is elementary. -/
 theorem LHom.isElementary_substructureReduct {L' : Language.{u', v'}} {M : Type w}
     [L.Structure M] [L'.Structure M] (φ : L →ᴸ L') [φ.IsExpansionOn M]
     {S : L'.ElementarySubstructure M} :
     (φ.substructureReduct (S : L'.Substructure M)).IsElementary := by
-  classical
-  refine Substructure.isElementary_of_exists _ ?_
-  intro n ψ x a h
-  -- transport the tuple into the hull
-  let x' : Fin n → ↥(S : L'.Substructure M) := fun i => ⟨(x i : M), (x i).2⟩
-  have hx' : (fun i => (x' i : M)) = fun i => (x i : M) := rfl
-  -- the translated hypothesis in the richer language
-  have h' : (φ.onBoundedFormula ψ).Realize default (Fin.snoc (fun i => (x' i : M)) a) := by
-    rw [hx']
-    exact (LHom.realize_onBoundedFormula φ ψ (v := default)
-      (xs := Fin.snoc (fun i => (x i : M)) a)).mpr h
-  obtain ⟨b, hb⟩ := (S.isElementary).exists_realize (φ := φ.onBoundedFormula ψ) (x := x')
-    (a := a) h'
-  refine ⟨⟨(b : M), b.2⟩, ?_⟩
-  exact (LHom.realize_onBoundedFormula φ ψ (v := default)
-    (xs := Fin.snoc (fun i => (x' i : M)) (b : M))).mp hb
+  refine Substructure.isElementary_of_exists _ fun n ψ x a h => ?_
+  -- the Tarski–Vaught condition in the richer language holds by elementarity of `S`
+  obtain ⟨b, hb⟩ := S.isElementary.exists_realize (φ := φ.onBoundedFormula ψ)
+    ((φ.realize_onBoundedFormula ψ).mpr h)
+  exact ⟨b, (φ.realize_onBoundedFormula ψ).mp hb⟩
 
 /-- The reduct of an elementary substructure along a language homomorphism, bundled again as an
 elementary substructure. -/
@@ -170,14 +128,13 @@ theorem ElementaryEmbedding.codRestrict_apply' {M : Type w} {N : Type w'} [L.Str
 theorem exists_small_elementarySubstructure_containing {N : Type w} [L.Structure N]
     {ι : Type p} (b : ι → N) :
     ∃ P : L.ElementarySubstructure N, (∀ i, b i ∈ P) ∧ Small.{max u v p} P := by
-  classical
   -- adjoin a constant for each parameter
   let L' : Language.{max u p, v} := L.sum (constantsOn ι)
   let : (constantsOn ι).Structure N := constantsOn.structure b
   obtain ⟨S, hS⟩ := exists_small_elementarySubstructure L' (M := N)
-  refine ⟨LHom.elementarySubstructureReduct LHom.sumInl S, ?_, hS⟩
-  intro i
-  exact Substructure.constants_mem (S := (S : L'.Substructure N)) (c := (Sum.inr i : L'.Constants))
+  exact ⟨LHom.elementarySubstructureReduct LHom.sumInl S,
+    fun i => Substructure.constants_mem (S := (S : L'.Substructure N))
+      (c := (Sum.inr i : L'.Constants)), hS⟩
 
 /-- An elementary embedding and a family of parameters in the target factor through a small
 elementary substructure of the target. -/
@@ -185,20 +142,11 @@ theorem ElementaryEmbedding.exists_small_factorization {M : Type w} {N : Type w'
     [L.Structure M] [L.Structure N] {ι : Type p} (e : M ↪ₑ[L] N) (b : ι → N) :
     ∃ (P : L.ElementarySubstructure N) (eP : M ↪ₑ[L] P) (c : ι → P),
       (∀ x, (eP x : N) = e x) ∧ (∀ i, (c i : N) = b i) ∧ Small.{max u v w p} P := by
-  classical
   -- adjoin a constant for every element of `M` (via `e`) and every parameter
-  let L' : Language.{max (max u w) p, v} := L.sum (constantsOn (M ⊕ ι))
-  let : (constantsOn (M ⊕ ι)).Structure N := constantsOn.structure (Sum.elim e b)
-  obtain ⟨S, hS⟩ := exists_small_elementarySubstructure L' (M := N)
-  let P : L.ElementarySubstructure N := LHom.elementarySubstructureReduct LHom.sumInl S
-  have hmem : ∀ x : M, e x ∈ P := fun x =>
-    Substructure.constants_mem (S := (S : L'.Substructure N))
-      (c := (Sum.inr (Sum.inl x) : L'.Constants))
-  have hmemb : ∀ i : ι, b i ∈ P := fun i =>
-    Substructure.constants_mem (S := (S : L'.Substructure N))
-      (c := (Sum.inr (Sum.inr i) : L'.Constants))
-  exact ⟨P, ElementaryEmbedding.codRestrict P e hmem, fun i => ⟨b i, hmemb i⟩,
-    fun _ => rfl, fun _ => rfl, hS⟩
+  obtain ⟨P, hP, hsmall⟩ :=
+    exists_small_elementarySubstructure_containing (L := L) (Sum.elim e b)
+  exact ⟨P, ElementaryEmbedding.codRestrict P e fun x => hP (Sum.inl x),
+    fun i => ⟨b i, hP (Sum.inr i)⟩, fun _ => rfl, fun _ => rfl, hsmall⟩
 
 end Language
 
