@@ -37,6 +37,15 @@ elementarity is needed.
 - `FirstOrder.Language.embedding_relativization`: for an embedding `f : M ↪[L] N`, the pair
   structure `(N, range f)` satisfies `φ^U` at `f ∘ a` if and only if `M` satisfies `φ` at `a`.
 - `FirstOrder.Language.pair_relativization`: the same statement for an elementary embedding.
+
+## TODO
+
+- Add relabeling/substitution naturality and derived-connective lemmas for `relativize` as concrete
+  downstream uses require them.
+- If pair-preserving embeddings gain callers, develop transport of `U` and relativized
+  satisfaction; avoid introducing a bundled pair-map hierarchy prematurely.
+- Revisit Mathlib's sum-structure/reduct APIs or a more general pair representation only if
+  multiple consumers justify it; preserve the current substructure-based semantics.
 -/
 
 universe u v w w'
