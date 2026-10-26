@@ -266,3 +266,22 @@ facts in Lean docstrings and archive the plan under
 `docs/plan/archive/` only if retaining the design history is useful,
 as prescribed by `docs/plan/README.md`. Update relative blueprint links
 if the plan is moved to the archive.
+
+## Deferred design TODOs (non-blocking)
+
+These are optional follow-ups, **not** uncompleted obligations of PR #42 or prerequisites for
+`lem:elementary-pair-axiomatization`. Revisit them only with concrete downstream consumers;
+keep the currently proved substructure semantics and elementary-pair axioms distinct.
+
+- [ ] **Naturality of relativization:** when needed, prove the smallest useful compatibility
+  statements for variable relabeling and substitution of original-`L` terms; distinguish
+  definitional equality from semantic equivalence and check binder indices.
+- [ ] **Transport of pairs:** if more than one downstream result needs maps between pairs,
+  formalize preservation/reflection of `U` under suitable embeddings or equivalences by
+  reusing Mathlib maps before introducing new bundled types.
+- [ ] **Structure API simplification:** revisit Mathlib's sum-structure/reduct constructors only
+  if they demonstrably simplify `pairStructure` while preserving the useful definitional
+  computation of its `L`-part.
+- [ ] **Generalized representation:** consider an arbitrary-`Set` pair constructor or a bundled
+  `Pair` only if downstream consumers reveal substantial duplication; do not weaken the
+  `S : L.Substructure M` assumption on the established semantics theorem.
