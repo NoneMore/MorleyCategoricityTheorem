@@ -61,6 +61,19 @@ extensions of an elementary pair are again elementary pairs, on their `U`-part a
 `IsElementaryPair` refers to the canonical `L`-reduct of the `L₀`-structure rather than to a
 separately given `L`-structure.  In the presence of an expansion hypothesis, the two readings agree
 by `LHom.IsExpansionOn.reduct_eq` and `isElementaryPair_iff`.
+
+## TODO
+
+- If multiple downstream uses need the elementary-pair condition independently of a background
+  theory, factor the closure and relativization schemes into a theory-independent
+  `elementaryPairAxioms L`; keep `elementaryPairTheory T` as their union with the transported
+  theory, adding monotonicity lemmas when needed.
+- If downstream proofs repeatedly extract the elementary substructure from `IsElementaryPair`,
+  provide a canonical `L.ElementarySubstructure` whose carrier is `pairPart L M`. Avoid a parallel
+  representation or unnecessary choice until a concrete consumer needs this API.
+- Develop transport of elementary pairs along pair-preserving embeddings and equivalences when
+  required by downstream results. Coordinate with the existing TODOs in `PairLanguage` rather
+  than introducing a bundled pair-map hierarchy prematurely.
 -/
 
 universe u v w w'
