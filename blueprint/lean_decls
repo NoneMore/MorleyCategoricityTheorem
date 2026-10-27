@@ -57,6 +57,12 @@ FirstOrder.Language.PairLanguage
 FirstOrder.Language.pairStructure
 FirstOrder.Language.BoundedFormula.relativize
 FirstOrder.Language.pair_relativization
+FirstOrder.Language.elementaryPairTheory
+FirstOrder.Language.IsElementaryPair
+FirstOrder.Language.model_elementaryPairTheory_iff
+FirstOrder.Language.ElementarySubstructure.model_elementaryPairTheory
+FirstOrder.Language.ElementarySubstructure.isElementaryPair
+FirstOrder.Language.ElementaryEmbedding.model_elementaryPairTheory
 FirstOrder.Language.IsMinimal
 FirstOrder.Language.Formula.IsMinimal
 FirstOrder.Language.Formula.IsStronglyMinimal

@@ -14,6 +14,8 @@ as `S`.  Relativizing an `L`-formula `φ` to `U` gives an `L₀`-formula `φ^U` 
 range over `U`.
 
 On the pair structure, `φ^U` holds of a tuple from `S` exactly when `φ` holds of that tuple in `S`.
+This is the special case, for the `L₀`-structure `(M, S)`, of the general statement that this holds
+whenever the `U`-part of an `L₀`-structure is the underlying set of the `L`-substructure `S`.
 Relativization therefore only requires `S` to be an `L`-substructure.  For an embedding
 `f : M ↪[L] N` the pair structure is `(N, range f)`, and `φ^U` holds at `f ∘ a` exactly when `M`
 satisfies `φ` at `a`; the induced equivalence `M ≃[L] range f` is the only ingredient, so no
@@ -26,14 +28,20 @@ elementarity is needed.
 - `FirstOrder.Language.pairPredicate`: the relation symbol `U`.
 - `FirstOrder.Language.predicateStructure`, `FirstOrder.Language.pairStructure`: the structures
   interpreting `U`, written field by field so that the `L`-part computes definitionally.
+- `FirstOrder.Language.pairPart`: the `U`-part of an arbitrary `L₀`-structure.
 - `FirstOrder.Language.BoundedFormula.relativize`: relativization `φ ↦ φ^U`.
 
 ## Main results
 
-- `FirstOrder.Language.realize_guard`: the predicate `U` holds of the last bound variable of a
-  quantifier body exactly when the corresponding tuple entry lies in `S`.
-- `FirstOrder.Language.BoundedFormula.realize_relativize`: `φ^U` holds in the pair structure at a
-  tuple from `S` if and only if `φ` holds of that tuple in `S`.
+- `FirstOrder.Language.realize_guard_of_pairPart` and `FirstOrder.Language.realize_guard`: the
+  predicate `U` holds of the last bound variable of a quantifier body exactly when the corresponding
+  tuple entry lies in the `U`-part.
+- `FirstOrder.Language.BoundedFormula.realize_relativize_of_pairPart` and
+  `FirstOrder.Language.Formula.realize_relativize_of_pairPart`: `φ^U` holds at a tuple from `S` if
+  and only if `φ` holds of that tuple in `S`, in an arbitrary `L₀`-structure whose `U`-part is the
+  `L`-substructure `S`.
+- `FirstOrder.Language.BoundedFormula.realize_relativize` and
+  `FirstOrder.Language.Formula.realize_relativize`: the same statements for the pair structure.
 - `FirstOrder.Language.embedding_relativization`: for an embedding `f : M ↪[L] N`, the pair
   structure `(N, range f)` satisfies `φ^U` at `f ∘ a` if and only if `M` satisfies `φ` at `a`.
 - `FirstOrder.Language.pair_relativization`: the same statement for an elementary embedding.
@@ -109,6 +117,19 @@ theorem pairStructure_RelMap_pairPredicate (S : L.Substructure M) (xs : Fin 1 �
   change (if h : 1 = 1 then xs (Fin.cast h.symm 0) ∈ S else False) ↔ xs 0 ∈ S
   simp
 
+/-! ### The `U`-part of a pair structure -/
+
+/-- The underlying set of the `U`-part of a `PairLanguage L`-structure: the elements satisfying the
+new unary predicate `U`. -/
+def pairPart (L : Language.{u, v}) (M : Type w) [(PairLanguage L).Structure M] : Set M :=
+  {x | Structure.RelMap (pairPredicate L) fun _ => x}
+
+/-- Membership in the `U`-part is the interpretation of the predicate `U`. -/
+@[simp]
+theorem mem_pairPart {L : Language.{u, v}} {M : Type w} [(PairLanguage L).Structure M] {x : M} :
+    x ∈ pairPart L M ↔ Structure.RelMap (pairPredicate L) fun _ => x :=
+  Iff.rfl
+
 /-- The predicate `U`, applied to the last bound variable of a quantifier body, holds exactly when
 the corresponding entry of the tuple lies in `S`. -/
 @[simp]
@@ -120,6 +141,17 @@ theorem realize_guard (S : L.Substructure M) {α : Type*} {n : ℕ} (v : α → 
   let inst : (PairLanguage L).Structure M := pairStructure S
   rw [BoundedFormula.realize_rel₁]
   simp [pairStructure_RelMap_pairPredicate]
+
+/-- The same guard, in an arbitrary `L₀`-structure whose `U`-part is an `L`-substructure `S`. -/
+@[simp]
+theorem realize_guard_of_pairPart {L : Language.{u, v}} {M : Type w} [L.Structure M]
+    [(PairLanguage L).Structure M] {S : L.Substructure M} (hS : ∀ x : M, x ∈ pairPart L M ↔ x ∈ S)
+    {α : Type*} {n : ℕ} (v : α → M) (xs : Fin (n + 1) → M) :
+    ((pairPredicate L).boundedFormula₁ (Term.var (Sum.inr (Fin.last n)))).Realize v xs ↔
+      xs (Fin.last n) ∈ S := by
+  rw [BoundedFormula.realize_rel₁]
+  simp only [Term.realize_var, Sum.elim_inr, Matrix.vec_single_eq_const]
+  exact hS (xs (Fin.last n))
 
 /-! ### Relativization -/
 
@@ -174,17 +206,13 @@ private theorem snoc_coe {S : L.Substructure M} {n : ℕ} (xs : Fin n → S) (b 
       Fin.snoc (fun i => ((xs i : S) : M)) ((b : S) : M) :=
   Fin.comp_snoc Subtype.val xs b
 
-/-- `φ^U` holds in the pair structure `(M, S)` at a tuple from `S` exactly when `φ` holds of that
-tuple in `S`. -/
-theorem realize_relativize {S : L.Substructure M} :
+/-- Relativization in an `L₀`-structure whose `U`-part is an `L`-substructure `S`: `φ^U` holds at a
+tuple from `S` exactly when `φ` holds of that tuple in `S`. -/
+theorem realize_relativize_of_pairPart {L : Language.{u, v}} {M : Type w} [L.Structure M]
+    [(PairLanguage L).Structure M] [(LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M]
+    {S : L.Substructure M} (hS : ∀ x : M, x ∈ pairPart L M ↔ x ∈ S) :
     ∀ {α : Type*} {n : ℕ} (φ : L.BoundedFormula α n) (v : α → S) (xs : Fin n → S),
-      @BoundedFormula.Realize (PairLanguage L) M (pairStructure S) α n φ.relativize
-          (fun a => (v a : M)) (fun i => (xs i : M)) ↔
-        φ.Realize v xs := by
-  -- Local instances: `LHom.realize_onTerm` needs the pair structure and its expansion property.
-  let inst : (PairLanguage L).Structure M := pairStructure S
-  have hExp : (LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M :=
-    pairStructure_isExpansionOn_sumInl S
+      φ.relativize.Realize (fun a => (v a : M)) (fun i => (xs i : M)) ↔ φ.Realize v xs := by
   intro α n φ
   induction φ with
   | falsum =>
@@ -206,34 +234,53 @@ theorem realize_relativize {S : L.Substructure M} :
           (Sum.elim (fun a => (v a : M)) (fun i => (xs i : M)))) ↔
         Structure.RelMap R fun i => (ts i).realize (Sum.elim v xs)
     simp only [sum_elim_coe, LHom.realize_onTerm, realize_term_substructure]
-    exact Iff.rfl
+    exact iff_of_eq (LHom.map_onRelation (LHom.sumInl : L →ᴸ PairLanguage L) R _)
   | imp φ ψ ihφ ihψ =>
     intro v xs
     exact imp_congr (ihφ v xs) (ihψ v xs)
   | all φ ih =>
     intro v xs
     rw [relativize_all, BoundedFormula.realize_all, BoundedFormula.realize_all]
-    simp only [BoundedFormula.realize_imp, realize_guard, Fin.snoc_last]
+    simp only [BoundedFormula.realize_imp, realize_guard_of_pairPart hS, Fin.snoc_last]
     constructor
     · rintro h b
       exact (ih v (Fin.snoc xs b)).mp (by simpa only [snoc_coe] using h ↑b b.2)
     · rintro h a ha
       simpa only [snoc_coe] using (ih v (Fin.snoc xs ⟨a, ha⟩)).mpr (h ⟨a, ha⟩)
 
+/-- The pair-structure case of `BoundedFormula.realize_relativize_of_pairPart`: `φ^U` holds in
+`(M, S)` at a tuple from `S` exactly when `φ` holds of that tuple in `S`. -/
+theorem realize_relativize {S : L.Substructure M} :
+    ∀ {α : Type*} {n : ℕ} (φ : L.BoundedFormula α n) (v : α → S) (xs : Fin n → S),
+      @BoundedFormula.Realize (PairLanguage L) M (pairStructure S) α n φ.relativize
+          (fun a => (v a : M)) (fun i => (xs i : M)) ↔
+        φ.Realize v xs :=
+  @realize_relativize_of_pairPart L M _ (pairStructure S)
+    (pairStructure_isExpansionOn_sumInl S) S fun x => by simp [pairPart]
+
 end BoundedFormula
 
-/-- Zero-binder specialization of `BoundedFormula.realize_relativize`: `φ^U` holds in the pair
-structure `(M, S)` at a tuple from `S` exactly when `φ` holds of that tuple in `S`. -/
+/-- Formula-level form of `BoundedFormula.realize_relativize_of_pairPart`: `φ^U` holds at a tuple
+from `S` exactly when `φ` holds of that tuple in `S`. -/
+theorem Formula.realize_relativize_of_pairPart {L : Language.{u, v}} {M : Type w} [L.Structure M]
+    [(PairLanguage L).Structure M] [(LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M]
+    {S : L.Substructure M} (hS : ∀ x : M, x ∈ pairPart L M ↔ x ∈ S) {α : Type*}
+    (φ : L.Formula α) {v : α → S} :
+    Formula.Realize φ.relativize (fun a => (v a : M)) ↔ φ.Realize v := by
+  have h := BoundedFormula.realize_relativize_of_pairPart (S := S) hS (φ := φ) (v := v)
+    (xs := (default : Fin 0 → S))
+  rw [show (fun i : Fin 0 => ((default : Fin 0 → S) i : M)) = (default : Fin 0 → M) from
+    Subsingleton.elim _ _] at h
+  exact h
+
+/-- The pair-structure case of `Formula.realize_relativize_of_pairPart`: `φ^U` holds in `(M, S)` at a
+tuple from `S` exactly when `φ` holds of that tuple in `S`. -/
 theorem Formula.realize_relativize {S : L.Substructure M} {α : Type*} {φ : L.Formula α}
     {v : α → S} :
     letI : (PairLanguage L).Structure M := pairStructure S
-    Formula.Realize φ.relativize (fun a => (v a : M)) ↔ φ.Realize v := by
-  have h := BoundedFormula.realize_relativize (S := S) (φ := φ) (v := v) (xs := default)
-  have hd : (fun i : Fin 0 => ((default : Fin 0 → S) i : M)) = default := by
-    funext i
-    exact i.elim0
-  rw [hd] at h
-  exact h
+    Formula.Realize φ.relativize (fun a => (v a : M)) ↔ φ.Realize v :=
+  @Formula.realize_relativize_of_pairPart L M _ (pairStructure S)
+    (pairStructure_isExpansionOn_sumInl S) S (fun x => by simp [pairPart]) α φ v
 
 /-! ### Elementary pairs -/
 
