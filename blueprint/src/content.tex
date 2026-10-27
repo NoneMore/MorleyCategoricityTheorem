@@ -727,6 +727,8 @@ as exactly \(M\).
 
 \begin{lemma}[Elementary pairs are first-order and preserved]
 \label{lem:elementary-pair-axiomatization}
+\lean{FirstOrder.Language.elementaryPairTheory, FirstOrder.Language.IsElementaryPair, FirstOrder.Language.model_elementaryPairTheory_iff, FirstOrder.Language.ElementarySubstructure.model_elementaryPairTheory, FirstOrder.Language.ElementarySubstructure.isElementaryPair, FirstOrder.Language.ElementaryEmbedding.model_elementaryPairTheory}
+\leanok
 \uses{def:pair-language,lem:pair-relativization,thm:tarski-vaught-test}
 There is an \(L_0\)-theory whose models are exactly the structures
 \((N,U)\) in which \(N\models T\), the predicate \(U\) is the universe
@@ -746,9 +748,16 @@ closed under the \(L\)-functions, and for every \(L\)-formula
 \]
 A genuine elementary pair satisfies this scheme by relativization.
 Conversely, the closure axioms make the \(U\)-part a substructure and
-the scheme gives the Tarski--Vaught condition, hence elementarity.
+the scheme gives the elementarity condition (equivalently, the
+Tarski--Vaught condition), hence \(M\preceq N\).
 Since this is a first-order theory, elementary substructures and
 extensions of pair structures remain models of the same theory.
+\emph{Formalization note.}  The closure axioms are imposed on the
+function symbols of \(L\) only; constants are the nullary ones, and no
+axiom is needed for relation symbols.  Elementarity is Mathlib's
+\texttt{FirstOrder.Language.Substructure.IsElementary}, so the proof
+derives the elementarity condition directly instead of passing through
+the Tarski--Vaught test.
 \end{proof}
 
 \begin{definition}[Homogeneous models]
