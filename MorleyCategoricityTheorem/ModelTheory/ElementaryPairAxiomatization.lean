@@ -35,7 +35,7 @@ extensions of an elementary pair are again elementary pairs, on their `U`-part a
 ## Main definitions
 
 - `FirstOrder.Language.IsElementaryPair`: an `L₀`-structure whose `U`-part is the universe of an
-  `L`-elementary substructure.
+  `L`-elementary substructure of its `L`-reduct.
 - `FirstOrder.Language.elementaryPairTheory`: the `L₀`-theory of elementary pairs for `T`.
 
 ## Main results
@@ -50,11 +50,17 @@ extensions of an elementary pair are again elementary pairs, on their `U`-part a
   `FirstOrder.Language.model_elementaryPairTheory_iff`: the models of `elementaryPairTheory T` are
   exactly the structures `(N, U)` with `N ⊨ T` and `U` the universe of an `L`-elementary
   substructure.
+- `FirstOrder.Language.pairStructure_model_elementaryPairTheory`: the pair structure `(M, S)` of an
+  elementary substructure `S` of a model of `T` is a model of `elementaryPairTheory T`.
 - `FirstOrder.Language.ElementarySubstructure.model_elementaryPairTheory` and
   `FirstOrder.Language.ElementaryEmbedding.model_elementaryPairTheory`: an `L₀`-elementary
   substructure or elementary extension of a model of `elementaryPairTheory T` is again a model, so
   by the characterization above it is again an elementary pair; see also
   `FirstOrder.Language.ElementarySubstructure.isElementaryPair`.
+
+`IsElementaryPair` refers to the canonical `L`-reduct of the `L₀`-structure rather than to a
+separately given `L`-structure.  In the presence of an expansion hypothesis, the two readings agree
+by `LHom.IsExpansionOn.reduct_eq` and `isElementaryPair_iff`.
 -/
 
 universe u v w w'
@@ -63,10 +69,25 @@ namespace FirstOrder
 
 namespace Language
 
+/-! ### The `L`-reduct of an `L₀`-structure -/
+
+/-- The reduct of a structure along a language map that is an expansion is the given structure. -/
+theorem LHom.IsExpansionOn.reduct_eq {L L' : Language} {ϕ : L →ᴸ L'} {M : Type*}
+    [L.Structure M] [L'.Structure M] (h : ϕ.IsExpansionOn M) :
+    ϕ.reduct M = (inferInstance : L.Structure M) := by
+  apply Structure.ext
+  · funext n f xs
+    exact h.map_onFunction f xs
+  · funext n R xs
+    exact h.map_onRelation R xs
+
+/-! ### Elementary pairs -/
+
 /-- An elementary pair: an `L₀`-structure whose `U`-part is the universe of an `L`-elementary
-substructure. -/
-def IsElementaryPair (L : Language.{u, v}) (M : Type w) [L.Structure M]
-    [(PairLanguage L).Structure M] : Prop :=
+substructure of its `L`-reduct.  Taking the `L`-structure to be the canonical reduct makes this a
+property of the `L₀`-structure alone, rather than of an unrelated `L`-structure on the same type. -/
+def IsElementaryPair (L : Language.{u, v}) (M : Type w) [(PairLanguage L).Structure M] : Prop :=
+  letI : L.Structure M := (LHom.sumInl : L →ᴸ PairLanguage L).reduct M
   ∃ S : L.ElementarySubstructure M, (S : Set M) = pairPart L M
 
 /-! ### Quantifying the free variables of a formula -/
@@ -173,6 +194,15 @@ section Models
 variable {L : Language.{u, v}} {M : Type w} [L.Structure M] [(PairLanguage L).Structure M]
   [(LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M]
 
+/-- With an expansion hypothesis, `IsElementaryPair` says that the `U`-part is the universe of an
+elementary substructure of the given `L`-structure: the `L`-structure used by `IsElementaryPair` is
+the canonical reduct, which agrees with the given one by `LHom.IsExpansionOn.reduct_eq`. -/
+theorem isElementaryPair_iff :
+    IsElementaryPair L M ↔ ∃ S : L.ElementarySubstructure M, (S : Set M) = pairPart L M := by
+  have h := LHom.IsExpansionOn.reduct_eq (ϕ := (LHom.sumInl : L →ᴸ PairLanguage L)) (M := M)
+    (inferInstance : (LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M)
+  rw [IsElementaryPair, h]
+
 /-- The `T`-part of the elementary-pair axioms: a model of `elementaryPairTheory T` is a model
 of `T`. -/
 theorem Theory.model_of_model_elementaryPairTheory {T : L.Theory}
@@ -211,13 +241,14 @@ theorem pairPartSubstructure_isElementary {T : L.Theory}
 is an elementary pair. -/
 theorem isElementaryPair_of_model {T : L.Theory} [hT : M ⊨ elementaryPairTheory (L := L) T] :
     IsElementaryPair L M :=
-  ⟨⟨pairPartSubstructure, pairPartSubstructure_isElementary (T := T)⟩, rfl⟩
+  isElementaryPair_iff.mpr
+    ⟨⟨pairPartSubstructure, pairPartSubstructure_isElementary (T := T)⟩, rfl⟩
 
 /-- **Elementary-pair axiomatization, soundness direction.**  An elementary pair whose ambient
 reduct is a model of `T` is a model of `elementaryPairTheory T`. -/
 theorem model_of_isElementaryPair {T : L.Theory} (hT : M ⊨ T) (h : IsElementaryPair L M) :
     M ⊨ elementaryPairTheory (L := L) T := by
-  obtain ⟨S, hS⟩ := h
+  obtain ⟨S, hS⟩ := isElementaryPair_iff.mp h
   unfold elementaryPairTheory
   refine Theory.Model.union (Theory.Model.union ((LHom.onTheory_model _ T).mpr hT) ?_) ?_
   · rw [Theory.model_iff]
@@ -249,6 +280,25 @@ theorem model_elementaryPairTheory_iff {T : L.Theory} :
 
 end Models
 
+/-! ### Pair structures -/
+
+section PairStructure
+
+variable {L : Language.{u, v}} {M : Type w} [L.Structure M] {T : L.Theory}
+
+/-- **Elementary-pair axiomatization, pair-structure form.**  If `S` is an elementary
+`L`-substructure of a model `M` of `T`, then the pair structure `(M, S)` is a model of
+`elementaryPairTheory T`. -/
+theorem pairStructure_model_elementaryPairTheory (S : L.ElementarySubstructure M) (hT : M ⊨ T) :
+    letI : (PairLanguage L).Structure M := pairStructure (S : L.Substructure M)
+    M ⊨ elementaryPairTheory (L := L) T :=
+  letI : (PairLanguage L).Structure M := pairStructure (S : L.Substructure M)
+  letI : (LHom.sumInl : L →ᴸ PairLanguage L).IsExpansionOn M :=
+    pairStructure_isExpansionOn_sumInl (S : L.Substructure M)
+  model_of_isElementaryPair hT ⟨S, rfl⟩
+
+end PairStructure
+
 /-! ### Preservation under elementary substructures and extensions -/
 
 section Preservation
@@ -265,9 +315,7 @@ theorem ElementarySubstructure.model_elementaryPairTheory {M : Type w}
 elementary pair is again an elementary pair, on its `U`-part and its ambient `L`-reduct. -/
 theorem ElementarySubstructure.isElementaryPair {M : Type w} [(PairLanguage L).Structure M]
     (S : (PairLanguage L).ElementarySubstructure M) [M ⊨ elementaryPairTheory (L := L) T] :
-    letI : L.Structure S := (LHom.sumInl : L →ᴸ PairLanguage L).reduct S
     IsElementaryPair L S :=
-  -- the `letI` is needed: `S` only carries the `L₀`-structure induced from `M`
   letI : L.Structure S := (LHom.sumInl : L →ᴸ PairLanguage L).reduct S
   isElementaryPair_of_model (L := L) (M := S) (T := T)
 
