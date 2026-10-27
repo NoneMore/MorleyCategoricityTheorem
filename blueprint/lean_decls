@@ -53,6 +53,10 @@ FirstOrder.Language.Theory.exists_elementaryExtension_card_eq_with_full_unary_re
 FirstOrder.Language.Theory.exists_model_of_card_definably_full
 FirstOrder.Language.Theory.IsVaughtianPair
 FirstOrder.Language.Theory.HasVaughtianPair
+FirstOrder.Language.PairLanguage
+FirstOrder.Language.pairStructure
+FirstOrder.Language.BoundedFormula.relativize
+FirstOrder.Language.pair_relativization
 FirstOrder.Language.IsMinimal
 FirstOrder.Language.Formula.IsMinimal
 FirstOrder.Language.Formula.IsStronglyMinimal
