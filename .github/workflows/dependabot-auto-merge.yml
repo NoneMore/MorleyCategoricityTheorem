@@ -28,11 +28,19 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
 
+      - name: Report Dependabot update classification
+        env:
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          echo "Package ecosystem: $ECOSYSTEM"
+          echo "Update type: $UPDATE_TYPE"
+
       - name: Enable auto-merge for low-risk updates
         if: >-
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
           (
-            steps.metadata.outputs.package-ecosystem == 'github-actions' &&
+            steps.metadata.outputs.package-ecosystem == 'github_actions' &&
             steps.metadata.outputs.update-type == 'version-update:semver-minor'
           )
         env:
