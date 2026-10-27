@@ -49,7 +49,8 @@ extensions of an elementary pair are again elementary pairs, on their `U`-part a
   `T` is a model of `elementaryPairTheory T`, giving
   `FirstOrder.Language.model_elementaryPairTheory_iff`: the models of `elementaryPairTheory T` are
   exactly the structures `(N, U)` with `N ⊨ T` and `U` the universe of an `L`-elementary
-  substructure.
+  substructure.  `FirstOrder.Language.model_elementaryPairTheory_iff_reduct` states this with the
+  `L`-structure fixed to the canonical `L`-reduct, so only the pair structure is needed.
 - `FirstOrder.Language.pairStructure_model_elementaryPairTheory`: the pair structure `(M, S)` of an
   elementary substructure `S` of a model of `T` is a model of `elementaryPairTheory T`.
 - `FirstOrder.Language.ElementarySubstructure.model_elementaryPairTheory` and
@@ -57,10 +58,16 @@ extensions of an elementary pair are again elementary pairs, on their `U`-part a
   substructure or elementary extension of a model of `elementaryPairTheory T` is again a model, so
   by the characterization above it is again an elementary pair; see also
   `FirstOrder.Language.ElementarySubstructure.isElementaryPair`.
+- `FirstOrder.Language.isElementaryPair_iff_model_empty`: elementary pairs are exactly the models of
+  the theory-independent part `elementaryPairTheory ∅`.  Consequently
+  `FirstOrder.Language.ElementarySubstructure.isElementaryPair_of_isElementaryPair` and
+  `FirstOrder.Language.ElementaryEmbedding.isElementaryPair_of_isElementaryPair` preserve the
+  elementary-pair property without fixing a background theory.
 
 `IsElementaryPair` refers to the canonical `L`-reduct of the `L₀`-structure rather than to a
 separately given `L`-structure.  In the presence of an expansion hypothesis, the two readings agree
-by `LHom.IsExpansionOn.reduct_eq` and `isElementaryPair_iff`.
+by `LHom.IsExpansionOn.reduct_eq` and `isElementaryPair_iff`; the characterization above and the
+theory-independent preservation results only require the pair structure.
 
 ## TODO
 
@@ -293,6 +300,33 @@ theorem model_elementaryPairTheory_iff {T : L.Theory} :
 
 end Models
 
+/-! ### The canonical-reduct form of the characterization -/
+
+/-- **Elementary-pair axiomatization.**  The models of `elementaryPairTheory T` are exactly the
+structures `(N, U)` in which `N` is a model of `T` and `U` is the universe of an `L`-elementary
+substructure of `N`.  This version fixes the `L`-structure to be the canonical `L`-reduct of the
+`L₀`-structure, so it applies to an arbitrary `L₀`-structure. -/
+theorem model_elementaryPairTheory_iff_reduct {L : Language.{u, v}} {M : Type w}
+    [(PairLanguage L).Structure M] {T : L.Theory} :
+    letI : L.Structure M := (LHom.sumInl : L →ᴸ PairLanguage L).reduct M
+    M ⊨ elementaryPairTheory (L := L) T ↔ M ⊨ T ∧ IsElementaryPair L M :=
+  letI : L.Structure M := (LHom.sumInl : L →ᴸ PairLanguage L).reduct M
+  model_elementaryPairTheory_iff
+
+/-- An elementary pair is exactly an `L₀`-structure satisfying the theory-independent part of the
+elementary-pair axioms, namely the closure axioms and the relativization scheme. -/
+theorem isElementaryPair_iff_model_empty {L : Language.{u, v}} {M : Type w}
+    [(PairLanguage L).Structure M] :
+    IsElementaryPair L M ↔ M ⊨ elementaryPairTheory (L := L) (∅ : L.Theory) :=
+  letI : L.Structure M := (LHom.sumInl : L →ᴸ PairLanguage L).reduct M
+  isElementaryPair_iff_model (T := ∅) model_empty
+
+/-- Regression test: the canonical-reduct characterization is usable from the `L₀`-structure alone,
+without a separately chosen `L`-structure on `M`. -/
+example {L : Language.{u, v}} {M : Type w} [(PairLanguage L).Structure M] {T : L.Theory}
+    (h : M ⊨ elementaryPairTheory (L := L) T) : IsElementaryPair L M :=
+  ((model_elementaryPairTheory_iff_reduct (L := L) (M := M) (T := T)).mp h).2
+
 /-! ### Pair structures -/
 
 section PairStructure
@@ -332,12 +366,32 @@ theorem ElementarySubstructure.isElementaryPair {M : Type w} [(PairLanguage L).S
   letI : L.Structure S := (LHom.sumInl : L →ᴸ PairLanguage L).reduct S
   isElementaryPair_of_model (L := L) (M := S) (T := T)
 
+/-- **Elementary-pair preservation, theory-independent form.**  An `L₀`-elementary substructure of
+an elementary pair is again an elementary pair, with no background theory fixed. -/
+theorem ElementarySubstructure.isElementaryPair_of_isElementaryPair {M : Type w}
+    [(PairLanguage L).Structure M] (S : (PairLanguage L).ElementarySubstructure M)
+    (h : IsElementaryPair L M) : IsElementaryPair L S :=
+  letI : M ⊨ elementaryPairTheory (L := L) (∅ : L.Theory) :=
+    (isElementaryPair_iff_model_empty (L := L) (M := M)).mp h
+  (isElementaryPair_iff_model_empty (L := L) (M := S)).mpr
+    (ElementarySubstructure.model_elementaryPairTheory (T := ∅) S)
+
 /-- An `L₀`-elementary extension of a model of the elementary-pair axioms is again a model. -/
 theorem ElementaryEmbedding.model_elementaryPairTheory {M : Type w} {N : Type w'}
     [(PairLanguage L).Structure M] [(PairLanguage L).Structure N]
     (e : M ↪ₑ[PairLanguage L] N) [M ⊨ elementaryPairTheory (L := L) T] :
     N ⊨ elementaryPairTheory (L := L) T :=
   (e.theory_model_iff _).mp inferInstance
+
+/-- **Elementary-pair preservation, theory-independent form.**  An `L₀`-elementary extension of an
+elementary pair is again an elementary pair, with no background theory fixed. -/
+theorem ElementaryEmbedding.isElementaryPair_of_isElementaryPair {M : Type w} {N : Type w'}
+    [(PairLanguage L).Structure M] [(PairLanguage L).Structure N]
+    (e : M ↪ₑ[PairLanguage L] N) (h : IsElementaryPair L M) : IsElementaryPair L N :=
+  letI : M ⊨ elementaryPairTheory (L := L) (∅ : L.Theory) :=
+    (isElementaryPair_iff_model_empty (L := L) (M := M)).mp h
+  (isElementaryPair_iff_model_empty (L := L) (M := N)).mpr
+    (ElementaryEmbedding.model_elementaryPairTheory (T := ∅) e)
 
 end Preservation
 
