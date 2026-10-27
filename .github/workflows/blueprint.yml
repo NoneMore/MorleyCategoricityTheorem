@@ -78,7 +78,7 @@ jobs:
             lake-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-
 
       - name: Set up Lean
-        uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
+        uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6 # v1.6.2
         with:
           auto-config: false
           build: false
