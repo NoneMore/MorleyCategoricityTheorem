@@ -700,6 +700,8 @@ and hence a Vaughtian pair.
 
 \begin{definition}[The pair language]
 \label{def:pair-language}
+\lean{FirstOrder.Language.PairLanguage, FirstOrder.Language.pairStructure, FirstOrder.Language.BoundedFormula.relativize}
+\leanok
 \uses{def:elementary-maps}
 For an inclusion \(M\preceq N\), let \(L_0=L\cup\{U\}\), where the new
 unary predicate \(U\) is interpreted as \(M\).  For each \(L\)-formula
@@ -709,6 +711,8 @@ to \(U\).
 
 \begin{lemma}[Relativization in an elementary pair]
 \label{lem:pair-relativization}
+\lean{FirstOrder.Language.pair_relativization}
+\leanok
 \uses{def:pair-language}
 If \(M\preceq N\), then for every \(L\)-formula \(\varphi\) and tuple
 \(\bar a\) from \(M\), the pair structure \((N,M)\) satisfies
