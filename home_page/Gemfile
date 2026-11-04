@@ -1,6 +1,7 @@
 source "https://rubygems.org"
 
-ruby "3.4.3"
+# Accept current Ruby 3.4 patch releases while keeping all gems locked in Gemfile.lock.
+ruby "~> 3.4.3"
 
 gem "github-pages", "~> 232", group: :jekyll_plugins
 gem "webrick", "~> 1.9"

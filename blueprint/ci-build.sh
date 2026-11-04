@@ -1,22 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This script runs inside the pinned TeX Live Alpine image used by both PR
-# validation and the production documentation workflow. Pin the primary Alpine
-# build tools as well, so repository updates fail closed instead of silently
-# changing the Blueprint toolchain. Transitive APK dependencies still come from
-# the Alpine v3.21 repositories; a fully hermetic build would require a custom
-# immutable image containing these tools.
-apk add --no-cache \
-  'py3-pip=24.3.1-r0' \
-  'python3=3.12.16-r0' \
-  'python3-dev=3.12.16-r0' \
-  'git=2.47.3-r0' \
-  'pkgconf=2.3.0-r0' \
-  'graphviz=12.2.0-r0' \
-  'graphviz-dev=12.2.0-r0' \
-  'gcc=14.2.0-r4' \
-  'musl-dev=1.2.5-r12'
+# This script runs inside the digest-pinned TeX Live image (Alpine v3.21)
+# shared by PR validation and documentation publishing. Alpine repositories
+# replace package patch/revision builds in place, so pinning exact APK revisions
+# here would eventually make even an unchanged commit unbuildable. Restrict the
+# Python minor version required by the virtualenv and resolve available security
+# and patch updates within the image's fixed Alpine release branch.
+# The Python application dependencies remain pinned in requirements-ci.txt.
+# For a fully hermetic system toolchain, preinstall these APKs in an immutable
+# custom image and pin that image by digest instead.
+apk add --no-cache --upgrade \
+  py3-pip \
+  'python3=~3.12' \
+  'python3-dev=~3.12' \
+  git \
+  pkgconf \
+  graphviz \
+  graphviz-dev \
+  gcc \
+  musl-dev
+
+# Record resolved native packages to make future environment drift diagnosable.
+apk info -v python3 python3-dev git graphviz graphviz-dev gcc
 
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
 git config --global --add safe.directory "$(pwd)"

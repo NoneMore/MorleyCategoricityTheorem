@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  # Detect upstream Alpine/Ruby package drift before the next PR needs CI.
+  schedule:
+    - cron: '17 8 * * 1'
   workflow_dispatch:
 
 concurrency:
@@ -208,7 +211,7 @@ jobs:
   blueprint:
     needs: classify
     if: needs.classify.outputs.blueprint == 'true'
-    # Keep the Ruby 3.4.3 pinned by home_page until its lockfile is upgraded.
+    # Use an explicit OS image instead of the moving ubuntu-latest alias.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     name: Validate blueprint
@@ -246,7 +249,7 @@ jobs:
   homepage:
     needs: classify
     if: needs.classify.outputs.homepage == 'true'
-    # Ruby 3.4.3 has no prebuilt release for ubuntu-26.04.
+    # The homepage uses the same stable runner as Blueprint validation.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     name: Validate homepage
