@@ -208,7 +208,8 @@ jobs:
   blueprint:
     needs: classify
     if: needs.classify.outputs.blueprint == 'true'
-    runs-on: ubuntu-latest
+    # Keep the Ruby 3.4.3 pinned by home_page until its lockfile is upgraded.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     name: Validate blueprint
     steps:
@@ -245,7 +246,8 @@ jobs:
   homepage:
     needs: classify
     if: needs.classify.outputs.homepage == 'true'
-    runs-on: ubuntu-latest
+    # Ruby 3.4.3 has no prebuilt release for ubuntu-26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     name: Validate homepage
     steps:

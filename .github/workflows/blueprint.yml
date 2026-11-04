@@ -24,7 +24,8 @@ permissions:
 
 jobs:
   publish_documentation:
-    runs-on: ubuntu-latest
+    # Ruby 3.4.3 is available on this runner image, unlike ubuntu-26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     name: Build and deploy documentation
     permissions:
