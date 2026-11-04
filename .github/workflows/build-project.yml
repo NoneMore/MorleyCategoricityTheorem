@@ -18,7 +18,8 @@ permissions:
 
 jobs:
   classify:
-    runs-on: ubuntu-latest
+    # Pin the runner generation; ubuntu-latest can migrate without a PR change.
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     name: Classify changes
     outputs:
@@ -79,7 +80,7 @@ jobs:
           fi
 
   workflows:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     name: Validate workflows
     steps:
@@ -110,7 +111,7 @@ jobs:
   lean:
     needs: classify
     if: needs.classify.outputs.lean == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     name: Validate Lean
     steps:
@@ -278,7 +279,7 @@ jobs:
       - blueprint
       - homepage
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     name: Validate repository
     steps:
