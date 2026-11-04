@@ -66,3 +66,10 @@ FirstOrder.Language.ElementaryEmbedding.model_elementaryPairTheory
 FirstOrder.Language.IsMinimal
 FirstOrder.Language.Formula.IsMinimal
 FirstOrder.Language.Formula.IsStronglyMinimal
+FirstOrder.Language.relAlgebraicClosure
+FirstOrder.Language.mem_relAlgebraicClosure_iff
+FirstOrder.Language.relAlgebraicClosure_subset
+FirstOrder.Language.subset_relAlgebraicClosure
+FirstOrder.Language.relAlgebraicClosure_mono
+FirstOrder.Language.relAlgebraicClosure_idem
+FirstOrder.Language.mem_relAlgebraicClosure_iff_exists_finset

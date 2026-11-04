@@ -1071,6 +1071,8 @@ strongly minimal if this remains true in every elementary extension.
 
 \begin{definition}[Algebraic closure on a strongly minimal set over a base]
 \label{def:strongly-minimal-pregeometry}
+\lean{FirstOrder.Language.relAlgebraicClosure, FirstOrder.Language.mem_relAlgebraicClosure_iff}
+\leanok
 \uses{def:minimality,def:algebraic-closure}
 For a strongly minimal set \(D\) definable over \(A\), define
 \[
@@ -1082,12 +1084,15 @@ algebraic over \(A\cup X\).
 
 \begin{lemma}[Closure laws for relative algebraic closure]
 \label{lem:strongly-minimal-closure-laws}
+\lean{FirstOrder.Language.relAlgebraicClosure_subset, FirstOrder.Language.subset_relAlgebraicClosure, FirstOrder.Language.relAlgebraicClosure_mono, FirstOrder.Language.relAlgebraicClosure_idem, FirstOrder.Language.mem_relAlgebraicClosure_iff_exists_finset}
+\leanok
 \uses{def:strongly-minimal-pregeometry,def:algebraic-closure}
 The operator \(\operatorname{cl}_A\) is reflexive, monotone, idempotent,
 and has finite character.
 \end{lemma}
 
 \begin{proof}
+\leanok
 These are the corresponding standard properties of algebraic closure,
 restricted to \(D\) after adjoining the fixed base \(A\).
 \end{proof}
