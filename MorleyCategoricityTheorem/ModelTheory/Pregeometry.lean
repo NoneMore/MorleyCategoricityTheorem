@@ -75,17 +75,11 @@ For `cl_A (cl_A X) ⊆ cl_A X`, the parameter set `A ∪ (D ∩ acl (A ∪ X))` 
 element of `D ∩ acl (A ∪ X)` is one of the adjoined parameters. -/
 theorem relAlgebraicClosure_idem :
     L.relAlgebraicClosure A D (L.relAlgebraicClosure A D X) = L.relAlgebraicClosure A D X := by
-  refine Set.Subset.antisymm ?_ ?_
-  · rintro b ⟨hbD, hb⟩
-    refine ⟨hbD, ?_⟩
-    have hsub : A ∪ (D ∩ L.algebraicClosure (A ∪ X)) ⊆ L.algebraicClosure (A ∪ X) :=
-      Set.union_subset (fun a ha => subset_algebraicClosure (Set.mem_union_left X ha))
-        Set.inter_subset_right
-    have hmem : b ∈ L.algebraicClosure (L.algebraicClosure (A ∪ X)) :=
-      algebraicClosure_mono hsub hb
-    simpa only [algebraicClosure_idem] using hmem
-  · rintro b ⟨hbD, hb⟩
-    exact ⟨hbD, subset_algebraicClosure (Set.mem_union_right A ⟨hbD, hb⟩)⟩
+  have hsub : A ∪ L.relAlgebraicClosure A D X ⊆ L.algebraicClosure (A ∪ X) :=
+    Set.union_subset (Set.subset_union_left.trans subset_algebraicClosure) Set.inter_subset_right
+  refine Set.Subset.antisymm ?_ (subset_relAlgebraicClosure Set.inter_subset_left)
+  exact Set.inter_subset_inter_right D
+    ((algebraicClosure_mono hsub).trans (le_of_eq (algebraicClosure_idem (A ∪ X))))
 
 /-- Finite character: `b ∈ cl_A(X)` depends on finitely many parameters from `X`.
 
@@ -98,20 +92,15 @@ theorem mem_relAlgebraicClosure_iff_exists_finset :
   constructor
   · rintro ⟨hbD, hb⟩
     obtain ⟨F, hF, hbF⟩ := mem_algebraicClosure_iff_exists_finset.mp hb
-    refine ⟨F.filter fun x => x ∉ A, ?_, hbD, ?_⟩
-    · -- the retained parameters lie in `X`, because the discarded ones lie in `A`
-      intro x hx
-      have hxF : x ∈ F := Finset.mem_of_mem_filter x hx
-      rcases hF (Finset.mem_coe.mp hxF) with hxA | hxX
-      · exact absurd hxA (Finset.mem_filter.mp hx).2
-      · exact hxX
-    · -- every parameter of `F` is either in `A` or retained by the filter
-      have hF' : (F : Set M) ⊆ A ∪ ↑(F.filter fun x => x ∉ A) := by
-        intro x hx
-        by_cases hxA : x ∈ A
-        · exact Set.mem_union_left _ hxA
-        · exact Set.mem_union_right _ (Finset.mem_coe.mpr (Finset.mem_filter.mpr ⟨hx, hxA⟩))
-      exact algebraicClosure_mono hF' hbF
+    -- the parameters outside `A` already suffice, and they lie in `X`
+    have hfilter : ↑(F.filter fun x => x ∉ A) ⊆ X := by
+      rw [Finset.coe_filter]
+      exact (Set.sdiff_subset_iff (u := X)).mpr hF
+    refine ⟨F.filter fun x => x ∉ A, hfilter, hbD, ?_⟩
+    have hF' : (F : Set M) ⊆ A ∪ ↑(F.filter fun x => x ∉ A) := by
+      rw [Finset.coe_filter]
+      exact (Set.subset_sdiff_union (F : Set M) A).trans (le_of_eq (Set.union_comm _ _))
+    exact algebraicClosure_mono hF' hbF
   · rintro ⟨F, hF, hb⟩
     exact ⟨hb.1, algebraicClosure_mono (Set.union_subset_union_right A hF) hb.2⟩
 
