@@ -9,8 +9,8 @@ set -euo pipefail
 # immutable image containing these tools.
 apk add --no-cache \
   'py3-pip=24.3.1-r0' \
-  'python3=3.12.15-r0' \
-  'python3-dev=3.12.15-r0' \
+  'python3=3.12.16-r0' \
+  'python3-dev=3.12.16-r0' \
   'git=2.47.3-r0' \
   'pkgconf=2.3.0-r0' \
   'graphviz=12.2.0-r0' \
