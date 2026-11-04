@@ -201,10 +201,13 @@ before using `Matroid.closure` for model-theoretic closure.
 The pregeometry plan defines `cl_A X = D ∩ acl (A ∪ X)` and should cite the `acl`-level laws rather
 than reprove them: reflexive `subset_algebraicClosure`, monotone `algebraicClosure_mono`, idempotent
 `algebraicClosure_idem`, finite character `mem_algebraicClosure_iff_exists_finset`, and absorption
-`algebraicClosure_union_eq` (`B ⊆ acl A → acl (A ∪ B) = acl A`). Note that `cl_A`
-is idempotent only for `X ⊆ D`: without that restriction the inclusion
-`cl_A X ⊆ cl_A (cl_A X)` can fail, because an element of `acl (A ∪ X) ∩ D` may need parameters
-outside `D`. No `cl_A`-level restatement belongs to this capability.
+`algebraicClosure_union_eq` (`B ⊆ acl A → acl (A ∪ B) = acl A`). No `cl_A`-level restatement
+belongs to this capability.
+
+> Correction, recorded by the [pregeometry plan](../pregeometry.md): for
+> `cl_A X = D ∩ acl (A ∪ X)` the inclusion `cl_A X ⊆ cl_A (cl_A X)` holds for every `X`, because
+> every element of `cl_A X` is an adjoined parameter of `cl_A (cl_A X)`. Reflexivity is the law that
+> needs `X ⊆ D`.
 
 `lem:algebraic-closure-cardinality` needs a counting lemma over formulas and finite parameter tuples.
 The definition deliberately exposes only "there exists a finite set", so add a canonical enumeration
