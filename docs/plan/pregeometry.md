@@ -10,7 +10,8 @@ reflexive, monotone, idempotent and has finite character.  Both are implemented 
 only [`AlgebraicClosure.lean`](../../MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean).
 
 Exchange, the pregeometry structure, independence and dimension are deferred; see **Deferred
-follow-ups**.  This plan does not change `blueprint/`.
+follow-ups**.  Both nodes carry `\lean{}`/`\leanok` in the blueprint, and their declarations are
+listed in `blueprint/lean_decls`.
 
 ## Intent
 
@@ -113,7 +114,6 @@ Design points:
 | pregeometry (`prop:strongly-minimal-pregeometry`) | Define the pregeometry structure (closure laws plus exchange) or build the matroid; Mathlib has neither.  Augmentation is not available before exchange. |
 | independence, bases, dimension (`def:strongly-minimal-independence`) | Built on the pregeometry; a matroid-based `dim_A` must be the cardinal-valued `cRk`, and `M.closure X = D ∩ acl (A ∪ X)` is a proof obligation, not a definitional equality. |
 | cardinality bound (`lem:algebraic-closure-cardinality`) | Independent of `cl_A`; needs a canonical enumeration of formulas with finite parameter tuples, so it belongs to the `acl` capability. |
-| blueprint wiring | Add `\lean{}`/`\leanok` for the two nodes and the corresponding `blueprint/lean_decls` entries in a blueprint change; `AGENTS.md` keeps `blueprint/` out of Lean-only changes. |
 
 ## Validation
 
@@ -122,4 +122,4 @@ Design points:
 - `FirstOrder.Language.relAlgebraicClosure_idem` and
   `FirstOrder.Language.mem_relAlgebraicClosure_iff_exists_finset` use only `propext`,
   `Classical.choice` and `Quot.sound`; there is no `sorry` in the module.
-- `lake exe checkdecls blueprint/lean_decls` is unaffected because `blueprint/` is unchanged.
+- `lake exe checkdecls blueprint/lean_decls` succeeds with both nodes' declarations listed.
