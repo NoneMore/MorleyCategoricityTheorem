@@ -92,6 +92,16 @@ dependencies (constructors, realization/reduct and language transport); avoid up
 type-space, and complete-type APIs. An unbundled `withSet` compactness lemma is fine if it reduces
 boilerplate.
 
+Implementation notes. Finite realizability is characterized directly for the complete theory of a fixed
+model (`partialType_completeTheory_iff_finitelyRealizable`) instead of through a two-model unbundled
+compactness lemma: satisfiability fixes the witness universe, while `M` may live in any universe.
+Consistency is transported along a language expansion by `partialType_completeTheory_mapExpansion`, and
+the finite conjunction moves back to the fixed model through `Theory.IsComplete.exists_realize_of_isComplete`.
+Models of `L.elementaryDiagram M` receive the canonical `L`-structure through the instance
+`instStructureModelTypeElementaryDiagram`, so `M ↪ₑ[L] N` refers to that canonical reduct; the companion
+theorem `partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding` produces the embedding, and
+`ElementaryEmbedding.ofModelsElementaryDiagram_apply` records that parameters are interpreted as constants.
+
 ### 2. Finite, distinct unary realizations
 
 Create `ModelTheory/PartialTypeRealizations.lean` , depending only on `PartialTypes` and unary formula
