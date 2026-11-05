@@ -36,6 +36,30 @@ Do not port upstream `Types.lean` or duplicate names already defined in the targ
 text verbatim, verify reuse permission and retain provenance; otherwise reprove the needed results against
 target APIs.
 
+### Audit outcome
+
+The audit compares the upstream declarations consumed by the three planned modules against this
+repository and Mathlib `v4.34.1`.
+
+- **Reuse.** Upstream `StabilityTheory` carries no license file, so no upstream text is copied
+  verbatim. The ported results below are reproved against target APIs, and the module documentation
+  records the reference project as provenance.
+- **Ported.** `LHom.onFormulaSet`, `LHom.mem_onFormulaSet`, `LHom.onFormulaSet_id`,
+  `LHom.onFormulaSet_comp`, and `LHom.onFormulaSet_mono` in
+  [`LanguageMap.lean`](../../MorleyCategoricityTheorem/ModelTheory/LanguageMap.lean), plus
+  `LHom.onFormulaEmbedding` in
+  [`Syntax.lean`](../../MorleyCategoricityTheorem/ModelTheory/Syntax.lean).
+- **Already available, not ported.** Formula injectivity (`LHom.onFormula_injective`), the sum-map
+  laws (`LHom.sumMap_id`, `LHom.sumMap_comp`), the constants-map injectivity API
+  (`lhomWithConstantsMap_injective`), `Formula.realize_exClosure`,
+  `Formula.realize_exClosure_of_realize_equivSentence`, and
+  `Formula.exists_realize_equivSentence_iff_realize_exClosure` (Mathlib, replacing upstream
+  `Semantics.lean`), `Theory.isSatisfiable_iff_isFinitelySatisfiable`,
+  `ElementaryEmbedding.ofModelsElementaryDiagram`, and the `Theory.ModelType` API.
+- **Out of scope.** Upstream `Types.lean`, the order, maximality, and type-space APIs, and the
+  parameter restriction/lifting API (`liftSet`, `restrictSet`, `liftParams`, `restrictParams`) are
+  not needed by the three planned modules.
+
 ## Chosen design
 
 ### 1. Minimal partial-type layer
