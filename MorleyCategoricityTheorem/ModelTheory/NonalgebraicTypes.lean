@@ -17,8 +17,8 @@ The proof forms the partial type of unary formulas over `B` true at `b`. Every f
 such formulas has infinitely many realizations in `M`: otherwise its realization set would be a
 finite `B`-definable set containing `b`, contradicting nonalgebraicity. The finite-witness theorem
 `Theory.PartialType.exists_distinct_realizations` then produces the elementary extension. Parameters
-are compared through the canonical embedding into the model of the elementary diagram, whose action on
-constants is recorded explicitly.
+are compared through the canonical embedding into the model of the elementary diagram, whose action
+on all of `M` is recorded explicitly.
 
 ## Main results
 
@@ -86,15 +86,15 @@ theorem infinite_finset_realizations_of_not_mem_algebraicClosure
 `B ⊆ M`, then for every `n` some model of the elementary diagram of `M` carries `n + 1` pairwise
 distinct realizations of `tp(b/B)`.
 
-Parameters are interpreted along the canonical elementary embedding `e : M ↪ₑ[L] N`, so the last
-conjunct transports the `L[[B]]`-formulas true at `b` to their `L[[M]]`-counterparts realized by the
-witnesses. -/
+Parameters are interpreted along the canonical elementary embedding `e : M ↪ₑ[L] N`, which acts on
+all of `M` as the corresponding constants, so the last conjunct transports the `L[[B]]`-formulas
+true at `b` to their `L[[M]]`-counterparts realized by the witnesses. -/
 theorem exists_distinct_realizations_of_not_mem_algebraicClosure
     (hb : b ∉ L.algebraicClosure B) (n : ℕ) :
     ∃ N : Theory.ModelType.{max u w', v, max (max u w') v} (L.elementaryDiagram M),
       ∃ e : M ↪ₑ[L] N, ∃ x : Fin (n + 1) → N,
         Function.Injective x ∧
-          (∀ a : B, e (a : M) = (L.con (a : M) : N)) ∧
+          (∀ a : M, e a = (L.con a : N)) ∧
             ∀ (i : Fin (n + 1)) (φ : L[[B]].Formula (Fin 1)),
               φ.Realize (fun _ : Fin 1 => b) →
                 ((L.lhomWithConstantsMap ((↑) : B → M)).onFormula φ).Realize

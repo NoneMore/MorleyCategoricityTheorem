@@ -86,6 +86,9 @@ Required public contracts (exact Lean binder order may differ):
   every finite fragment is realized simultaneously in the fixed model `M` .
 -  `PartialType.partialTypeOver_iff_realizedIn_elementaryExtension` : consistency iff realizable in a model
   of `L.elementaryDiagram M` , after transporting parameter constants `A → M` .
+-  `PartialType.ofFinitelyRealizable` and its parameter-set specialization
+  `PartialTypeOver.ofFinitelyRealizable` : package finite realizability in `M` as a bundled partial type, so
+  consumers do not repeat the consistency step of `partialTypeOver_iff_finitelyRealizable` .
 
 Recover the elementary embedding with `ElementaryEmbedding.ofModelsElementaryDiagram` . Include only proof
 dependencies (constructors, realization/reduct and language transport); avoid upstream order, maximality,
@@ -102,6 +105,10 @@ Models of `L.elementaryDiagram M` receive the canonical `L`-structure through th
 theorem `partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding` returns the embedding together
 with the parameter-interpretation conjunct `∀ a : M, e a = (L.con a : N)`, discharged by
 `ElementaryEmbedding.ofModelsElementaryDiagram_apply`.
+
+The bundled layer stays optional for consumers: `ofFinitelyRealizable` builds a `PartialType` from finite
+realizability in `M` , and `isSatisfiable'` reads consistency back, while all compactness theorems remain
+stated for raw `Set` s. No `SetLike` coercion, order, or type-space API is added at this stage.
 
 ### 2. Finite, distinct unary realizations
 
@@ -142,8 +149,9 @@ of `M` needed to fill them. Finite realizability is fed directly into
 `partialTypeOver_iff_finitelyRealizable` , and the resulting satisfiability into
 `partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding` , which returns both the embedding and
 the parameter-interpretation conjunct `e a = (L.con a : N)` , so no separate reconstruction of the
-canonical embedding is needed. The produced model lives in a universe determined by the language and
-by `M` , independently of `n` .
+canonical embedding is needed. `exists_distinct_realizations` keeps the full `∀ a : M, e a = (L.con a : N)`
+guarantee in its public conclusion instead of restricting it to the parameters of `B` . The produced model
+lives in a universe determined by the language and by `M` , independently of `n` .
 
 ### 3. Nonalgebraic-type application
 
@@ -204,7 +212,9 @@ For a separately authorized blueprint wiring change, update `blueprint/lean_decl
 `sorry` or hidden `sorryAx` in the claimed proofs or their new dependencies.
 
 Done means the three layers compile, the canonical parameter-transport invariant is proved, root imports are
-synchronized, and checks pass. This **plan-only** commit needs Markdown/link review, not a Lean build.
+synchronized, and checks pass. The implementation in PR #53 satisfies these (`lake build
+MorleyCategoricityTheorem` , `lake exe mk_all --check` , and an axiom audit of the public theorems); once the
+modules land, this plan is documentation, so it needs Markdown/link review rather than a build of its own.
 
 ## Deferred work
 
@@ -215,5 +225,6 @@ arbitrary arities or general constraint-language infrastructure.
 
 In a **separate validated change**, `DefinablyFull` may use that generalization with `I = F × κ.out` ,
 retaining its Löwenheim–Skolem cardinality reduction. Neither extension is required for the blueprint node.
-Update this plan when design decisions change; archive it under `docs/plan/archive/` when durable knowledge
-has moved into Lean module documentation.
+A `CompleteTypeOver`/type-transport bridge and import-graph refactoring are separate follow-ups as well,
+deferred until a consumer needs them. Update this plan when design decisions change; archive it under
+`docs/plan/archive/` when durable knowledge has moved into Lean module documentation.

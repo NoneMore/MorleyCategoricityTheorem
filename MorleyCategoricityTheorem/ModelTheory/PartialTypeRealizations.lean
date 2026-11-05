@@ -20,9 +20,9 @@ candidates in `M`, among which pairwise distinct witnesses can be chosen.
 
 ## Main results
 
-- `Theory.PartialType.exists_distinct_realizations`: the finite-witness theorem, with parameter
-  transport stated explicitly along the canonical elementary embedding of `M` into a model of its
-  elementary diagram.
+- `Theory.PartialType.exists_distinct_realizations`: the finite-witness theorem, returning the
+  canonical elementary embedding of `M` into a model of its elementary diagram together with its
+  action on all of `M`.
 
 The result follows the design of the reference project
 [`NoneMore/StabilityTheory`](https://github.com/NoneMore/StabilityTheory); it is reproved here
@@ -110,8 +110,8 @@ private theorem exists_injective_of_forall_infinite {ι : Type*} [Fintype ι] {W
 realizations in `M`, then `p` has `n + 1` pairwise distinct realizations in a model of the
 elementary diagram of `M`.
 
-The parameters of `B` are interpreted along the canonical elementary embedding of `M` into that
-model, as recorded by the last two components of the conclusion. -/
+The returned embedding interprets every element of `M`, and hence every parameter of `B`, as the
+corresponding constant; the conclusion records this as `∀ a : M, e a = (L.con a : N)`. -/
 theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1))}
     (hp : ∀ s : Finset (L[[B]].Formula (Fin 1)),
       (↑s : Set (L[[B]].Formula (Fin 1))) ⊆ p →
@@ -120,7 +120,7 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
     ∃ N : ModelType.{max u w', v, max (max u w') v} (L.elementaryDiagram M), ∃ e : M ↪ₑ[L] N,
       ∃ x : Fin (n + 1) → N,
         Function.Injective x ∧
-          (∀ a : B, e (a : M) = (L.con (a : M) : N)) ∧
+          (∀ a : M, e a = (L.con a : N)) ∧
             ∀ (i : Fin (n + 1)) (φ : L[[B]].Formula (Fin 1)), φ ∈ p →
               ((L.lhomWithConstantsMap ((↑) : B → M)).onFormula φ).Realize
                 (fun _ : Fin 1 => x i) := by
@@ -170,8 +170,8 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
       simp only [neqFormula, Formula.realize_not, Formula.realize_equal, Term.realize_var]
       exact fun h => hij (hxinj h)
   have hsat : ((L[[B]].completeTheory M).withSet P).IsSatisfiable :=
-    (partialTypeOver_iff_finitelyRealizable (L := L) (M := M) (A := B) (α := Fin (n + 1))
-      P).2 hfin
+    (PartialTypeOver.ofFinitelyRealizable (L := L) (M := M) (A := B) (α := Fin (n + 1))
+      P hfin).isSatisfiable'
   obtain ⟨N, e, he, v, hv⟩ :=
     (partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding (L := L) (M := M) (A := B)
       (α := Fin (n + 1)) P).1 hsat
@@ -188,8 +188,7 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
     have hreal : (neqFormula i j).Realize v := (LHom.realize_onFormula f _).mp (hv _ hmem)
     simp only [neqFormula, Formula.realize_not, Formula.realize_equal, Term.realize_var] at hreal
     exact hreal hij
-  · intro a
-    exact he (a : M)
+  · exact he
   · intro i φ hφ
     have hmem : relabelToCoord i φ ∈ jointSet B p n := by
       simp only [jointSet, Set.mem_union]

@@ -36,6 +36,10 @@ against this repository's APIs and its Mathlib revision.
 - `FirstOrder.Language.Theory.PartialType`: a set of formulas consistent with a theory.
 - `FirstOrder.Language.Theory.PartialTypeOver`: a partial type over the complete theory of a
   structure in a parameter-expanded language.
+- `FirstOrder.Language.Theory.PartialType.ofFinitelyRealizable`: package a set of formulas whose
+  finite fragments are realized in a fixed structure as a bundled partial type; its specialization
+  `FirstOrder.Language.Theory.PartialTypeOver.ofFinitelyRealizable` does the same for a parameter
+  set.
 
 ## Main results
 
@@ -156,6 +160,14 @@ theorem partialType_completeTheory_iff_finitelyRealizable {M : Type w'} [L.Struc
         exact (Formula.realize_equivSentence_symm M (Formula.equivSentence ψ) v).1
           (by simpa using hv ψ hψ)
     exact Theory.Model.isSatisfiable M
+
+/-- Package a set of formulas whose finite fragments are realized in `M` as a partial type over the
+complete theory of `M`. -/
+def ofFinitelyRealizable {M : Type w'} [L.Structure M] [Nonempty M] (S : Set (L.Formula α))
+    (h : ∀ s : Finset (L.Formula α), (↑s : Set (L.Formula α)) ⊆ S →
+      ∃ v : α → M, ∀ φ ∈ s, φ.Realize v) :
+    (L.completeTheory M).PartialType α :=
+  ⟨S, (partialType_completeTheory_iff_finitelyRealizable S).2 h⟩
 
 /-- Transport a consistent set of formulas along a language expansion. -/
 theorem partialType_completeTheory_mapExpansion {L₁ L₂ : Language.{u, v}} {M : Type w'}
@@ -285,6 +297,15 @@ theorem partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding
         S).2 ⟨N, v, hv⟩
 
 end PartialType
+
+/-- Package a set of formulas over `A` whose finite fragments are realized in `M` as a partial type
+over `A`. -/
+def PartialTypeOver.ofFinitelyRealizable {L : Language.{u, v}} {M : Type w'} [L.Structure M]
+    [Nonempty M] {A : Set M} {α : Type w} (S : Set (L[[A]].Formula α))
+    (h : ∀ s : Finset (L[[A]].Formula α), (↑s : Set (L[[A]].Formula α)) ⊆ S →
+      ∃ v : α → M, ∀ φ ∈ s, φ.Realize v) :
+    PartialTypeOver L A α :=
+  PartialType.ofFinitelyRealizable (L := L[[A]]) (M := M) (α := α) S h
 
 end Theory
 
