@@ -99,8 +99,9 @@ Consistency is transported along a language expansion by `partialType_completeTh
 the finite conjunction moves back to the fixed model through `Theory.IsComplete.exists_realize_of_isComplete`.
 Models of `L.elementaryDiagram M` receive the canonical `L`-structure through the instance
 `instStructureModelTypeElementaryDiagram`, so `M ↪ₑ[L] N` refers to that canonical reduct; the companion
-theorem `partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding` produces the embedding, and
-`ElementaryEmbedding.ofModelsElementaryDiagram_apply` records that parameters are interpreted as constants.
+theorem `partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding` returns the embedding together
+with the parameter-interpretation conjunct `∀ a : M, e a = (L.con a : N)`, discharged by
+`ElementaryEmbedding.ofModelsElementaryDiagram_apply`.
 
 ### 2. Finite, distinct unary realizations
 
@@ -139,10 +140,9 @@ candidates for that coordinate. Pairwise distinct witnesses are selected greedil
 not occur in the fragment reduce to the empty fragment, so the hypothesis also supplies the infinitude
 of `M` needed to fill them. Finite realizability is fed directly into
 `partialTypeOver_iff_finitelyRealizable` , and the resulting satisfiability into
-`partialTypeOver_iff_realizedIn_elementaryExtension` ; the embedding is then reconstructed as the
-canonical `ElementaryEmbedding.ofModelsElementaryDiagram` rather than taken from the
-`_with_embedding` equivalence, which is what makes the parameter-interpretation conjunct
-`e a = (L.con a : N)` provable. The produced model lives in a universe determined by the language and
+`partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding` , which returns both the embedding and
+the parameter-interpretation conjunct `e a = (L.con a : N)` , so no separate reconstruction of the
+canonical embedding is needed. The produced model lives in a universe determined by the language and
 by `M` , independently of `n` .
 
 ### 3. Nonalgebraic-type application

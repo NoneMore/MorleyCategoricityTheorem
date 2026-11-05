@@ -48,8 +48,9 @@ against this repository's APIs and its Mathlib revision.
 - `Theory.PartialType.partialTypeOver_iff_realizedIn_elementaryExtension`: realization in a model
   of the elementary diagram.
 - `Theory.PartialType.partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding`: the same
-  statement together with an elementary embedding `M ↪ₑ[L] N`; its forward direction produces the
-  canonical embedding `ElementaryEmbedding.ofModelsElementaryDiagram`.
+  statement together with an elementary embedding `M ↪ₑ[L] N` that interprets each parameter as the
+  corresponding constant; its forward direction produces the canonical embedding
+  `ElementaryEmbedding.ofModelsElementaryDiagram`.
 - `ElementaryEmbedding.ofModelsElementaryDiagram_apply`: the canonical embedding interprets each
   parameter as the corresponding constant.
 -/
@@ -59,6 +60,18 @@ universe u v w w' x
 namespace FirstOrder
 
 namespace Language
+
+namespace ElementaryEmbedding
+
+/-- The canonical elementary embedding of a structure into a model of its elementary diagram
+interprets each parameter as the corresponding constant. -/
+theorem ofModelsElementaryDiagram_apply {L : Language.{u, v}} {M : Type w'} [L.Structure M]
+    {N : Type x} [L.Structure N] [L[[M]].Structure N] [(L.lhomWithConstants M).IsExpansionOn N]
+    [N ⊨ L.elementaryDiagram M] (a : M) :
+    ofModelsElementaryDiagram L M N a = (L.con a : N) :=
+  rfl
+
+end ElementaryEmbedding
 
 namespace Theory
 
@@ -246,24 +259,27 @@ theorem partialTypeOver_iff_realizedIn_elementaryExtension (S : Set (L[[A]].Form
       (φ : L[[A]].Formula α)).mp h1
 
 /-- A set of formulas with parameters from `A` is consistent with the complete theory of `M`
-exactly when it is realized in a model of the elementary diagram of `M` through the canonical
-elementary embedding. -/
+exactly when it is realized in a model of the elementary diagram of `M` through an elementary
+embedding that interprets each parameter as the corresponding constant. -/
 theorem partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding
     (S : Set (L[[A]].Formula α)) :
     ((L[[A]].completeTheory M).withSet S).IsSatisfiable ↔
       ∃ N : Theory.ModelType.{max u w', v, max (max (max u w') v) w} (L.elementaryDiagram M),
-        ∃ _ : M ↪ₑ[L] N,
-          ∃ v : α → N,
-            ∀ φ ∈ S,
-              ((L.lhomWithConstantsMap ((↑) : A → M)).onFormula φ).Realize v := by
+        ∃ e : M ↪ₑ[L] N,
+          (∀ a : M, e a = (L.con a : N)) ∧
+            ∃ v : α → N,
+              ∀ φ ∈ S,
+                ((L.lhomWithConstantsMap ((↑) : A → M)).onFormula φ).Realize v := by
   constructor
   · intro hS
     obtain ⟨N, v, hv⟩ :=
       (partialTypeOver_iff_realizedIn_elementaryExtension (L := L) (M := M) (A := A) (α := α)
         S).1 hS
     have : (L.lhomWithConstants M).IsExpansionOn N := LHom.isExpansionOn_reduct _ _
-    exact ⟨N, ElementaryEmbedding.ofModelsElementaryDiagram L M N, v, hv⟩
-  · rintro ⟨N, _, v, hv⟩
+    exact ⟨N, ElementaryEmbedding.ofModelsElementaryDiagram L M N,
+      fun a => ElementaryEmbedding.ofModelsElementaryDiagram_apply (L := L) (M := M) (N := N) a,
+      v, hv⟩
+  · rintro ⟨N, _, _, v, hv⟩
     exact
       (partialTypeOver_iff_realizedIn_elementaryExtension (L := L) (M := M) (A := A) (α := α)
         S).2 ⟨N, v, hv⟩
@@ -271,18 +287,6 @@ theorem partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding
 end PartialType
 
 end Theory
-
-namespace ElementaryEmbedding
-
-/-- The canonical elementary embedding of a structure into a model of its elementary diagram
-interprets each parameter as the corresponding constant. -/
-theorem ofModelsElementaryDiagram_apply {L : Language.{u, v}} {M : Type w'} [L.Structure M]
-    {N : Type x} [L.Structure N] [L[[M]].Structure N] [(L.lhomWithConstants M).IsExpansionOn N]
-    [N ⊨ L.elementaryDiagram M] (a : M) :
-    ofModelsElementaryDiagram L M N a = (L.con a : N) :=
-  rfl
-
-end ElementaryEmbedding
 
 end Language
 

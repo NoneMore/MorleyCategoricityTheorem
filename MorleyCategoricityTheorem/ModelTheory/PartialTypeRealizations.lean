@@ -172,14 +172,14 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
   have hsat : ((L[[B]].completeTheory M).withSet P).IsSatisfiable :=
     (partialTypeOver_iff_finitelyRealizable (L := L) (M := M) (A := B) (α := Fin (n + 1))
       P).2 hfin
-  obtain ⟨N, v, hv⟩ :=
-    (partialTypeOver_iff_realizedIn_elementaryExtension (L := L) (M := M) (A := B)
+  obtain ⟨N, e, he, v, hv⟩ :=
+    (partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding (L := L) (M := M) (A := B)
       (α := Fin (n + 1)) P).1 hsat
   -- Work in the `L[[B]]`-reduct of `N` to compare with formulas over `B`.
   let f := L.lhomWithConstantsMap ((↑) : B → M)
   let : L[[B]].Structure N := f.reduct N
   have : f.IsExpansionOn N := LHom.isExpansionOn_reduct f N
-  refine ⟨N, ElementaryEmbedding.ofModelsElementaryDiagram L M N, v, ?_, ?_, ?_⟩
+  refine ⟨N, e, v, ?_, ?_, ?_⟩
   · intro i j hij
     by_contra hne
     have hmem : neqFormula i j ∈ jointSet B p n := by
@@ -189,7 +189,7 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
     simp only [neqFormula, Formula.realize_not, Formula.realize_equal, Term.realize_var] at hreal
     exact hreal hij
   · intro a
-    exact ElementaryEmbedding.ofModelsElementaryDiagram_apply (L := L) (M := M) (N := N) (a : M)
+    exact he (a : M)
   · intro i φ hφ
     have hmem : relabelToCoord i φ ∈ jointSet B p n := by
       simp only [jointSet, Set.mem_union]
