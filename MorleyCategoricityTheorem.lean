@@ -18,6 +18,7 @@ import MorleyCategoricityTheorem.ModelTheory.Satisfiability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 import MorleyCategoricityTheorem.ModelTheory.SkolemHull
 import MorleyCategoricityTheorem.ModelTheory.Syntax
+import MorleyCategoricityTheorem.ModelTheory.TwoCardinal
 import MorleyCategoricityTheorem.ModelTheory.TypeSpaceHomeomorphism
 import MorleyCategoricityTheorem.ModelTheory.Types
 import MorleyCategoricityTheorem.ModelTheory.VaughtianPair

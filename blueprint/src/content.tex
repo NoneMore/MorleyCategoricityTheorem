@@ -635,9 +635,16 @@ at that stage and the next stage gives it \(\kappa\) realizations.
 
 \begin{definition}[\((\kappa,\lambda)\)-models]
 \label{def:kappa-lambda-model}
+\lean{FirstOrder.Language.Theory.IsKappaLambdaModel, FirstOrder.Language.Theory.HasKappaLambdaModel}
+\leanok
 For \(\kappa>\lambda\geq\aleph_0\), a \((\kappa,\lambda)\)-model is a
 model of size \(\kappa\) with a one-variable parameter-definable subset
 of size \(\lambda\).
+\emph{Formalization note.}  The inequalities \(\kappa>\lambda\geq\aleph_0\)
+are hypotheses of the statements using the notion, not part of the
+definition, and the definable subset is presented as the unary
+realization set of a formula with a finite parameter tuple, which is the
+shape of a Vaughtian-pair witness.
 \end{definition}
 
 \begin{definition}[Vaughtian pairs]
