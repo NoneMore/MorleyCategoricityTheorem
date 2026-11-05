@@ -13,6 +13,7 @@ import MorleyCategoricityTheorem.ModelTheory.Minimality
 import MorleyCategoricityTheorem.ModelTheory.OmegaStable
 import MorleyCategoricityTheorem.ModelTheory.PairLanguage
 import MorleyCategoricityTheorem.ModelTheory.PartialEmbedding
+import MorleyCategoricityTheorem.ModelTheory.PartialTypeRealizations
 import MorleyCategoricityTheorem.ModelTheory.PartialTypes
 import MorleyCategoricityTheorem.ModelTheory.Pregeometry
 import MorleyCategoricityTheorem.ModelTheory.Satisfiability

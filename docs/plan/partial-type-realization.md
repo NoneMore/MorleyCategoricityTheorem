@@ -129,6 +129,22 @@ equivalences, and unpack the resulting realization.
 
 Keep `Fin 1` , `Sum` relabelling, and expansion bookkeeping private unless another consumer needs them.
 
+Implementation notes. The joint formula set (`jointSet`) is the union of the coordinate relabellings of
+`p` and the inequalities between distinct coordinates. Relabelling a formula to a coordinate is not
+injective, so a finite fragment cannot be pulled back to a finite subset of `p` ; the proof instead
+chooses one source formula of `p` for each fragment element, collects the chosen sources of each
+coordinate into a finite set `T i` , and applies the hypothesis to `T i` to get infinitely many
+candidates for that coordinate. Pairwise distinct witnesses are selected greedily
+(`exists_injective_of_forall_infinite`) outside the finitely many earlier choices; coordinates that do
+not occur in the fragment reduce to the empty fragment, so the hypothesis also supplies the infinitude
+of `M` needed to fill them. Finite realizability is fed directly into
+`partialTypeOver_iff_finitelyRealizable` , and the resulting satisfiability into
+`partialTypeOver_iff_realizedIn_elementaryExtension` ; the embedding is then reconstructed as the
+canonical `ElementaryEmbedding.ofModelsElementaryDiagram` rather than taken from the
+`_with_embedding` equivalence, which is what makes the parameter-interpretation conjunct
+`e a = (L.con a : N)` provable. The produced model lives in a universe determined by the language and
+by `M` , independently of `n` .
+
 ### 3. Nonalgebraic-type application
 
 Create `ModelTheory/NonalgebraicTypes.lean` , importing `AlgebraicClosure` and `PartialTypeRealizations`
