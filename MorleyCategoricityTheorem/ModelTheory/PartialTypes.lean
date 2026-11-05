@@ -109,6 +109,35 @@ namespace PartialType
 
 variable {T : L.Theory} {α : Type w}
 
+/-- A model of a consistent set of formulas realizes it simultaneously. -/
+private theorem exists_modelType_realizing {S : Set (L.Formula α)}
+    (hS : (T.withSet S).IsSatisfiable) :
+    ∃ M : Theory.ModelType.{u, v, max u v w} T,
+      ∃ v : α → M, ∀ φ ∈ S, φ.Realize v := by
+  let N : (T.withSet S).ModelType := hS.some
+  let : L.Structure N := (L.lhomWithConstants α).reduct N
+  have : (L.lhomWithConstants α).IsExpansionOn N := LHom.isExpansionOn_reduct _ _
+  have hN : N ⊨ T :=
+    (LHom.onTheory_model (L.lhomWithConstants α) T).1 (N.is_model.mono Set.subset_union_left)
+  refine ⟨Theory.ModelType.of T N, fun a => (L.con a : N), ?_⟩
+  intro φ hφ
+  have hmem : Formula.equivSentence φ ∈ T.withSet S := Or.inr ⟨φ, hφ, rfl⟩
+  exact (Formula.realize_equivSentence N φ).1 (N.is_model.realize_of_mem _ hmem)
+
+/-- A set of formulas simultaneously realized in a model of `T` is consistent with `T`. -/
+private theorem isSatisfiable_withSet_of_realize {M : Type w'} [L.Structure M] [Nonempty M]
+    [M ⊨ T] {S : Set (L.Formula α)} {v : α → M} (h : ∀ φ ∈ S, φ.Realize v) :
+    (T.withSet S).IsSatisfiable := by
+  let : (constantsOn α).Structure M := constantsOn.structure v
+  have : (L.lhomWithConstants α).IsExpansionOn M := L.withConstants_expansion α
+  have hM : M ⊨ T.withSet S := by
+    refine ⟨fun φ hφ => ?_⟩
+    rcases hφ with hφ | ⟨ψ, hψS, rfl⟩
+    · exact ((LHom.onTheory_model _ _).2 inferInstance).realize_of_mem φ hφ
+    · exact (Formula.realize_equivSentence_symm M (Formula.equivSentence ψ) v).1
+        (by simpa using h ψ hψS)
+  exact Theory.Model.isSatisfiable M
+
 /-- Over the complete theory of a structure, a set of formulas is consistent exactly when every
 finite fragment is realized in the structure itself. -/
 theorem partialType_completeTheory_iff_finitelyRealizable {M : Type w'} [L.Structure M]
@@ -119,26 +148,13 @@ theorem partialType_completeTheory_iff_finitelyRealizable {M : Type w'} [L.Struc
   classical
   constructor
   · intro hS s hs
-    let N : ((L.completeTheory M).withSet S).ModelType := hS.some
-    let : L.Structure N := (L.lhomWithConstants α).reduct N
-    have : (L.lhomWithConstants α).IsExpansionOn N := LHom.isExpansionOn_reduct _ _
-    have hN : N ⊨ L.completeTheory M :=
-      (LHom.onTheory_model (L.lhomWithConstants α) (L.completeTheory M)).1
-        (N.is_model.mono Set.subset_union_left)
-    have hv : ∀ φ ∈ s, φ.Realize (fun a => (L.con a : N)) := by
-      intro φ hφ
-      have hmem : Formula.equivSentence φ ∈ (L.completeTheory M).withSet S :=
-        Or.inr ⟨φ, hs hφ, rfl⟩
-      have hreal : N ⊨ Formula.equivSentence φ := N.is_model.realize_of_mem _ hmem
-      exact (Formula.realize_equivSentence N φ).1 hreal
+    obtain ⟨N, v, hv⟩ := exists_modelType_realizing (T := L.completeTheory M) hS
     let ψ : L.Formula α := Formula.iInf fun φ : s => (φ : L.Formula α)
-    have hψ : ψ.Realize (fun a => (L.con a : N)) := by
-      simp only [ψ, Formula.realize_iInf, Subtype.forall]
-      exact fun φ hφ => hv φ hφ
-    obtain ⟨w, hw⟩ :=
-      (completeTheory.isComplete L M).exists_realize_of_isComplete
-        (M := N) (fun a => (L.con a : N)) ψ hψ M
-    exact ⟨w, fun φ hφ => (Formula.realize_iInf.mp hw) ⟨φ, hφ⟩⟩
+    have hψ : ψ.Realize v := by
+      simp only [ψ, Formula.realize_iInf]
+      exact fun φ => hv φ (hs φ.2)
+    obtain ⟨w, hw⟩ := (completeTheory.isComplete L M).exists_realize_of_isComplete v ψ hψ M
+    exact ⟨w, fun φ hφ => Formula.realize_iInf.mp hw ⟨φ, hφ⟩⟩
   · intro h
     rw [isSatisfiable_iff_isFinitelySatisfiable]
     intro T0 hT0
@@ -146,20 +162,13 @@ theorem partialType_completeTheory_iff_finitelyRealizable {M : Type w'} [L.Struc
       (T0.map (Formula.equivSentence).symm.toEmbedding).filter fun φ => φ ∈ S
     have hs : (↑s : Set (L.Formula α)) ⊆ S := fun φ hφ => (Finset.mem_filter.mp hφ).2
     obtain ⟨v, hv⟩ := h s hs
-    let : (constantsOn α).Structure M := constantsOn.structure v
-    have : (L.lhomWithConstants α).IsExpansionOn M := L.withConstants_expansion α
-    have hM : M ⊨ (T0 : L[[α]].Theory) := by
-      rw [Theory.model_iff]
+    have hsub : (T0 : L[[α]].Theory) ⊆ (L.completeTheory M).withSet ↑s := by
       intro φ hφ
-      rcases hT0 hφ with hφT | hφS
-      · exact ((LHom.onTheory_model (L.lhomWithConstants α) (L.completeTheory M)).2
-          (by infer_instance)).realize_of_mem _ hφT
-      · obtain ⟨ψ, hψS, rfl⟩ := hφS
-        have hψ : ψ ∈ s := by
-          simpa [s, hψS] using hφ
-        exact (Formula.realize_equivSentence_symm M (Formula.equivSentence ψ) v).1
-          (by simpa using hv ψ hψ)
-    exact Theory.Model.isSatisfiable M
+      rcases hT0 hφ with hφT | ⟨ψ, hψS, rfl⟩
+      · exact Or.inl hφT
+      · have hψ : ψ ∈ s := by simpa [s, hψS] using hφ
+        exact Or.inr ⟨ψ, hψ, rfl⟩
+    exact (isSatisfiable_withSet_of_realize (T := L.completeTheory M) hv).mono hsub
 
 /-- Package a set of formulas whose finite fragments are realized in `M` as a partial type over the
 complete theory of `M`. -/
@@ -178,39 +187,18 @@ theorem partialType_completeTheory_mapExpansion {L₁ L₂ : Language.{u, v}} {M
   classical
   rw [partialType_completeTheory_iff_finitelyRealizable] at hS ⊢
   intro s hs
-  let g : s → L₁.Formula α := fun ψ => Classical.choose (LHom.mem_onFormulaSet.mp (hs ψ.2))
-  have hg_mem : ∀ ψ : s, g ψ ∈ S := fun ψ =>
-    (Classical.choose_spec (LHom.mem_onFormulaSet.mp (hs ψ.2))).1
-  have hg_eq : ∀ ψ : s, φ.onFormula (g ψ) = (ψ : L₂.Formula α) := fun ψ =>
-    (Classical.choose_spec (LHom.mem_onFormulaSet.mp (hs ψ.2))).2
-  let t : Finset (L₁.Formula α) := s.attach.image g
-  have ht : (↑t : Set (L₁.Formula α)) ⊆ S := by
-    intro ψ hψ
-    obtain ⟨ψ', _, rfl⟩ := Finset.mem_image.mp hψ
-    exact hg_mem ψ'
-  obtain ⟨v, hv⟩ := hS t ht
+  choose g hgS hgeq using fun ψ : s => LHom.mem_onFormulaSet.mp (hs ψ.2)
+  have ht : (↑(s.attach.image g) : Set (L₁.Formula α)) ⊆ S := by
+    rw [Finset.coe_image]
+    rintro _ ⟨ψ, -, rfl⟩
+    exact hgS ψ
+  obtain ⟨v, hv⟩ := hS _ ht
   refine ⟨v, fun ψ hψ => ?_⟩
-  have hψt : g ⟨ψ, hψ⟩ ∈ t :=
+  have hψt : g ⟨ψ, hψ⟩ ∈ s.attach.image g :=
     Finset.mem_image.mpr ⟨⟨ψ, hψ⟩, Finset.mem_attach _ _, rfl⟩
-  have hψeq : φ.onFormula (g ⟨ψ, hψ⟩) = ψ := by simpa using hg_eq ⟨ψ, hψ⟩
+  have hψeq : φ.onFormula (g ⟨ψ, hψ⟩) = ψ := hgeq ⟨ψ, hψ⟩
   rw [← hψeq]
   exact (LHom.realize_onFormula φ (g ⟨ψ, hψ⟩)).mpr (hv _ hψt)
-
-/-- A model of a consistent set of formulas realizes it simultaneously. -/
-private theorem exists_modelType_realizing {S : Set (L.Formula α)}
-    (hS : (T.withSet S).IsSatisfiable) :
-    ∃ M : Theory.ModelType.{u, v, max u v w} T,
-      ∃ v : α → M, ∀ φ ∈ S, φ.Realize v := by
-  let N : (T.withSet S).ModelType := hS.some
-  let : L.Structure N := (L.lhomWithConstants α).reduct N
-  have : (L.lhomWithConstants α).IsExpansionOn N := LHom.isExpansionOn_reduct _ _
-  have hN : N ⊨ T :=
-    (LHom.onTheory_model (L.lhomWithConstants α) T).1 (N.is_model.mono Set.subset_union_left)
-  refine ⟨Theory.ModelType.of T N, fun a => (L.con a : N), ?_⟩
-  intro φ hφ
-  have hmem : Formula.equivSentence φ ∈ T.withSet S := Or.inr ⟨φ, hφ, rfl⟩
-  have hreal : N ⊨ Formula.equivSentence φ := N.is_model.realize_of_mem _ hmem
-  exact (Formula.realize_equivSentence N φ).1 hreal
 
 variable {M : Type w'} [L.Structure M] [Nonempty M]
 
@@ -222,8 +210,7 @@ theorem partialTypeOver_iff_finitelyRealizable (S : Set (L[[A]].Formula α)) :
     ((L[[A]].completeTheory M).withSet S).IsSatisfiable ↔
       ∀ s : Finset (L[[A]].Formula α), (↑s : Set (L[[A]].Formula α)) ⊆ S →
         ∃ v : α → M, ∀ φ ∈ s, φ.Realize v := by
-  simpa using
-    (partialType_completeTheory_iff_finitelyRealizable (L := L[[A]]) (M := M) (α := α) S)
+  exact partialType_completeTheory_iff_finitelyRealizable S
 
 /-- A set of formulas with parameters from `A` is consistent with the complete theory of `M`
 exactly when it is realized in a model of the elementary diagram of `M`, after transporting
@@ -235,40 +222,30 @@ theorem partialTypeOver_iff_realizedIn_elementaryExtension (S : Set (L[[A]].Form
           ∀ φ ∈ S,
             ((L.lhomWithConstantsMap ((↑) : A → M)).onFormula φ).Realize v := by
   classical
+  let f : L[[A]] →ᴸ L[[M]] := L.lhomWithConstantsMap ((↑) : A → M)
+  let S' : Set (L[[M]].Formula α) := f.onFormulaSet S
+  have : (LHom.constantsOnMap ((↑) : A → M)).IsExpansionOn M :=
+    constantsOnMap_isExpansionOn rfl
+  have hf : f.IsExpansionOn M := LHom.sumMap_isExpansionOn (LHom.id L) _ M
   constructor
   · intro hS
-    let f : L[[A]] →ᴸ L[[M]] := L.lhomWithConstantsMap ((↑) : A → M)
-    let S' : Set (L[[M]].Formula α) := f.onFormulaSet S
-    have : (LHom.constantsOnMap ((↑) : A → M)).IsExpansionOn M :=
-      constantsOnMap_isExpansionOn rfl
-    have : f.IsExpansionOn M := LHom.sumMap_isExpansionOn (LHom.id L) _ M
-    have hS' : ((L[[M]].completeTheory M).withSet S').IsSatisfiable := by
-      have h := partialType_completeTheory_mapExpansion (L₁ := L[[A]]) (L₂ := L[[M]])
-        (φ := f) (S := S) hS
-      simpa [S', f] using h
-    obtain ⟨N, v, hv⟩ := exists_modelType_realizing (T := L[[M]].completeTheory M) hS'
+    obtain ⟨N, v, hv⟩ := exists_modelType_realizing (T := L[[M]].completeTheory M)
+      (partialType_completeTheory_mapExpansion (φ := f) (S := S) hS)
     exact ⟨N, v, fun φ hφ => hv _ ⟨φ, hφ, rfl⟩⟩
-  · rintro ⟨N, v, h⟩
+  · rintro ⟨N, v, hv⟩
+    -- `S'` is consistent, so completeness realizes its finite fragments in `M` itself
+    have hsat : ((L[[M]].completeTheory M).withSet S').IsSatisfiable :=
+      isSatisfiable_withSet_of_realize (M := N) fun ψ hψ => by
+        obtain ⟨φ, hφ, rfl⟩ := hψ
+        exact hv φ hφ
     rw [partialTypeOver_iff_finitelyRealizable]
-    have : (LHom.constantsOnMap ((↑) : A → M)).IsExpansionOn M :=
-      constantsOnMap_isExpansionOn rfl
-    have : (L.lhomWithConstantsMap ((↑) : A → M)).IsExpansionOn M :=
-      LHom.sumMap_isExpansionOn (LHom.id L) _ M
     intro s hs
-    let ψ : L[[M]].Formula α := Formula.iInf fun φ : s =>
-      (L.lhomWithConstantsMap ((↑) : A → M)).onFormula (φ : L[[A]].Formula α)
-    have hψ : ψ.Realize v := by
-      simp only [ψ, Formula.realize_iInf, Subtype.forall]
-      exact fun φ hφ => h φ (hs hφ)
-    obtain ⟨w, hw⟩ :=
-      (completeTheory.isComplete (L[[M]]) M).exists_realize_of_isComplete
-        (M := N) v ψ hψ M
-    refine ⟨w, fun φ hφ => ?_⟩
-    have h1 : ((L.lhomWithConstantsMap ((↑) : A → M)).onFormula
-        (φ : L[[A]].Formula α)).Realize w :=
-      (Formula.realize_iInf.mp hw) ⟨φ, hφ⟩
-    exact (LHom.realize_onFormula (L.lhomWithConstantsMap ((↑) : A → M))
-      (φ : L[[A]].Formula α)).mp h1
+    obtain ⟨w, hw⟩ := (partialType_completeTheory_iff_finitelyRealizable (M := M) S').1 hsat
+      (s.image fun φ => f.onFormula φ)
+      (by simpa [S', LHom.onFormulaSet] using LHom.onFormulaSet_mono f hs)
+    exact ⟨w, fun φ hφ =>
+      (LHom.realize_onFormula f (φ : L[[A]].Formula α)).mp
+        (hw _ (Finset.mem_image.mpr ⟨φ, hφ, rfl⟩))⟩
 
 /-- A set of formulas with parameters from `A` is consistent with the complete theory of `M`
 exactly when it is realized in a model of the elementary diagram of `M` through an elementary
@@ -284,17 +261,12 @@ theorem partialTypeOver_iff_realizedIn_elementaryExtension_with_embedding
                 ((L.lhomWithConstantsMap ((↑) : A → M)).onFormula φ).Realize v := by
   constructor
   · intro hS
-    obtain ⟨N, v, hv⟩ :=
-      (partialTypeOver_iff_realizedIn_elementaryExtension (L := L) (M := M) (A := A) (α := α)
-        S).1 hS
+    obtain ⟨N, v, hv⟩ := (partialTypeOver_iff_realizedIn_elementaryExtension S).1 hS
     have : (L.lhomWithConstants M).IsExpansionOn N := LHom.isExpansionOn_reduct _ _
     exact ⟨N, ElementaryEmbedding.ofModelsElementaryDiagram L M N,
-      fun a => ElementaryEmbedding.ofModelsElementaryDiagram_apply (L := L) (M := M) (N := N) a,
-      v, hv⟩
+      ElementaryEmbedding.ofModelsElementaryDiagram_apply, v, hv⟩
   · rintro ⟨N, _, _, v, hv⟩
-    exact
-      (partialTypeOver_iff_realizedIn_elementaryExtension (L := L) (M := M) (A := A) (α := α)
-        S).2 ⟨N, v, hv⟩
+    exact (partialTypeOver_iff_realizedIn_elementaryExtension S).2 ⟨N, v, hv⟩
 
 end PartialType
 
