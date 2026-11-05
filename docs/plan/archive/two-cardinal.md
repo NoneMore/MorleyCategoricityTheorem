@@ -1,13 +1,25 @@
 # Two-cardinal models
 
+## Implementation status
+
+Blueprint [`def:kappa-lambda-model`](../../../blueprint/src/content.tex) is implemented in
+[`TwoCardinal.lean`](../../../MorleyCategoricityTheorem/ModelTheory/TwoCardinal.lean) and annotated
+in the blueprint ([PR #52](https://github.com/NoneMore/MorleyCategoricityTheorem/pull/52)).
+
+The Vaughtian-pair bridge and the corollary designed below are **not yet formalized**.  The plan is
+archived because the definition-node scope is complete; the design of the remaining bridge is kept
+here so it can be picked up without repeating the analysis.  The Löwenheim–Skolem side condition
+recorded below is not optional bookkeeping: it must be added to the blueprint statement of
+`lem:kappa-lambda-model-gives-vaughtian-pair` when the bridge is formalized.
+
 ## Scope and status
 
-Blueprint [`def:kappa-lambda-model`](../../blueprint/src/content.tex) introduces `(κ, λ)`-models: a
+Blueprint [`def:kappa-lambda-model`](../../../blueprint/src/content.tex) introduces `(κ, λ)`-models: a
 model of size `κ` with a one-variable parameter-definable subset of size `λ`.  It is implemented in
-[`TwoCardinal.lean`](../../MorleyCategoricityTheorem/ModelTheory/TwoCardinal.lean) and carries
+[`TwoCardinal.lean`](../../../MorleyCategoricityTheorem/ModelTheory/TwoCardinal.lean) and carries
 `\lean{}`/`\leanok` in the blueprint, with its declarations listed in `blueprint/lean_decls`.
 The definition node itself is complete; the bridge to Vaughtian pairs
-([`lem:kappa-lambda-model-gives-vaughtian-pair`](../../blueprint/src/content.tex)) and its corollary
+([`lem:kappa-lambda-model-gives-vaughtian-pair`](../../../blueprint/src/content.tex)) and its corollary
 are designed below but not yet formalized.
 
 The nodes downstream of the definition are
@@ -35,12 +47,12 @@ The pieces needed by the definition already exist:
 
 | ingredient | declaration | location |
 |---|---|---|
-| unary realization set | `Formula.realizationSet₁` | [`Semantics.lean`](../../MorleyCategoricityTheorem/ModelTheory/Semantics.lean) |
-| finite parameter presentation | `Language.definable₁_iff_exists_fin_realizationSet₁` | [`Definability.lean`](../../MorleyCategoricityTheorem/ModelTheory/Definability.lean) |
-| realizability of a definable set | `Formula.realizationSet₁_definable` | [`Definability.lean`](../../MorleyCategoricityTheorem/ModelTheory/Definability.lean) |
-| transport of unary realization sets | `Equiv.image_realizationSet₁` | [`ElementaryMaps.lean`](../../MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean) |
+| unary realization set | `Formula.realizationSet₁` | [`Semantics.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Semantics.lean) |
+| finite parameter presentation | `Language.definable₁_iff_exists_fin_realizationSet₁` | [`Definability.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Definability.lean) |
+| realizability of a definable set | `Formula.realizationSet₁_definable` | [`Definability.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Definability.lean) |
+| transport of unary realization sets | `Equiv.image_realizationSet₁` | [`ElementaryMaps.lean`](../../../MorleyCategoricityTheorem/ModelTheory/ElementaryMaps.lean) |
 | theory transport along an embedding | `ElementaryEmbedding.theory_model_iff` | Mathlib `ModelTheory.ElementaryMaps` |
-| Vaughtian pairs | `Theory.IsVaughtianPair`, `Theory.HasVaughtianPair` | [`VaughtianPair.lean`](../../MorleyCategoricityTheorem/ModelTheory/VaughtianPair.lean) |
+| Vaughtian pairs | `Theory.IsVaughtianPair`, `Theory.HasVaughtianPair` | [`VaughtianPair.lean`](../../../MorleyCategoricityTheorem/ModelTheory/VaughtianPair.lean) |
 | downward Löwenheim–Skolem | `exists_elementarySubstructure_card_eq` | Mathlib `ModelTheory.Skolem` |
 | elementary substructure interface | `ElementarySubstructure.subtype`, `theory_model_iff` | Mathlib `ModelTheory.ElementarySubstructures` |
 
@@ -119,6 +131,12 @@ place this happens).  `HasKappaLambdaModel` fixes the model universe to `w` beca
 `ModelType.{u, v, w}` has cardinality in `Cardinal.{w}`; weakening this would only add lifts to
 every downstream statement, and no node needs it.
 
+For the same reason `IsKappaLambdaModel.of_equiv` and `iff_of_equiv` take both models in a common
+universe: `Equiv.image_realizationSet₁` supports distinct universes for realization sets, but
+transporting `#M = κ` across universes would compare `Cardinal.{w}` and `Cardinal.{w'}` values and
+needs a lift-stated variant.  No consumer needs that yet; add a lifted version rather than widening
+the current API if one appears.
+
 ## The Vaughtian-pair bridge
 
 The planned interface for `lem:kappa-lambda-model-gives-vaughtian-pair` is
@@ -157,11 +175,14 @@ Proof plan:
 
 **Blueprint fidelity.**  The blueprint states the lemma without a language-cardinality hypothesis,
 but step 3 needs `max (#s, |L|, ℵ₀) ≤ λ`, and that is the only available route: the blueprint's own
-`thm:downward-lowenheim-skolem` bounds an elementary submodel by `|X| + |L| + ℵ₀`, not by `λ`.  The
-Lean statement therefore carries the Löwenheim–Skolem side condition `hL : |L| ≤ μ`, which is
-discharged by `ℵ₀ ≤ μ` in every countable-language consumer (`thm:vaught-two-cardinal`).  Whether
-the hypothesis can be removed for uncountable languages is left open; the plan records it instead
-of silently weakening the blueprint's citation.
+`thm:downward-lowenheim-skolem` bounds an elementary submodel by `|X| + |L| + ℵ₀`, not by `λ`.
+
+The resolution is to align the statement with the side condition rather than to look for an
+Löwenheim–Skolem-free proof.  The Lean statement carries `hL : |L| ≤ μ`, and when the bridge is
+formalized the blueprint statement of `lem:kappa-lambda-model-gives-vaughtian-pair` gains the
+matching hypothesis `|L| ≤ λ`.  Countable-language consumers (`thm:vaught-two-cardinal`) discharge
+it through `ℵ₀ ≤ λ`, so no downstream node changes.  The hypothesis is not cosmetic: a language with
+`λ⁺` distinct constants admits no `L`-substructure of size `λ`.
 
 The corollary `cor:no-small-infinite-definable-sets-without-vaughtian-pairs` is the
 contrapositive: given `¬ HasVaughtianPair T`, a model `M ⊨ T` with `#M = κ`, and `s` definable,

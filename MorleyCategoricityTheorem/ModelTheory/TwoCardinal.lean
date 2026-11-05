@@ -38,7 +38,8 @@ Cardinalities use `Cardinal.mk`, since `Set.encard` collapses the infinite cardi
 ordering `κ > λ ≥ ℵ₀` is a hypothesis of the statements using the notion rather than part of the
 definition.  The second cardinal is named `μ` because `λ` is a keyword in Lean.
 
-Design rationale and the planned Vaughtian-pair bridge are in `docs/plan/two-cardinal.md`.
+Design rationale and the planned Vaughtian-pair bridge are in
+`docs/plan/archive/two-cardinal.md`.
 -/
 
 universe u v w
@@ -117,7 +118,10 @@ theorem exists_realizationSet₁_card_eq (h : IsKappaLambdaModel T M κ μ) :
   h.2.2
 
 /-- `(κ, λ)`-modelhood is invariant under `L`-isomorphism: the definable set is transported by the
-equivalence, which preserves its cardinality. -/
+equivalence, which preserves its cardinality.
+
+Both models live in a common universe.  Cross-universe transport would compare cardinalities in
+different universes and needs a lift-stated variant; no consumer needs one yet. -/
 theorem of_equiv {N : Type w} [L.Structure N] (h : IsKappaLambdaModel T M κ μ)
     (e : M ≃[L] N) : IsKappaLambdaModel T N κ μ := by
   obtain ⟨hT, hcard, n, φ, a, hreal⟩ := h
