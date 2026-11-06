@@ -40,19 +40,6 @@ namespace Language
 
 variable {L : Language.{u, v}} {M : Type w'} [L.Structure M] {B : Set M} {b : M}
 
-/-- Moving a formula with constants into the base language, with the constants becoming parameters,
-preserves realization. -/
-private theorem realize_constantsVarsEquiv₁ (ψ : L[[B]].Formula (Fin 1)) (x : M) :
-    Formula.Realize (BoundedFormula.constantsVarsEquiv ψ)
-        (Sum.elim (Subtype.val : B → M) (fun _ : Fin 1 => x)) ↔
-      ψ.Realize (fun _ : Fin 1 => x) := by
-  have h : (Sum.elim (fun a : B => (↑(L.con a) : M)) (fun _ : Fin 1 => x) : B ⊕ Fin 1 → M)
-      = Sum.elim (Subtype.val : B → M) (fun _ : Fin 1 => x) := by
-    ext a
-    cases a <;> rfl
-  rw [Formula.Realize, ← h]
-  exact BoundedFormula.realize_constantsVarsEquiv (φ := ψ) (v := fun _ : Fin 1 => x) (xs := default)
-
 /-- Every finite conjunction of unary formulas over `B` true at `b` has infinitely many
 realizations in `M`, provided `b` is not algebraic over `B`.
 
@@ -69,18 +56,14 @@ theorem infinite_finset_realizations_of_not_mem_algebraicClosure
       ∀ φ ∈ s, φ.Realize (fun _ : Fin 1 => x) := by
     intro x
     simp only [hψdef, Formula.realize_iInf, Subtype.forall]
+  -- Its realizations form a finite `B`-definable set containing `b`.
   have hfin' : {x : M | ψ.Realize (fun _ : Fin 1 => x)}.Finite :=
     hfin.subset fun _ hx => (hψ _).1 hx
-  -- Transport the conjunction to a formula of the base language in the parameter type `B`.
-  have hset : Formula.realizationSet₁ (BoundedFormula.constantsVarsEquiv ψ)
-        (Subtype.val : B → M)
-      = {x : M | ψ.Realize (fun _ : Fin 1 => x)} := by
-    ext x
-    simp only [Formula.mem_realizationSet₁, realize_constantsVarsEquiv₁, Set.mem_ofPred_eq]
-  refine hb ?_
-  rw [mem_algebraicClosure_iff, isAlgebraicOver_iff_exists_realizationSet₁]
-  exact ⟨BoundedFormula.constantsVarsEquiv ψ, by rw [hset]; exact hfin',
-    by rw [hset]; exact (hψ b).2 hs⟩
+  have hdef : B.Definable₁ L {x : M | ψ.Realize (fun _ : Fin 1 => x)} :=
+    ⟨ψ, Set.ext fun w => by
+      have hw : (fun _ : Fin 1 => w 0) = w := funext fun i => congrArg w (Fin.eq_zero i).symm
+      simp only [Set.mem_ofPred_eq, hw]⟩
+  exact hb ⟨_, hfin', hdef, (hψ b).2 hs⟩
 
 /-- **Nonalgebraic types have arbitrarily many distinct conjugates.** If `b` is not algebraic over
 `B ⊆ M`, then for every `n` some model of the elementary diagram of `M` carries `n + 1` pairwise
@@ -105,10 +88,8 @@ theorem exists_distinct_realizations_of_not_mem_algebraicClosure
   have hp : ∀ s : Finset (L[[B]].Formula (Fin 1)),
       (↑s : Set (L[[B]].Formula (Fin 1))) ⊆ p →
         {x : M | ∀ φ ∈ s, φ.Realize (fun _ : Fin 1 => x)}.Infinite :=
-    fun s hs => infinite_finset_realizations_of_not_mem_algebraicClosure hb s fun φ hφ => hs hφ
-  obtain ⟨N, e, x, hx, he, hreal⟩ :=
-    Theory.PartialType.exists_distinct_realizations (L := L) (M := M) (B := B) (p := p) hp n
-  exact ⟨N, e, x, hx, he, fun i φ hφ => hreal i φ (show φ ∈ p from hφ)⟩
+    fun s hs => infinite_finset_realizations_of_not_mem_algebraicClosure hb s hs
+  exact Theory.PartialType.exists_distinct_realizations (p := p) hp n
 
 end Language
 
