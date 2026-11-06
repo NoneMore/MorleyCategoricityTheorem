@@ -77,31 +77,27 @@ private theorem exists_injective_of_forall_infinite {ι : Type*} [Fintype ι] {W
     | empty => exact ⟨fun _ => Classical.arbitrary M, by simp, by simp⟩
     | insert a s ha ih =>
       obtain ⟨x, hx, hxW⟩ := ih
-      obtain ⟨y, hyW, hy⟩ := (hW a).exists_notMem_finite (s.finite_toSet.image x)
+      have ha' : ∀ j ∈ s, j ≠ a := fun j hj h => ha (h ▸ hj)
+      -- Pick the value at `a` outside the values already assigned on `s`.
+      obtain ⟨y, hyW, hy⟩ := (hW a).exists_notMem_finite (Set.Finite.image x s.finite_toSet)
       refine ⟨Function.update x a y, ?_, ?_⟩
-      · intro i hi j hj hij
+      · rintro i hi j hj hij
         simp only [Finset.coe_insert, Set.mem_insert_iff] at hi hj
-        rcases hi with hia | hi <;> rcases hj with hja | hj
-        · rw [hia, hja]
-        · rw [hia] at hij ⊢
-          have hja' : j ≠ a := fun h => ha (by simpa [h] using hj)
-          rw [Function.update_self, Function.update_of_ne hja'] at hij
-          exact (hy ⟨j, hj, hij.symm⟩).elim
-        · rw [hja] at hij ⊢
-          have hia' : i ≠ a := fun h => ha (by simpa [h] using hi)
-          rw [Function.update_self, Function.update_of_ne hia'] at hij
-          exact (hy ⟨i, hi, hij⟩).elim
-        · have hia' : i ≠ a := fun h => ha (by simpa [h] using hi)
-          have hja' : j ≠ a := fun h => ha (by simpa [h] using hj)
-          rw [Function.update_of_ne hia', Function.update_of_ne hja'] at hij
-          exact hx hi hj hij
+        rcases hi with rfl | hi <;> rcases hj with rfl | hj
+        · rfl
+        · have h1 : y = x j := by
+            rwa [Function.update_self, Function.update_of_ne (ha' j hj)] at hij
+          exact (hy ⟨j, hj, h1.symm⟩).elim
+        · have h2 : y = x i := by
+            rw [Function.update_self, Function.update_of_ne (ha' i hi)] at hij
+            exact hij.symm
+          exact (hy ⟨i, hi, h2.symm⟩).elim
+        · exact hx hi hj (by
+            rwa [Function.update_of_ne (ha' i hi), Function.update_of_ne (ha' j hj)] at hij)
       · intro i hi
-        rw [Finset.mem_insert] at hi
-        rcases hi with hia | hi
-        · rw [hia]
-          simpa only [Function.update_self] using hyW
-        · have hia' : i ≠ a := fun h => ha (h ▸ hi)
-          simpa only [Function.update_of_ne hia'] using hxW i hi
+        rcases Finset.mem_insert.mp hi with rfl | hi
+        · simpa only [Function.update_self] using hyW
+        · simpa only [Function.update_of_ne (ha' i hi)] using hxW i hi
   obtain ⟨x, hx⟩ := key Finset.univ
   exact ⟨x, fun i j h => hx.1 (Finset.mem_univ i) (Finset.mem_univ j) h,
     fun i => hx.2 i (Finset.mem_univ i)⟩
@@ -150,9 +146,8 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
     refine ⟨x, fun ψ hψ => ?_⟩
     have hψP : (ψ : L[[B]].Formula (Fin (n + 1))) ∈ jointSet B p n := hs hψ
     simp only [jointSet, Set.mem_union] at hψP
-    rcases hψP with hA | hB
+    obtain hA | hB := hψP
     · obtain ⟨i, hmem⟩ := Set.mem_iUnion.mp hA
-      simp only [Set.mem_image] at hmem
       obtain ⟨φ, hφp, hφeq⟩ := hmem
       have hcond : ∃ φ' ∈ p, relabelToCoord i φ' = (ψ : L[[B]].Formula (Fin (n + 1))) :=
         ⟨φ, hφp, hφeq⟩
@@ -182,17 +177,15 @@ theorem exists_distinct_realizations {B : Set M} {p : Set (L[[B]].Formula (Fin 1
   refine ⟨N, e, v, ?_, ?_, ?_⟩
   · intro i j hij
     by_contra hne
-    have hmem : neqFormula i j ∈ jointSet B p n := by
-      simp only [jointSet, Set.mem_union]
-      exact Or.inr ⟨i, j, hne, rfl⟩
+    have hmem : neqFormula i j ∈ jointSet B p n :=
+      Set.mem_union_right _ ⟨i, j, hne, rfl⟩
     have hreal : (neqFormula i j).Realize v := (LHom.realize_onFormula f _).mp (hv _ hmem)
     simp only [neqFormula, Formula.realize_not, Formula.realize_equal, Term.realize_var] at hreal
     exact hreal hij
   · exact he
   · intro i φ hφ
-    have hmem : relabelToCoord i φ ∈ jointSet B p n := by
-      simp only [jointSet, Set.mem_union]
-      exact Or.inl (Set.mem_iUnion.mpr ⟨i, Set.mem_image_of_mem _ hφ⟩)
+    have hmem : relabelToCoord i φ ∈ jointSet B p n :=
+      Set.mem_union_left _ (Set.mem_iUnion.mpr ⟨i, Set.mem_image_of_mem _ hφ⟩)
     have hreal : (relabelToCoord i φ).Realize v := (LHom.realize_onFormula f _).mp (hv _ hmem)
     exact (LHom.realize_onFormula f φ).mpr ((relabelToCoord_realize i φ v).mp hreal)
 
