@@ -75,3 +75,4 @@ FirstOrder.Language.subset_relAlgebraicClosure
 FirstOrder.Language.relAlgebraicClosure_mono
 FirstOrder.Language.relAlgebraicClosure_idem
 FirstOrder.Language.mem_relAlgebraicClosure_iff_exists_finset
+FirstOrder.Language.exists_distinct_realizations_of_not_mem_algebraicClosure

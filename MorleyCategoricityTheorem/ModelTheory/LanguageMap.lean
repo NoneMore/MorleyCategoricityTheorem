@@ -1,20 +1,57 @@
 import Mathlib.ModelTheory.LanguageMap
+import Mathlib.ModelTheory.Syntax
 
 /-!
 # Language maps
 
 This file contains auxiliary results about language maps and expansions by constants. In
 particular, it records the functoriality of the sum map `LHom.sumMap` (`LHom.sumMap_id`,
-`LHom.sumMap_comp`).
+`LHom.sumMap_comp`) and the transport of sets of formulas along a language map
+(`LHom.onFormulaSet`).
+
+The formula-set transport API follows the design of the reference project
+[`NoneMore/StabilityTheory`](https://github.com/NoneMore/StabilityTheory); its statements are
+reproved here against this repository's `LHom.onFormula` API.
 -/
 
-universe u v w w'
+universe u v w w' u' v' u'' v'' w''
 
 namespace FirstOrder
 
 namespace Language
 
 namespace LHom
+
+section FormulaSet
+
+variable {L : Language.{u, v}} {L' : Language.{u', v'}} {L'' : Language.{u'', v''}}
+variable {α : Type w''}
+
+/-- Transports a set of formulas along a language homomorphism. -/
+def onFormulaSet (φ : L →ᴸ L') (S : Set (L.Formula α)) : Set (L'.Formula α) :=
+  φ.onFormula '' S
+
+@[simp]
+theorem mem_onFormulaSet {φ : L →ᴸ L'} {S : Set (L.Formula α)} {ψ : L'.Formula α} :
+    ψ ∈ φ.onFormulaSet S ↔ ∃ θ ∈ S, φ.onFormula θ = ψ :=
+  Iff.rfl
+
+@[simp]
+theorem onFormulaSet_id (L : Language.{u, v}) (S : Set (L.Formula α)) :
+    (LHom.id L).onFormulaSet S = S := by
+  simp [onFormulaSet, LHom.onFormula]
+
+@[simp]
+theorem onFormulaSet_comp (g : L' →ᴸ L'') (f : L →ᴸ L') (S : Set (L.Formula α)) :
+    g.onFormulaSet (f.onFormulaSet S) = (g.comp f).onFormulaSet S := by
+  simp only [onFormulaSet, LHom.onFormula, LHom.comp_onBoundedFormula]
+  exact Set.image_image ..
+
+theorem onFormulaSet_mono (f : L →ᴸ L') {S T : Set (L.Formula α)} (hST : S ⊆ T) :
+    f.onFormulaSet S ⊆ f.onFormulaSet T :=
+  Set.image_mono hST
+
+end FormulaSet
 
 variable {L : Language.{u, v}} {M : Type w} {N : Type w'}
 variable [L.Structure N] [L[[M]].Structure N]

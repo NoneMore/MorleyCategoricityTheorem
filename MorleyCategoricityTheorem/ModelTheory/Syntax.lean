@@ -271,6 +271,10 @@ theorem onFormula_injective (φ : L →ᴸ L') (h : φ.Injective) :
     Function.Injective (φ.onFormula : L.Formula α → L'.Formula α) := by
   simpa [onFormula] using (onBoundedFormula_injective φ h (n := 0))
 
+/-- The formula transport of an injective language homomorphism, bundled as an embedding. -/
+def onFormulaEmbedding (φ : L →ᴸ L') (h : φ.Injective) : L.Formula α ↪ L'.Formula α :=
+  ⟨φ.onFormula, onFormula_injective φ h⟩
+
 /-- The map on sentences induced by a language map is injective when the language map is
   injective. -/
 theorem onSentence_injective (φ : L →ᴸ L') (h : φ.Injective) :
