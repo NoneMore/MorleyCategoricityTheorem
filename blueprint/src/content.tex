@@ -1106,6 +1106,8 @@ restricted to \(D\) after adjoining the fixed base \(A\).
 
 \begin{lemma}[Nonalgebraic types have arbitrarily many distinct conjugates]
 \label{lem:nonalgebraic-type-many-realizations}
+\lean{FirstOrder.Language.exists_distinct_realizations_of_not_mem_algebraicClosure}
+\leanok
 \uses{thm:compactness,def:types-over-parameters,def:algebraic-closure}
 If \(b\notin\operatorname{acl}(B)\), then for every
 \(n\in\mathbb N\) there is an elementary extension containing distinct
@@ -1113,6 +1115,7 @@ If \(b\notin\operatorname{acl}(B)\), then for every
 \end{lemma}
 
 \begin{proof}
+\leanok
 Add constants \(b_0,\ldots,b_n\), require each to satisfy the complete
 type of \(b\) over \(B\), and require them pairwise distinct.  Every
 finite fragment mentions only finitely many formulas from that type;
