@@ -1,13 +1,31 @@
 # Partial-Type Realization in Elementary Extensions
 
+## Implementation status
+
+Implemented in [PR #53](https://github.com/NoneMore/MorleyCategoricityTheorem/pull/53): the
+formula-set transport and the compactness interface for unary partial types live in
+[`LanguageMap.lean`](../../../MorleyCategoricityTheorem/ModelTheory/LanguageMap.lean),
+[`Syntax.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Syntax.lean), and
+[`PartialTypes.lean`](../../../MorleyCategoricityTheorem/ModelTheory/PartialTypes.lean); the finite
+distinct-realization theorems and the blueprint consumer are in
+[`PartialTypeRealizations.lean`](../../../MorleyCategoricityTheorem/ModelTheory/PartialTypeRealizations.lean)
+and [`NonalgebraicTypes.lean`](../../../MorleyCategoricityTheorem/ModelTheory/NonalgebraicTypes.lean).
+The same PR adds the blueprint `\lean`/`\leanok` annotations for
+[`lem:nonalgebraic-type-many-realizations`](../../../blueprint/src/content.tex), which this plan had
+deferred to a separately authorized change.
+
+This archived plan preserves the pre-implementation investigation and design. Statements below about
+unproved obligations, plan-only scope, and future validation describe that earlier stage; they are not
+remaining tasks. The generalizations under **Deferred work** are still out of scope.
+
 ## Goal and scope
 
 Build a reusable compactness interface for unary partial types realized in an **elementary extension**,
 including finitely many pairwise distinct witnesses. The first consumer is blueprint
-[`lem:nonalgebraic-type-many-realizations`](../../blueprint/src/content.tex): if `b ∉ L.algebraicClosure B`
+[`lem:nonalgebraic-type-many-realizations`](../../../blueprint/src/content.tex): if `b ∉ L.algebraicClosure B`
 , then for every `n` there is an elementary extension with `n + 1` distinct realizations of `tp(b/B)` .
 
-[`DefinablyFull.lean`](../../MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean) already constructs
+[`DefinablyFull.lean`](../../../MorleyCategoricityTheorem/ModelTheory/DefinablyFull.lean) already constructs
 many witnesses using an elementary diagram, finite satisfiability, and compactness. Extract the reusable
 realization machinery, not its cardinality control or an immediate refactor of that working proof. Adapt
 only the necessary declarations from
@@ -26,10 +44,10 @@ drop-in code.
 |---|---|
 | [Upstream `PartialTypes.lean`](https://github.com/NoneMore/StabilityTheory/blob/master/StabilityTheory/ModelTheory/PartialTypes.lean) | `Theory.withSet`, `Theory.PartialType`, finite-realizability and elementary-extension equivalences |
 | [Upstream `LanguageMap.lean`](https://github.com/NoneMore/StabilityTheory/blob/master/StabilityTheory/ModelTheory/LanguageMap.lean) | Formula-set transport and injectivity, only if missing locally |
-| Target [`Syntax.lean`](../../MorleyCategoricityTheorem/ModelTheory/Syntax.lean) | Existing `LHom.onFormula_injective`, `LHom.onTheory_comp` and language-map constructions |
-| Target [`Types.lean`](../../MorleyCategoricityTheorem/ModelTheory/Types.lean) | Existing `L.CompleteTypeOver` and `typeOf`; no new complete-type framework |
-| Target [`Semantics.lean`](../../MorleyCategoricityTheorem/ModelTheory/Semantics.lean) | `Formula.realizationSet₁` and `Formula.realize_iInf` |
-| Target [`AlgebraicClosure.lean`](../../MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean) | `isAlgebraicOver_iff_exists_realizationSet₁` |
+| Target [`Syntax.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Syntax.lean) | Existing `LHom.onFormula_injective`, `LHom.onTheory_comp` and language-map constructions |
+| Target [`Types.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Types.lean) | Existing `L.CompleteTypeOver` and `typeOf`; no new complete-type framework |
+| Target [`Semantics.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Semantics.lean) | `Formula.realizationSet₁` and `Formula.realize_iInf` |
+| Target [`AlgebraicClosure.lean`](../../../MorleyCategoricityTheorem/ModelTheory/AlgebraicClosure.lean) | `isAlgebraicOver_iff_exists_realizationSet₁` |
 | Mathlib | `Theory.isSatisfiable_iff_isFinitelySatisfiable` and `ElementaryEmbedding.ofModelsElementaryDiagram` |
 
 Do not port upstream `Types.lean` or duplicate names already defined in the target. Before copying upstream
@@ -46,9 +64,9 @@ repository and Mathlib `v4.34.1`.
   records the reference project as provenance.
 - **Ported.** `LHom.onFormulaSet`, `LHom.mem_onFormulaSet`, `LHom.onFormulaSet_id`,
   `LHom.onFormulaSet_comp`, and `LHom.onFormulaSet_mono` in
-  [`LanguageMap.lean`](../../MorleyCategoricityTheorem/ModelTheory/LanguageMap.lean), plus
+  [`LanguageMap.lean`](../../../MorleyCategoricityTheorem/ModelTheory/LanguageMap.lean), plus
   `LHom.onFormulaEmbedding` in
-  [`Syntax.lean`](../../MorleyCategoricityTheorem/ModelTheory/Syntax.lean).
+  [`Syntax.lean`](../../../MorleyCategoricityTheorem/ModelTheory/Syntax.lean).
 - **Already available, not ported.** Formula injectivity (`LHom.onFormula_injective`), the sum-map
   laws (`LHom.sumMap_id`, `LHom.sumMap_comp`), the constants-map injectivity API
   (`lhomWithConstantsMap_injective`), `Formula.realize_exClosure`,
