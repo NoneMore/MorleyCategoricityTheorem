@@ -1,0 +1,83 @@
+diff --git a/Mathlib/FieldTheory/AxGrothendieck.lean b/Mathlib/FieldTheory/AxGrothendieck.lean
+index e59806cab6..fca342b50b 100644
+--- a/Mathlib/FieldTheory/AxGrothendieck.lean
++++ b/Mathlib/FieldTheory/AxGrothendieck.lean
+@@ -152,7 +152,8 @@ theorem realize_genericPolyMapSurjOnOfInjOn
+     simp [Set.InjOn]; tauto
+   simp only [Sentence.Realize, Formula.Realize, genericPolyMapSurjOnOfInjOn, Formula.relabel,
+     Function.comp_def, Sum.map, id_eq, Equiv.sumAssoc, Equiv.coe_fn_symm_mk, Sum.elim_inr,
+-    realize_iAlls, realize_imp, realize_relabel, Fin.natAdd_zero, realize_subst, realize_iInf,
++    realize_iAlls, realize_imp, realize_relabel, BoundedFormula.realize_relabelFree,
++    Fin.natAdd_zero, realize_subst, realize_iInf,
+     realize_bdEqual, Term.realize_relabel,
+     Equiv.forall_congr_left (Equiv.curry (Fin 2) ι K), Equiv.curry_symm_apply,
+     Fin.forall_fin_succ_pi, Fin.forall_fin_zero_pi, realize_iExs, realize_inf, Sum.forall_sum,
+diff --git a/Mathlib/ModelTheory/ElementarySubstructures.lean b/Mathlib/ModelTheory/ElementarySubstructures.lean
+index 8053d339f6..cf42196641 100644
+--- a/Mathlib/ModelTheory/ElementarySubstructures.lean
++++ b/Mathlib/ModelTheory/ElementarySubstructures.lean
+@@ -183,7 +183,8 @@ theorem isElementary_closure (hA : L.MeetsDefinable A) :
+         ⟩).term) i, ?_⟩
+     ext v
+     simp only [Fin.isValue, mem_ofPred_eq, Formula.relabel, Formula.Realize,
+-      BoundedFormula.realize_subst, BoundedFormula.realize_relabel, Nat.add_zero, Fin.castAdd_zero,
++      BoundedFormula.realize_subst, BoundedFormula.realize_relabel,
++      BoundedFormula.realize_relabelFree, Nat.add_zero, Fin.castAdd_zero,
+       Fin.cast_refl, Function.comp_id, Fin.natAdd_zero, D]
+     rw [← Formula.Realize, BoundedFormula.realize_toFormula, LHom.realize_onBoundedFormula]
+     congr! 1
+diff --git a/Mathlib/ModelTheory/Semantics.lean b/Mathlib/ModelTheory/Semantics.lean
+index a9e104f25f..63184901f7 100644
+--- a/Mathlib/ModelTheory/Semantics.lean
++++ b/Mathlib/ModelTheory/Semantics.lean
+@@ -367,6 +367,13 @@ theorem realize_mapTermRel_id [L'.Structure M]
+   | imp _ _ ih1 ih2 => simp [mapTermRel, Realize, ih1, ih2]
+   | all _ ih => simp only [mapTermRel, Realize, ih, id]
+ 
++@[simp]
++theorem realize_relabelFree {n : ℕ} {φ : L.BoundedFormula α n} {g : α → β} {v : β → M}
++    {xs : Fin n → M} :
++    (φ.relabelFree g).Realize v xs ↔ φ.Realize (v ∘ g) xs :=
++  realize_mapTermRel_id (fun n t xs => by simp [Term.realize_relabel, Sum.elim_comp_map])
++    fun n R x => rfl
++
+ theorem realize_mapTermRel_add_castLe [L'.Structure M] {k : ℕ}
+     {ft : ∀ n, L.Term (α ⊕ (Fin n)) → L'.Term (β ⊕ (Fin (k + n)))}
+     {fr : ∀ n, L.Relations n → L'.Relations n} {n} {φ : L.BoundedFormula α n}
+@@ -581,8 +588,9 @@ theorem realize_iff : (φ.iff ψ).Realize v ↔ (φ.Realize v ↔ ψ.Realize v)
+ @[simp]
+ theorem realize_relabel {φ : L.Formula α} {g : α → β} {v : β → M} :
+     (φ.relabel g).Realize v ↔ φ.Realize (v ∘ g) := by
+-  rw [Realize, Realize, relabel, BoundedFormula.realize_relabel, iff_eq_eq, Fin.castAdd_zero]
+-  exact congr rfl (funext finZeroElim)
++  rw [Realize, Realize, relabel, BoundedFormula.relabelFree]
++  exact BoundedFormula.realize_mapTermRel_id
++    (fun n t xs => by simp [Term.realize_relabel, Sum.elim_comp_map]) fun n R x => rfl
+ 
+ theorem realize_relabel_sumInr (φ : L.Formula (Fin n)) {v : Empty → M} {x : Fin n → M} :
+     (BoundedFormula.relabel Sum.inr φ).Realize v x ↔ φ.Realize x := by
+diff --git a/Mathlib/ModelTheory/Syntax.lean b/Mathlib/ModelTheory/Syntax.lean
+index 91e8e540b6..a4172a9b0b 100644
+--- a/Mathlib/ModelTheory/Syntax.lean
++++ b/Mathlib/ModelTheory/Syntax.lean
+@@ -554,6 +554,11 @@ def relabelEquiv (g : α ≃ β) {k} : L.BoundedFormula α k ≃ L.BoundedFormul
+   mapTermRelEquiv (fun _n => Term.relabelEquiv (g.sumCongr (_root_.Equiv.refl _)))
+     fun _n => _root_.Equiv.refl _
+ 
++/-- Arity-preserving free-variable relabeling: `mapTermRel` with the identity arity
++function, so no `0 + n` shift/`castLE` bookkeeping ever appears. -/
++def relabelFree (f : α → β) {n : ℕ} : L.BoundedFormula α n → L.BoundedFormula β n :=
++  mapTermRel (fun _ t => t.relabel (Sum.map f id)) (fun _ => id) (fun _ => id)
++
+ @[simp]
+ theorem relabel_falsum (g : α → β ⊕ (Fin n)) {k} :
+     (falsum : L.BoundedFormula α k).relabel g = falsum :=
+@@ -749,7 +754,7 @@ namespace Formula
+ 
+ /-- Relabels a formula's variables along a particular function. -/
+ def relabel (g : α → β) : L.Formula α → L.Formula β :=
+-  @BoundedFormula.relabel _ _ _ 0 (Sum.inl ∘ g) 0
++  BoundedFormula.relabelFree g
+ 
+ /-- The graph of a function as a first-order formula. -/
+ def graph (f : L.Functions n) : L.Formula (Fin (n + 1)) :=
