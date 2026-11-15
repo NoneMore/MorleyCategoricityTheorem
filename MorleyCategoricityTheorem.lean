@@ -19,6 +19,7 @@ import MorleyCategoricityTheorem.ModelTheory.PartialTypes
 import MorleyCategoricityTheorem.ModelTheory.Pregeometry
 import MorleyCategoricityTheorem.ModelTheory.Satisfiability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
+import MorleyCategoricityTheorem.ModelTheory.SkolemExpansion
 import MorleyCategoricityTheorem.ModelTheory.SkolemHull
 import MorleyCategoricityTheorem.ModelTheory.Syntax
 import MorleyCategoricityTheorem.ModelTheory.TwoCardinal

@@ -458,11 +458,19 @@ inverse, given by \(f^{-1}\), yields the reverse inclusion.
 
 \begin{theorem}[Skolem expansion]
 \label{thm:skolem-expansion}
+\lean{FirstOrder.Language.skolemExpansion, FirstOrder.Language.skolemAxiom, FirstOrder.Language.skolemTheory, FirstOrder.Language.realize_skolemAxiom, FirstOrder.Language.model_skolemTheory, FirstOrder.Language.Theory.model_of_model_skolemTheory, FirstOrder.Language.card_skolemExpansion}
+\leanok
 For every \(L\)-theory \(T\), there is an expanded language \(L^*\) and
 a theory \(T^*\supseteq T\) with Skolem functions such that every model
 of \(T\) admits an expansion to a model of \(T^*\), every model of
 \(T^*\) has an \(L\)-reduct satisfying \(T\), and
-\(|L^*|=|L|+\aleph_0\) may be arranged.
+\(|L^*|=|L|+\aleph_0\).
+\emph{Formalization note.}  The formalization performs one Skolemization
+step, adjoining witnesses for \(L\)-formulas only; iterating it would add
+witnesses for formulas of the expanded language, which the Skolem-hull
+argument does not need.  Models are assumed nonempty because the
+expansion introduces constant symbols.  The cardinality is computed
+exactly, as \(\max\{|L|,\aleph_0\}\).
 \end{theorem}
 
 \begin{theorem}[Infinite Ramsey theorem]
