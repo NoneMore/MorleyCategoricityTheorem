@@ -81,6 +81,8 @@ FirstOrder.Language.model_elementaryPairTheory_iff
 FirstOrder.Language.ElementarySubstructure.model_elementaryPairTheory
 FirstOrder.Language.ElementarySubstructure.isElementaryPair
 FirstOrder.Language.ElementaryEmbedding.model_elementaryPairTheory
+FirstOrder.Language.IsHomogeneous
+FirstOrder.Language.IsHomogeneousModel
 FirstOrder.Language.IsMinimal
 FirstOrder.Language.Formula.IsMinimal
 FirstOrder.Language.Formula.IsStronglyMinimal
