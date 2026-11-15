@@ -248,25 +248,23 @@ theorem map_completeTheory (f : A ↪ₚₑ[L] B) :
       L[[B]].completeTheory N :=
   (LEquiv.onTheory_completeTheory_eq_iff f.parameterLEquiv).mpr (map_sentence f)
 
-/-- Transport a partial elementary embedding along equalities of its source and target. -/
+/-- Transport a partial elementary embedding along equalities of its source and target.
+
+The two ends are moved along the canonical equivalences `Set.equivOfEq` of equal sets, so both the
+surjectivity and the formula-preservation conditions transport definitionally. -/
 def reindex (f : A ↪ₚₑ[L] B) {A' : Set M} {B' : Set N} (hA : A = A') (hB : B = B') :
-    A' ↪ₚₑ[L] B' :=
-  let toFun : A' → B' := fun a =>
-    ⟨f ⟨a.1, hA.symm ▸ a.2⟩, hB ▸ (f ⟨a.1, hA.symm ▸ a.2⟩).2⟩
-  { toFun := toFun
-    surjective' := by
-      intro b
-      obtain ⟨a, ha⟩ := f.surjective' ⟨b.1, hB.symm ▸ b.2⟩
-      refine ⟨⟨a.1, hA ▸ a.2⟩, ?_⟩
-      apply Subtype.ext
-      simpa using congrArg Subtype.val ha
-    map_formula' := by
-      intro n φ x
-      let y : Fin n → A := fun i => ⟨(x i).1, hA.symm ▸ (x i).2⟩
-      have hx : (Subtype.val ∘ x : Fin n → M) = Subtype.val ∘ y := rfl
-      have hfx : (Subtype.val ∘ toFun ∘ x : Fin n → N) = Subtype.val ∘ f ∘ y := rfl
-      rw [hx, hfx]
-      exact f.map_formula' φ y }
+    A' ↪ₚₑ[L] B' where
+  toFun := Set.equivOfEq hB ∘ f ∘ Set.equivOfEq hA.symm
+  surjective' :=
+    (Set.equivOfEq hB).surjective.comp ((f.surjective').comp (Set.equivOfEq hA.symm).surjective)
+  map_formula' _ φ x := f.map_formula' φ (Set.equivOfEq hA.symm ∘ x)
+
+/-- A reindexed embedding takes the same values as the original embedding. -/
+@[simp]
+theorem reindex_apply (f : A ↪ₚₑ[L] B) {A' : Set M} {B' : Set N} (hA : A = A')
+    (hB : B = B') (a : A') :
+    (f.reindex hA hB a : N) = (f ⟨a.1, hA.symm ▸ a.2⟩ : N) :=
+  rfl
 
 /-- Pull back a partial elementary embedding between subsets of `N` along a first-order equivalence
 `e : M ≃[L] N`, obtaining a partial elementary embedding between their preimages in `M`.
@@ -275,41 +273,29 @@ The underlying map is `e.symm ∘ f ∘ e`. -/
 noncomputable def comapEquiv (e : M ≃[L] N) {A B : Set N} (f : A ↪ₚₑ[L] B) :
     (e ⁻¹' A) ↪ₚₑ[L] (e ⁻¹' B) :=
   let toFun : (e ⁻¹' A) → (e ⁻¹' B) := fun a =>
-    ⟨e.symm (f ⟨e a.1, a.2⟩), by
-      change e (e.symm (f ⟨e a.1, a.2⟩).1) ∈ B
-      rw [FirstOrder.Language.Equiv.apply_symm_apply]
-      exact (f ⟨e a.1, a.2⟩).2⟩
+    ⟨e.symm (f ⟨e a.1, a.2⟩ : N), by simp⟩
   { toFun := toFun
     surjective' := by
       intro b
-      obtain ⟨a0, ha0⟩ := f.surjective' ⟨e b.1, b.2⟩
-      let a1 : A := ⟨e (e.symm a0.1), by
-        rw [FirstOrder.Language.Equiv.apply_symm_apply]
-        exact a0.2⟩
-      refine ⟨⟨e.symm a0.1, by simp [a0.2]⟩, ?_⟩
-      apply Subtype.ext
-      change e.symm (f a1).1 = b.1
-      have harg : a1 = a0 := Subtype.ext (FirstOrder.Language.Equiv.apply_symm_apply e a0.1)
-      rw [harg]
-      have hf : (f a0).1 = e b.1 := congrArg Subtype.val ha0
-      rw [hf, FirstOrder.Language.Equiv.symm_apply_apply]
+      obtain ⟨a, ha⟩ := f.surjective' ⟨e b.1, b.2⟩
+      refine ⟨⟨e.symm a.1, by simp⟩, Subtype.ext ?_⟩
+      show e.symm (f ⟨e (e.symm a.1), by simp⟩ : N) = b.1
+      simpa using congrArg e.symm (congrArg Subtype.val ha)
     map_formula' := by
       intro n φ x
       let y : Fin n → A := fun i => ⟨e (x i).1, (x i).2⟩
-      have hx : (e ∘ (Subtype.val ∘ x) : Fin n → N) = Subtype.val ∘ y := rfl
-      have hfx : (e ∘ (Subtype.val ∘ toFun ∘ x) : Fin n → N) = Subtype.val ∘ f ∘ y := by
-        funext i
-        change e (e.symm (f ⟨e (x i).1, (x i).2⟩).1) = (f ⟨e (x i).1, (x i).2⟩).1
-        exact FirstOrder.Language.Equiv.apply_symm_apply e _
-      calc
-        φ.Realize (Subtype.val ∘ x)
-            ↔ φ.Realize (e ∘ (Subtype.val ∘ x)) :=
-              (StrongHomClass.realize_formula (g := e) φ).symm
-        _ ↔ φ.Realize (Subtype.val ∘ y) := by rw [hx]
+      calc φ.Realize (Subtype.val ∘ x)
+          ↔ φ.Realize (e ∘ (Subtype.val ∘ x)) :=
+            (StrongHomClass.realize_formula (g := e) φ).symm
         _ ↔ φ.Realize (Subtype.val ∘ f ∘ y) := f.map_formula' φ y
-        _ ↔ φ.Realize (e ∘ (Subtype.val ∘ toFun ∘ x)) := by rw [hfx]
         _ ↔ φ.Realize (Subtype.val ∘ toFun ∘ x) :=
-              StrongHomClass.realize_formula (g := e) φ }
+            (StrongHomClass.realize_formula (g := e.symm) (v := Subtype.val ∘ f ∘ y) φ).symm }
+
+/-- The underlying map of `comapEquiv` is `e.symm ∘ f ∘ e`. -/
+@[simp]
+theorem comapEquiv_apply (e : M ≃[L] N) {A B : Set N} (f : A ↪ₚₑ[L] B) (a : e ⁻¹' A) :
+    (comapEquiv e f a : M) = e.symm (f ⟨e a.1, a.2⟩ : N) :=
+  rfl
 
 end PartialElementaryEmbedding
 

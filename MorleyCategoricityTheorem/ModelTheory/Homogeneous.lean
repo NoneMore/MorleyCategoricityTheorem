@@ -81,43 +81,31 @@ theorem mono (h : L.IsHomogeneous M κ') (hκ : κ ≤ κ') : L.IsHomogeneous M 
 theorem of_equiv (e : M ≃[L] N) (h : L.IsHomogeneous M κ) :
     L.IsHomogeneous N κ := by
   intro A B f hA x
-  have hcard : #(e ⁻¹' A) = #A :=
-    Cardinal.mk_congr
-      { toFun := fun a => ⟨e a.1, a.2⟩
-        invFun := fun a => ⟨e.symm a.1, by simp [a.2]⟩
-        left_inv := by intro a; ext; simp
-        right_inv := by intro a; ext; simp }
-  have hA' : #(e ⁻¹' A) < κ := by rwa [hcard]
-  obtain ⟨y', g', hg'⟩ := h (PartialElementaryEmbedding.comapEquiv e f) hA' (e.symm x)
-  have hsetA : (e.symm ⁻¹' (insert (e.symm x) (e ⁻¹' A))) = insert x A := by
-    ext a
-    simp only [Set.mem_preimage, Set.mem_insert_iff, FirstOrder.Language.Equiv.apply_symm_apply]
-    constructor
-    · rintro (h | ha)
-      · left
-        have := congrArg e h
-        simpa using this
-      · exact Or.inr ha
-    · rintro (h | ha)
-      · left; rw [h]
-      · exact Or.inr ha
-  have hsetB : (e.symm ⁻¹' (insert y' (e ⁻¹' B))) = insert (e y') B := by
-    ext a
-    simp only [Set.mem_preimage, Set.mem_insert_iff, FirstOrder.Language.Equiv.apply_symm_apply]
-    constructor
-    · rintro (h | hb)
-      · left
-        rw [← h, FirstOrder.Language.Equiv.apply_symm_apply]
-      · exact Or.inr hb
-    · rintro (h | hb)
-      · left; rw [h, FirstOrder.Language.Equiv.symm_apply_apply]
-      · exact Or.inr hb
+  have hcard : #(e ⁻¹' A) = #A := Cardinal.mk_subtype_of_equiv A e.toEquiv
+  obtain ⟨y', g', hg'⟩ :=
+    h (PartialElementaryEmbedding.comapEquiv e f) (hcard ▸ hA) (e.symm x)
+  have hsetA : e.symm ⁻¹' (insert (e.symm x) (e ⁻¹' A)) = insert x A := by
+    show e.toEquiv.symm ⁻¹' insert (e.toEquiv.symm x) (e.toEquiv ⁻¹' A) = insert x A
+    rw [← _root_.Equiv.image_eq_preimage_symm (e := e.toEquiv), Set.image_insert_eq,
+      _root_.Equiv.image_preimage, _root_.Equiv.apply_symm_apply]
+  have hsetB : e.symm ⁻¹' (insert y' (e ⁻¹' B)) = insert (e y') B := by
+    show e.toEquiv.symm ⁻¹' insert y' (e.toEquiv ⁻¹' B) = insert (e.toEquiv y') B
+    rw [← _root_.Equiv.image_eq_preimage_symm (e := e.toEquiv), Set.image_insert_eq,
+      _root_.Equiv.image_preimage]
   refine ⟨e y', (PartialElementaryEmbedding.comapEquiv e.symm g').reindex hsetA hsetB, ?_⟩
   intro a
   apply Subtype.ext
-  simp only [PartialElementaryEmbedding.reindex, PartialElementaryEmbedding.comapEquiv]
-  have h := congrArg Subtype.val (hg' ⟨e.symm (a : N), by simp [a.2]⟩)
-  simpa [PartialElementaryEmbedding.comapEquiv] using congrArg e h
+  rw [PartialElementaryEmbedding.reindex_apply]
+  calc ((PartialElementaryEmbedding.comapEquiv e.symm g')
+        ⟨a.1, hsetA.symm ▸ Set.subset_insert x A a.2⟩ : N)
+      = e (g' ⟨e.symm a.1, by simp⟩ : M) := by
+        rw [PartialElementaryEmbedding.comapEquiv_apply]
+        rfl
+    _ = e (PartialElementaryEmbedding.comapEquiv e f ⟨e.symm a.1, by simp⟩ : M) := by
+        rw [PartialElementaryEmbedding.Extends.val_apply hg' ⟨e.symm a.1, by simp⟩]
+    _ = (f a : N) := by
+        rw [PartialElementaryEmbedding.comapEquiv_apply]
+        simp
 
 /-- `κ`-homogeneity is invariant under first-order equivalence. -/
 theorem iff_of_equiv (e : M ≃[L] N) :
