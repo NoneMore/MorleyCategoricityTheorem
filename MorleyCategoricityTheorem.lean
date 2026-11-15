@@ -1,5 +1,6 @@
 import MorleyCategoricityTheorem.BinaryTree
 import MorleyCategoricityTheorem.ModelTheory.AlgebraicClosure
+import MorleyCategoricityTheorem.ModelTheory.AlgebraicTypes
 import MorleyCategoricityTheorem.ModelTheory.Definability
 import MorleyCategoricityTheorem.ModelTheory.DefinablyFull
 import MorleyCategoricityTheorem.ModelTheory.ElementaryChain
