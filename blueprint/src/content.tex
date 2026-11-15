@@ -218,12 +218,15 @@ if some formula in it determines that type uniquely.
 
 \begin{proposition}[Algebraic types are isolated]
 \label{prop:algebraic-implies-isolated}
+\lean{FirstOrder.Language.Theory.CompleteType.isIsolated_typeOf_of_mem_algebraicClosure}
+\leanok
 \uses{def:types-over-parameters,def:algebraic-closure,def:isolated-and-omitted-types}
 If \(b\in\operatorname{acl}(A)\), then \(\operatorname{tp}(b/A)\) is
 isolated.
 \end{proposition}
 
 \begin{proof}
+\leanok
 Choose a finite \(A\)-definable set containing \(b\) and refine its
 defining formula to distinguish the finitely many possible types.
 \end{proof}
