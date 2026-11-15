@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NoneMore
 -/
 import MorleyCategoricityTheorem.ModelTheory.ElementaryMaps
-import MorleyCategoricityTheorem.ModelTheory.SkolemHull
+import MorleyCategoricityTheorem.ModelTheory.SmallElementarySubstructure
 
 /-!
 # Minimal unary definable sets
