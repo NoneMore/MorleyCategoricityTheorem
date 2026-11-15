@@ -12,12 +12,11 @@ import MorleyCategoricityTheorem.ModelTheory.IsolatedTypes
 If `b` lies in the algebraic closure of a parameter set `A` in a structure `M`, then its complete
 type over `A` is isolated (blueprint `prop:algebraic-implies-isolated`).
 
-The proof takes a finite `A`-definable set `s` containing `b`, with defining formula `φ`.  The
-elements of `s` realize only finitely many complete types over `A`; for every such type `q` other
-than `tp(b/A)` a formula `θ_q` in `tp(b/A)` but not in `q` separates the two.  Then
-`φ ∧ ⋀_q θ_q` belongs to `tp(b/A)`, and any tuple realizing it lies in `s` and hence has one of the
-finitely many types of elements of `s`; all of those except `tp(b/A)` are ruled out by the
-conjuncts.  Since the theory `completeTheory M` expanded by constants for `A` is complete,
+The proof takes a finite `A`-definable set `s` containing `b`, with defining formula `φ`.  Every
+element of `s` whose type over `A` differs from `tp(b/A)` is separated from `tp(b/A)` by a formula
+`θ_x` true at `b` but false at that element.  Then `φ ∧ ⋀_x θ_x` belongs to `tp(b/A)`, and a tuple
+realizing it lies in `s` without being one of the separated elements, so it has type `tp(b/A)`.
+Since the theory `completeTheory M` expanded by constants for `A` is complete,
 `CompleteType.isIsolated_typeOf_iff_of_isComplete` upgrades this model-internal uniqueness to
 isolation of the complete type.
 
@@ -56,36 +55,33 @@ theorem isIsolated_typeOf_of_mem_algebraicClosure [Nonempty M]
     simpa using Set.ext_iff.mp hφ (fun _ : Fin 1 => x)
   let T := L[[A]].completeTheory M
   let p : T.CompleteType (Fin 1) := T.typeOf (fun _ : Fin 1 => b)
-  -- the finitely many complete types realized by the elements of `s`
-  let ts : Finset (T.CompleteType (Fin 1)) :=
-    hsf.toFinset.image (fun x : M => T.typeOf (fun _ : Fin 1 => x))
-  -- every other type of an element of `s` admits a formula in `p` but not in it
-  have hsep : ∀ q ∈ ts.erase p, ∃ χ : (L[[A]]).Formula (Fin 1),
-      Formula.equivSentence χ ∈ p ∧ Formula.equivSentence χ ∉ q := by
-    intro q hq
-    obtain ⟨hqp, -⟩ := Finset.mem_erase.mp hq
-    have hnotsub : ¬((p : (L[[A]])[[Fin 1]].Theory) ⊆ (q : (L[[A]])[[Fin 1]].Theory)) :=
-      fun hsub ↦ hqp (CompleteType.eq_of_le hsub).symm
-    obtain ⟨σ, hσp, hσq⟩ := Set.not_subset.mp hnotsub
-    exact ⟨Formula.equivSentence.symm σ, by simpa using hσp, by simpa using hσq⟩
-  choose χ hχp hχq using hsep
+  -- the elements of `s` whose type differs from `p`
+  let F : Finset M := hsf.toFinset.filter fun x => T.typeOf (fun _ : Fin 1 => x) ≠ p
+  -- each of them is separated from `b` by a formula true at `b` and false at it
+  have hsep : ∀ x : ↥F, ∃ χ : (L[[A]]).Formula (Fin 1),
+      χ.Realize (fun _ : Fin 1 => b) ∧ ¬ χ.Realize (fun _ : Fin 1 => x.1) := by
+    intro x
+    obtain ⟨-, hx⟩ := Finset.mem_filter.mp x.2
+    have hnotsub : ¬(p ≤ T.typeOf (fun _ : Fin 1 => x.1)) :=
+      mt CompleteType.eq_of_le hx.symm
+    obtain ⟨σ, hσp, hσx⟩ := Set.not_subset.mp hnotsub
+    exact ⟨Formula.equivSentence.symm σ, CompleteType.mem_typeOf.mp hσp,
+      mt CompleteType.mem_typeOf.mpr hσx⟩
+  choose χ hχb hχx using hsep
   have hT : T.IsComplete := completeTheory.isComplete (L[[A]]) M
   rw [CompleteType.isIsolated_typeOf_iff_of_isComplete hT]
-  refine ⟨φ ⊓ Formula.iInf (fun q : ↥(ts.erase p) => χ q.1 q.2), ?_, ?_⟩
+  -- the conjunction confines realizations to `s` and rules out the elements of `F`
+  refine ⟨φ ⊓ Formula.iInf χ, ?_, ?_⟩
   · simp only [Formula.realize_inf, Formula.realize_iInf]
-    exact ⟨(hφmem b).mp hbs, fun q ↦ CompleteType.formula_mem_typeOf.mp (hχp q.1 q.2)⟩
+    exact ⟨(hφmem b).mp hbs, hχb⟩
   · intro v hv
     have hv' : v = fun _ : Fin 1 => v 0 := funext fun i => by rw [Fin.eq_zero i]
     rw [hv'] at hv ⊢
     simp only [Formula.realize_inf, Formula.realize_iInf] at hv
-    obtain ⟨hφv, hχv⟩ := hv
-    have hv0 : v 0 ∈ s := (hφmem (v 0)).mpr hφv
-    have hmem : T.typeOf (fun _ : Fin 1 => v 0) ∈ ts :=
-      Finset.mem_image.mpr ⟨v 0, hsf.mem_toFinset.mpr hv0, rfl⟩
     by_contra hne
-    have hqmem : T.typeOf (fun _ : Fin 1 => v 0) ∈ ts.erase p :=
-      Finset.mem_erase.mpr ⟨hne, hmem⟩
-    exact (hχq _ hqmem) (CompleteType.formula_mem_typeOf.mpr (hχv ⟨_, hqmem⟩))
+    have hmem : v 0 ∈ F :=
+      Finset.mem_filter.mpr ⟨hsf.mem_toFinset.mpr ((hφmem (v 0)).mpr hv.1), hne⟩
+    exact hχx ⟨v 0, hmem⟩ (hv.2 ⟨v 0, hmem⟩)
 
 end CompleteType
 
