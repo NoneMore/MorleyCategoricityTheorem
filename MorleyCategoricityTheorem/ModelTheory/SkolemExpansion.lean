@@ -90,8 +90,7 @@ def skolemVarEquiv (n : ℕ) : Empty ⊕ Fin (n + 1) ≃ Fin n ⊕ Fin 1 :=
 /-- The formula `φ` in the free variables `x₀, …, x_{n-1}` and the witness `y`. -/
 noncomputable def skolemFormula {n : ℕ} (φ : L.BoundedFormula Empty (n + 1)) :
     (skolemExpansion L).Formula (Fin n ⊕ Fin 1) :=
-  BoundedFormula.relabelEquiv (skolemVarEquiv n)
-    ((skolemExpansionLHom L).onBoundedFormula φ.toFormula)
+  ((skolemExpansionLHom L).onBoundedFormula φ).toFormula.relabel (skolemVarEquiv n)
 
 /-- The substitution sending the free variables of `skolemFormula` to the free variables of `φ`
 and to the Skolem term. -/
@@ -138,46 +137,27 @@ theorem realize_skolemFormula {n : ℕ} (φ : L.BoundedFormula Empty (n + 1))
     (v : Fin n ⊕ Fin 1 → M) :
     (skolemFormula φ).Realize v ↔
       φ.Realize (default : Empty → M) (Fin.snoc (v ∘ Sum.inl) (v (Sum.inr 0))) := by
-  simp only [Formula.Realize, skolemFormula, BoundedFormula.realize_relabelEquiv,
+  have h : (v ∘ ⇑(skolemVarEquiv n)) ∘ Sum.inr = Fin.snoc (v ∘ Sum.inl) (v (Sum.inr 0)) := by
+    ext i
+    induction i using Fin.lastCases <;> simp [skolemVarEquiv]
+  simp only [skolemFormula, Formula.realize_relabel, BoundedFormula.realize_toFormula,
     LHom.realize_onBoundedFormula]
-  change Formula.Realize (BoundedFormula.toFormula φ) (v ∘ ⇑(skolemVarEquiv n)) ↔
-    φ.Realize default (Fin.snoc (v ∘ Sum.inl) (v (Sum.inr 0)))
-  rw [BoundedFormula.realize_toFormula]
-  have h1 : (v ∘ ⇑(skolemVarEquiv n)) ∘ Sum.inl = (default : Empty → M) :=
-    Subsingleton.elim _ _
-  have h2 : (v ∘ ⇑(skolemVarEquiv n)) ∘ Sum.inr = Fin.snoc (v ∘ Sum.inl) (v (Sum.inr 0)) := by
-    funext i
-    refine Fin.lastCases ?_ ?_ i <;> simp [skolemVarEquiv]
-  rw [h1, h2]
+  rw [Subsingleton.elim ((v ∘ ⇑(skolemVarEquiv n)) ∘ Sum.inl) (default : Empty → M), h]
 
 /-- Realization of the existential quantification `∃ y, φ(x̄, y)`. -/
 theorem realize_skolemEx {n : ℕ} (φ : L.BoundedFormula Empty (n + 1)) (x : Fin n → M) :
     ((skolemFormula φ).iExs (Fin 1)).Realize x ↔
       ∃ y : M, φ.Realize (default : Empty → M) (Fin.snoc x y) := by
-  rw [Formula.realize_iExs]
-  constructor
-  · rintro ⟨y, hy⟩
-    exact ⟨y 0, by simpa using (realize_skolemFormula φ (Sum.elim x y)).mp hy⟩
-  · rintro ⟨y, hy⟩
-    exact ⟨fun _ => y, (realize_skolemFormula φ (Sum.elim x fun _ => y)).mpr (by simpa using hy)⟩
+  simp only [Formula.realize_iExs, realize_skolemFormula, Sum.elim_comp_inl]
+  exact ⟨fun ⟨i, hi⟩ => ⟨i 0, hi⟩, fun ⟨y, hy⟩ => ⟨fun _ => y, hy⟩⟩
 
 /-- Realization of the instance of `φ` at the Skolem term. -/
 theorem realize_skolemInstance {n : ℕ} (φ : L.BoundedFormula Empty (n + 1)) (x : Fin n → M) :
     (skolemInstance φ).Realize x ↔
       φ.Realize (default : Empty → M) (Fin.snoc x (Structure.funMap (skolemFunction φ) x)) := by
-  change BoundedFormula.Realize (skolemInstance φ) x default ↔ _
-  rw [skolemInstance]
-  change BoundedFormula.Realize ((skolemFormula φ).subst (skolemSubst φ)) x default ↔ _
-  rw [BoundedFormula.realize_subst]
-  change Formula.Realize (skolemFormula φ)
-    (fun a : Fin n ⊕ Fin 1 => (skolemSubst φ a).realize x) ↔ _
-  rw [realize_skolemFormula]
-  have h1 : (fun a : Fin n ⊕ Fin 1 => (skolemSubst φ a).realize x) ∘ Sum.inl = x := by
-    funext i
-    rfl
-  have h2 : (skolemSubst φ (Sum.inr 0)).realize x = Structure.funMap (skolemFunction φ) x :=
-    rfl
-  rw [h1, h2]
+  simp only [skolemInstance, Formula.Realize, BoundedFormula.realize_subst]
+  -- `skolemSubst` sends the witness variable to the Skolem term, so the arguments agree definitionally.
+  exact realize_skolemFormula φ fun a => (skolemSubst φ a).realize x
 
 /-- The semantic form of the Skolem axiom: the Skolem function picks a witness whenever one
  exists. -/
@@ -185,14 +165,9 @@ theorem realize_skolemAxiom {n : ℕ} (φ : L.BoundedFormula Empty (n + 1)) :
     M ⊨ skolemAxiom φ ↔ ∀ x : Fin n → M,
       (∃ y : M, φ.Realize (default : Empty → M) (Fin.snoc x y)) →
         φ.Realize (default : Empty → M) (Fin.snoc x (Structure.funMap (skolemFunction φ) x)) := by
-  rw [skolemAxiom]
-  change Formula.Realize
-    (BoundedFormula.relabel Sum.inr (((skolemFormula φ).iExs (Fin 1)).imp (skolemInstance φ))).alls
-    (default : Empty → M) ↔ _
-  rw [BoundedFormula.realize_alls]
-  refine forall_congr' fun x => ?_
-  rw [Formula.realize_relabel_sumInr, Formula.realize_imp, realize_skolemEx,
-    realize_skolemInstance]
+  simp only [skolemAxiom, Sentence.Realize, BoundedFormula.realize_alls,
+    Formula.realize_relabel_sumInr, Formula.realize_imp, realize_skolemEx, realize_skolemInstance]
+  rfl
 
 end Realize
 
@@ -206,11 +181,8 @@ theorem model_skolemTheory {M : Type w} [Nonempty M] [L.Structure M] {T : L.Theo
   rw [Theory.model_iff]
   rintro σ ⟨n, φ, rfl⟩
   rw [realize_skolemAxiom]
-  intro x hx
-  have h : Structure.funMap (skolemFunction φ) x =
-      Classical.epsilon fun a => φ.Realize (default : Empty → M) (Fin.snoc x a) := rfl
-  rw [h]
-  exact Classical.epsilon_spec hx
+  -- The canonical expansion interprets `f_φ` by `Classical.epsilon`, so the axiom holds by choice.
+  exact fun x hx => Classical.epsilon_spec hx
 
 /-- A model of the Skolem theory has an `L`-reduct modelling `T`. -/
 theorem Theory.model_of_model_skolemTheory {M : Type w} [L.Structure M]
@@ -242,14 +214,9 @@ theorem card_skolemExpansion_le {L : Language.{u, v}} :
     (skolemExpansion L).card ≤ max ℵ₀ L.card := by
   have hB : Cardinal.mk (Σ n, L.BoundedFormula Empty (n + 1)) ≤ max ℵ₀ L.card :=
     (card_functions_sum_skolem₁ (L := L)).symm.le.trans card_functions_sum_skolem₁_le
-  have hcard : (skolemExpansion L).card =
-      Cardinal.mk (L.Symbols ⊕ (Σ n, L.BoundedFormula Empty (n + 1))) :=
-    Cardinal.mk_congr (skolemSymbolEquiv L)
-  rw [hcard, Cardinal.mk_sum, Cardinal.lift_id, Cardinal.lift_id]
-  refine (Cardinal.add_le_max _ _).trans (le_of_eq ?_)
-  exact le_antisymm
-    (max_le (max_le (le_max_right _ _) hB) (le_max_left _ _))
-    (max_le (le_max_right _ _) (le_trans (le_max_left _ _) (le_max_left _ _)))
+  rw [Language.card, Cardinal.mk_congr (skolemSymbolEquiv L), Cardinal.mk_sum, Cardinal.lift_id,
+    Cardinal.lift_id]
+  exact (Cardinal.add_le_max _ _).trans (max_le (max_le (le_max_right _ _) hB) (le_max_left _ _))
 
 /-! ### The Skolem property -/
 
@@ -260,10 +227,10 @@ theorem Substructure.isElementary_reduct {M : Type w} [L.Structure M]
     [M ⊨ skolemTheory T] (S : (skolemExpansion L).Substructure M) :
     ((skolemExpansionLHom L).substructureReduct S).IsElementary := by
   refine Substructure.isElementary_of_exists _ fun n φ x a h => ?_
-  refine ⟨⟨Structure.funMap (skolemFunction φ) fun i => (x i : M), S.fun_mem _ _ fun i => (x i).2⟩, ?_⟩
+  refine ⟨⟨Structure.funMap (skolemFunction φ) fun i => (x i : M),
+    S.fun_mem _ _ fun i => (x i).2⟩, ?_⟩
   exact (realize_skolemAxiom φ).mp
-    (Theory.realize_sentence_of_mem (skolemTheory T) (skolemAxiom_mem_skolemTheory φ))
-    (fun i => (x i : M)) ⟨a, h⟩
+    (Theory.realize_sentence_of_mem (skolemTheory T) (skolemAxiom_mem_skolemTheory φ)) _ ⟨a, h⟩
 
 end Language
 
