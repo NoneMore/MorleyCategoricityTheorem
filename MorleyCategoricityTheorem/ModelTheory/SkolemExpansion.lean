@@ -25,7 +25,7 @@ The main structural results are:
   expansion introduces constant symbols;
 * every model of `skolemTheory T` has an `L`-reduct modelling `T`
   (`Theory.model_of_model_skolemTheory`);
-* the expansion adds at most `|L| + ℵ₀` symbols (`card_skolemExpansion_le`);
+* the expansion has exactly `max ℵ₀ L.card` symbols (`card_skolemExpansion`);
 * in a model of the Skolem theory, every substructure of the expansion has an elementary `L`-reduct
   (`Substructure.isElementary_reduct`), the Tarski–Vaught form of the Skolem property.
 
@@ -43,9 +43,9 @@ The main structural results are:
 - `FirstOrder.Language.model_skolemTheory` and
   `FirstOrder.Language.Theory.model_of_model_skolemTheory`: models of `T` expand to models of
   `skolemTheory T`, and models of `skolemTheory T` have `L`-reducts modelling `T`.
-- `FirstOrder.Language.card_functions_skolemExpansion_le` and
-  `FirstOrder.Language.card_skolemExpansion_le`: the Skolem expansion has at most `max ℵ₀ L.card`
-  function symbols, and at most `max ℵ₀ L.card` symbols in total.
+- `FirstOrder.Language.card_skolemExpansion`: the Skolem expansion has exactly `max ℵ₀ L.card`
+  symbols; `card_functions_skolemExpansion_le` bounds its number of function symbols by the same
+  cardinal.
 - `FirstOrder.Language.Substructure.isElementary_reduct`: the Skolem axioms give the Tarski–Vaught
   condition for the `L`-reduct of any substructure of an expansion.
 -/
@@ -209,7 +209,8 @@ private def skolemSymbolEquiv (L : Language.{u, v}) :
     ((Equiv.sumCongr (_root_.Equiv.refl _) (Equiv.sumComm _ _)).trans
       (Equiv.sumAssoc _ _ _).symm))
 
-/-- The Skolem expansion has at most `|L| + ℵ₀` symbols. -/
+/-- The Skolem expansion has at most `|L| + ℵ₀` symbols; this is one half of the sharp
+`card_skolemExpansion`. -/
 theorem card_skolemExpansion_le {L : Language.{u, v}} :
     (skolemExpansion L).card ≤ max ℵ₀ L.card := by
   have hB : Cardinal.mk (Σ n, L.BoundedFormula Empty (n + 1)) ≤ max ℵ₀ L.card :=
@@ -217,6 +218,29 @@ theorem card_skolemExpansion_le {L : Language.{u, v}} :
   rw [Language.card, Cardinal.mk_congr (skolemSymbolEquiv L), Cardinal.mk_sum, Cardinal.lift_id,
     Cardinal.lift_id]
   exact (Cardinal.add_le_max _ _).trans (max_le (max_le (le_max_right _ _) hB) (le_max_left _ _))
+
+/-- The Skolem expansion has at least `max ℵ₀ L.card` symbols: the symbols of `L` embed into the
+expansion, and the Skolem function symbols alone are infinite. -/
+theorem le_card_skolemExpansion {L : Language.{u, v}} :
+    max ℵ₀ L.card ≤ (skolemExpansion L).card := by
+  refine max_le ?_ ?_
+  · -- the formulas of `L` give an infinite supply of Skolem function symbols
+    simp only [card]
+    refine Cardinal.aleph0_le_mk_iff.mpr (Infinite.of_injective
+      (fun n : ℕ => (Sum.inl ⟨n, Sum.inr (⊥ : L.BoundedFormula Empty (n + 1))⟩ :
+        (L.sum L.skolem₁).Symbols)) ?_)
+    intro n m h
+    exact congrArg Sigma.fst (Sum.inl_injective h)
+  · -- the symbols of `L` are also symbols of the expansion
+    simp only [card]
+    refine ⟨Function.Embedding.sumMap
+      (Function.Embedding.sigmaMap (Function.Embedding.refl ℕ) fun _ => Function.Embedding.inl)
+      (Function.Embedding.sigmaMap (Function.Embedding.refl ℕ) fun _ => Function.Embedding.inl)⟩
+
+/-- The Skolem expansion has exactly `|L| + ℵ₀` symbols. -/
+theorem card_skolemExpansion {L : Language.{u, v}} :
+    (skolemExpansion L).card = max ℵ₀ L.card :=
+  le_antisymm card_skolemExpansion_le le_card_skolemExpansion
 
 /-! ### The Skolem property -/
 
