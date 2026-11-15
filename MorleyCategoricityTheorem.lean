@@ -22,6 +22,7 @@ import MorleyCategoricityTheorem.ModelTheory.Satisfiability
 import MorleyCategoricityTheorem.ModelTheory.Semantics
 import MorleyCategoricityTheorem.ModelTheory.SkolemExpansion
 import MorleyCategoricityTheorem.ModelTheory.SkolemHull
+import MorleyCategoricityTheorem.ModelTheory.SmallElementarySubstructure
 import MorleyCategoricityTheorem.ModelTheory.Syntax
 import MorleyCategoricityTheorem.ModelTheory.TwoCardinal
 import MorleyCategoricityTheorem.ModelTheory.TypeSpaceHomeomorphism
