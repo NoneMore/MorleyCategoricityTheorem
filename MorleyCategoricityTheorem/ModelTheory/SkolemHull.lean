@@ -30,9 +30,13 @@ containing `X`.
 - `FirstOrder.Language.skolemHull_reduct_isElementary`: the `L`-reduct of the Skolem hull is
   elementary in `M`.
 - `FirstOrder.Language.skolemHull_theory_model`: a Skolem hull of a model of `T` is a model of `T`.
+- `FirstOrder.Language.lift_card_skolemHull_le`: the hull has at most `max ℵ₀ (#X + |L|)` elements,
+  and `lift_card_skolemHull_eq_of_le` sharpens this to `#X` when `#X` is infinite and bounds `L`.
 -/
 
 universe u v w
+
+open Cardinal
 
 namespace FirstOrder
 
@@ -79,6 +83,46 @@ theorem skolemHull_induction {X : Set M} {p : M → Prop} {x : M} (h : x ∈ sko
     (Hfun : ∀ {n : ℕ} (f : (skolemExpansion L).Functions n), ClosedUnder f (Set.ofPred p)) :
     p x :=
   Substructure.closure_induction h HX Hfun
+
+/-! ### Size of the hull -/
+
+/-- The Skolem hull of `X` has at most `max ℵ₀ (#X + #L)` elements: its elements are values of
+`L^*`-terms with parameters in `X`, and the Skolem expansion contributes at most `max ℵ₀ #L`
+function symbols. -/
+theorem lift_card_skolemHull_le (X : Set M) :
+    Cardinal.lift.{max u v, w} #(skolemHull L X) ≤
+      max ℵ₀ (Cardinal.lift.{max u v, w} #X + Cardinal.lift.{w, max u v} L.card) := by
+  refine (Substructure.lift_card_closure_le (L := skolemExpansion L) (s := X)).trans ?_
+  have hfun : Cardinal.lift.{w, max u v} #(Σ i, (skolemExpansion L).Functions i) ≤
+      max ℵ₀ (Cardinal.lift.{w, max u v} L.card) :=
+    (Cardinal.lift_le.mpr card_functions_skolemExpansion_le).trans (by rw [lift_max, lift_aleph0])
+  -- `max ℵ₀` absorbs `ℵ₀`, so `a + max ℵ₀ b ≤ max ℵ₀ (a + b)`
+  have key : ∀ a b : Cardinal.{max u v w}, a + max ℵ₀ b ≤ max ℵ₀ (a + b) := by
+    intro a b
+    refine (Cardinal.add_le_max a (max ℵ₀ b)).trans (max_le ?_ (le_max_left _ _))
+    refine max_le ((self_le_add_right a b).trans (le_max_right _ _)) ?_
+    exact max_le (le_max_left _ _) ((self_le_add_left b a).trans (le_max_right _ _))
+  exact (max_le_max le_rfl (add_le_add le_rfl hfun)).trans (max_le (le_max_left _ _) (key _ _))
+
+/-- An infinite cardinal bounding both the generating set and the language bounds the hull. -/
+theorem lift_card_skolemHull_le_of_le (X : Set M) {κ : Cardinal.{max u v w}} (hκ : ℵ₀ ≤ κ)
+    (hX : Cardinal.lift.{max u v, w} #X ≤ κ)
+    (hL : Cardinal.lift.{w, max u v} L.card ≤ κ) :
+    Cardinal.lift.{max u v, w} #(skolemHull L X) ≤ κ := by
+  refine (lift_card_skolemHull_le L X).trans ?_
+  refine max_le hκ ?_
+  refine (add_le_add hX hL).trans ?_
+  rw [Cardinal.add_eq_max hκ, max_self]
+
+/-- A Skolem hull of a set of infinite cardinality `κ` has cardinality `κ`, provided the language
+is no larger than `κ`. -/
+theorem lift_card_skolemHull_eq_of_le (X : Set M) {κ : Cardinal.{max u v w}} (hκ : ℵ₀ ≤ κ)
+    (hX : Cardinal.lift.{max u v, w} #X = κ)
+    (hL : Cardinal.lift.{w, max u v} L.card ≤ κ) :
+    Cardinal.lift.{max u v, w} #(skolemHull L X) = κ := by
+  refine le_antisymm (lift_card_skolemHull_le_of_le L X hκ hX.le hL) ?_
+  rw [← hX]
+  exact Cardinal.lift_le.mpr (Cardinal.mk_le_mk_of_subset (subset_skolemHull L X))
 
 variable [L.Structure M] [(skolemExpansionLHom L).IsExpansionOn M]
 
