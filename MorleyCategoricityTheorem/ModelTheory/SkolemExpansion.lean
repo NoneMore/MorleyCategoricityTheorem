@@ -197,45 +197,41 @@ theorem card_functions_skolemExpansion_le {L : Language.{u, v}} :
     Cardinal.mk (Σ n, (skolemExpansion L).Functions n) ≤ max ℵ₀ L.card :=
   card_functions_sum_skolem₁_le
 
-/-- The symbols of the Skolem expansion are the symbols of `L` together with the Skolem function
-symbols. -/
-private def skolemSymbolEquiv (L : Language.{u, v}) :
-    (skolemExpansion L).Symbols ≃ L.Symbols ⊕ (Σ n, L.BoundedFormula Empty (n + 1)) :=
-  (Equiv.sumCongr
-    (Equiv.sigmaSumDistrib (fun n => L.Functions n)
-      (fun n => L.BoundedFormula Empty (n + 1)))
-    (Equiv.sigmaCongrRight fun n => Equiv.sumEmpty (L.Relations n) Empty)).trans
-  ((Equiv.sumAssoc _ _ _).trans
-    ((Equiv.sumCongr (_root_.Equiv.refl _) (Equiv.sumComm _ _)).trans
-      (Equiv.sumAssoc _ _ _).symm))
+/-- The one-step Skolem expansion has one function symbol per `L`-formula and no relation symbols,
+so its cardinality is the number of `L`-formulas. -/
+private theorem card_skolem₁ (L : Language.{u, v}) :
+    (L.skolem₁).card = #(Σ n, L.BoundedFormula Empty (n + 1)) := by
+  simp [card, Symbols]
+
+/-- There are infinitely many `L`-formulas, hence infinitely many Skolem function symbols. -/
+private theorem aleph0_le_card_skolem₁ (L : Language.{u, v}) : ℵ₀ ≤ (L.skolem₁).card := by
+  rw [card_skolem₁ L]
+  exact aleph0_le_mk_iff.mpr <| Infinite.of_injective
+    (fun n : ℕ => (⟨n, ⊥⟩ : Σ n, L.BoundedFormula Empty (n + 1)))
+    fun _ _ h => congrArg Sigma.fst h
+
+/-- The symbols of the Skolem expansion split into the symbols of `L` and the symbols of
+`L.skolem₁`. -/
+private theorem card_skolemExpansion_eq_add (L : Language.{u, v}) :
+    (skolemExpansion L).card = L.card + (L.skolem₁).card := by
+  rw [skolemExpansion, card_sum, Cardinal.lift_id, Cardinal.lift_id]
 
 /-- The Skolem expansion has at most `|L| + ℵ₀` symbols; this is one half of the sharp
 `card_skolemExpansion`. -/
 theorem card_skolemExpansion_le {L : Language.{u, v}} :
     (skolemExpansion L).card ≤ max ℵ₀ L.card := by
-  have hB : Cardinal.mk (Σ n, L.BoundedFormula Empty (n + 1)) ≤ max ℵ₀ L.card :=
-    (card_functions_sum_skolem₁ (L := L)).symm.le.trans card_functions_sum_skolem₁_le
-  rw [Language.card, Cardinal.mk_congr (skolemSymbolEquiv L), Cardinal.mk_sum, Cardinal.lift_id,
-    Cardinal.lift_id]
-  exact (Cardinal.add_le_max _ _).trans (max_le (max_le (le_max_right _ _) hB) (le_max_left _ _))
+  have hskolem : (L.skolem₁).card ≤ max ℵ₀ L.card :=
+    (card_skolem₁ L).trans_le <|
+      card_functions_sum_skolem₁.symm.trans_le card_functions_skolemExpansion_le
+  rw [card_skolemExpansion_eq_add, Cardinal.add_eq_max' (aleph0_le_card_skolem₁ L)]
+  exact max_le (le_max_right _ _) hskolem
 
-/-- The Skolem expansion has at least `max ℵ₀ L.card` symbols: the symbols of `L` embed into the
-expansion, and the Skolem function symbols alone are infinite. -/
+/-- The Skolem expansion has at least `max ℵ₀ L.card` symbols: it contains the symbols of `L`, and
+`L.skolem₁` alone contributes infinitely many symbols. -/
 theorem le_card_skolemExpansion {L : Language.{u, v}} :
     max ℵ₀ L.card ≤ (skolemExpansion L).card := by
-  refine max_le ?_ ?_
-  · -- the formulas of `L` give an infinite supply of Skolem function symbols
-    simp only [card]
-    refine Cardinal.aleph0_le_mk_iff.mpr (Infinite.of_injective
-      (fun n : ℕ => (Sum.inl ⟨n, Sum.inr (⊥ : L.BoundedFormula Empty (n + 1))⟩ :
-        (L.sum L.skolem₁).Symbols)) ?_)
-    intro n m h
-    exact congrArg Sigma.fst (Sum.inl_injective h)
-  · -- the symbols of `L` are also symbols of the expansion
-    simp only [card]
-    refine ⟨Function.Embedding.sumMap
-      (Function.Embedding.sigmaMap (Function.Embedding.refl ℕ) fun _ => Function.Embedding.inl)
-      (Function.Embedding.sigmaMap (Function.Embedding.refl ℕ) fun _ => Function.Embedding.inl)⟩
+  rw [card_skolemExpansion_eq_add]
+  exact max_le ((aleph0_le_card_skolem₁ L).trans (self_le_add_left _ _)) (self_le_add_right _ _)
 
 /-- The Skolem expansion has exactly `|L| + ℵ₀` symbols. -/
 theorem card_skolemExpansion {L : Language.{u, v}} :
