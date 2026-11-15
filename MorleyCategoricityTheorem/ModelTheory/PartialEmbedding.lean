@@ -22,15 +22,21 @@ elementary embedding.
 - `PartialElementaryEmbedding.map_sentence`: this equivalence preserves satisfaction of sentences.
 - `PartialElementaryEmbedding.map_completeTheory`: it carries the complete theory of `M` over `A`
   onto the complete theory of `N` over `B`.
+- `PartialElementaryEmbedding.Extends`: extension of partial elementary embeddings, and its basic
+  closure properties.
+- `PartialElementaryEmbedding.reindex`: transport of a partial elementary embedding along
+  equalities of its source and target.
+- `PartialElementaryEmbedding.comapEquiv`: pullback of a partial elementary embedding along a
+  first-order equivalence.
 - `ElementaryEmbedding.toPartialElementaryEmbeddingOn`: the restriction of an elementary embedding
   `M ↪ₑ[L] N` to a partial elementary embedding from a parameter set onto its image.
   `Equiv.toPartialElementaryEmbeddingOn` is the specialisation to a first-order equivalence.
 
 ## TODO
 
-- As isolated-type extension and back-and-forth constructions create concrete callers, develop an
-  extension/restriction relation and unions of compatible chains of partial elementary embeddings.
-  Keep this API proof-driven rather than fixing a general framework in advance.
+- Extend the extension relation `PartialElementaryEmbedding.Extends` with restrictions and unions
+  of compatible chains of partial elementary embeddings when back-and-forth constructions create
+  concrete callers.  Keep this API proof-driven rather than fixing a general framework in advance.
 -/
 
 universe u v w w'
@@ -134,6 +140,37 @@ variable {A : Set M} {B : Set N}
 instance : CoeFun (A ↪ₚₑ[L] B) fun _ => A → B :=
   ⟨PartialElementaryEmbedding.toFun⟩
 
+variable {A' A'' : Set M} {B' B'' : Set N}
+
+/-- A partial elementary embedding `g` extends `f` when its source and target contain those of `f`
+and it agrees with `f` on the source of `f`.
+
+This is the one-step extension relation used to state homogeneity: extending over an additional
+element adds that element to the source and a chosen image to the target. -/
+def Extends (g : A' ↪ₚₑ[L] B') (f : A ↪ₚₑ[L] B) (hA : A ⊆ A') (hB : B ⊆ B') : Prop :=
+  ∀ a : A, g ⟨a, hA a.2⟩ = ⟨f a, hB (f a).2⟩
+
+/-- Every partial elementary embedding extends itself. -/
+theorem Extends.refl (f : A ↪ₚₑ[L] B) :
+    f.Extends f (Set.Subset.refl A) (Set.Subset.refl B) :=
+  fun _ => rfl
+
+/-- The underlying value of an extension is the underlying value of the original map. -/
+@[simp]
+theorem Extends.val_apply {f : A ↪ₚₑ[L] B} {g : A' ↪ₚₑ[L] B'}
+    {hA : A ⊆ A'} {hB : B ⊆ B'} (hgf : g.Extends f hA hB) (a : A) :
+    (g ⟨a, hA a.2⟩ : N) = f a := by
+  simpa using congrArg Subtype.val (hgf a)
+
+/-- Extension of partial elementary embeddings is transitive. -/
+theorem Extends.trans {f : A ↪ₚₑ[L] B} {g : A' ↪ₚₑ[L] B'} {h : A'' ↪ₚₑ[L] B''}
+    {hA : A ⊆ A'} {hB : B ⊆ B'} {hA' : A' ⊆ A''} {hB' : B' ⊆ B''}
+    (hgf : g.Extends f hA hB) (hhg : h.Extends g hA' hB') :
+    h.Extends f (hA.trans hA') (hB.trans hB') := by
+  intro a
+  apply Subtype.ext
+  simpa using (Extends.val_apply hhg ⟨a, hA a.2⟩).trans (Extends.val_apply hgf a)
+
 /-- A partial elementary embedding is, in particular, a partial embedding. -/
 def toPartialEmbedding (f : A ↪ₚₑ[L] B) : A ↪ₚ[L] B where
   toFun := f
@@ -210,6 +247,55 @@ theorem map_completeTheory (f : A ↪ₚₑ[L] B) :
     f.parameterLEquiv.toLHom.onTheory (L[[A]].completeTheory M) =
       L[[B]].completeTheory N :=
   (LEquiv.onTheory_completeTheory_eq_iff f.parameterLEquiv).mpr (map_sentence f)
+
+/-- Transport a partial elementary embedding along equalities of its source and target.
+
+The two ends are moved along the canonical equivalences `Set.equivOfEq` of equal sets, so both the
+surjectivity and the formula-preservation conditions transport definitionally. -/
+def reindex (f : A ↪ₚₑ[L] B) {A' : Set M} {B' : Set N} (hA : A = A') (hB : B = B') :
+    A' ↪ₚₑ[L] B' where
+  toFun := Set.equivOfEq hB ∘ f ∘ Set.equivOfEq hA.symm
+  surjective' :=
+    (Set.equivOfEq hB).surjective.comp ((f.surjective').comp (Set.equivOfEq hA.symm).surjective)
+  map_formula' _ φ x := f.map_formula' φ (Set.equivOfEq hA.symm ∘ x)
+
+/-- A reindexed embedding takes the same values as the original embedding. -/
+@[simp]
+theorem reindex_apply (f : A ↪ₚₑ[L] B) {A' : Set M} {B' : Set N} (hA : A = A')
+    (hB : B = B') (a : A') :
+    (f.reindex hA hB a : N) = (f ⟨a.1, hA.symm ▸ a.2⟩ : N) :=
+  rfl
+
+/-- Pull back a partial elementary embedding between subsets of `N` along a first-order equivalence
+`e : M ≃[L] N`, obtaining a partial elementary embedding between their preimages in `M`.
+
+The underlying map is `e.symm ∘ f ∘ e`. -/
+noncomputable def comapEquiv (e : M ≃[L] N) {A B : Set N} (f : A ↪ₚₑ[L] B) :
+    (e ⁻¹' A) ↪ₚₑ[L] (e ⁻¹' B) :=
+  let toFun : (e ⁻¹' A) → (e ⁻¹' B) := fun a =>
+    ⟨e.symm (f ⟨e a.1, a.2⟩ : N), by simp⟩
+  { toFun := toFun
+    surjective' := by
+      intro b
+      obtain ⟨a, ha⟩ := f.surjective' ⟨e b.1, b.2⟩
+      refine ⟨⟨e.symm a.1, by simp⟩, Subtype.ext ?_⟩
+      show e.symm (f ⟨e (e.symm a.1), by simp⟩ : N) = b.1
+      simpa using congrArg e.symm (congrArg Subtype.val ha)
+    map_formula' := by
+      intro n φ x
+      let y : Fin n → A := fun i => ⟨e (x i).1, (x i).2⟩
+      calc φ.Realize (Subtype.val ∘ x)
+          ↔ φ.Realize (e ∘ (Subtype.val ∘ x)) :=
+            (StrongHomClass.realize_formula (g := e) φ).symm
+        _ ↔ φ.Realize (Subtype.val ∘ f ∘ y) := f.map_formula' φ y
+        _ ↔ φ.Realize (Subtype.val ∘ toFun ∘ x) :=
+            (StrongHomClass.realize_formula (g := e.symm) (v := Subtype.val ∘ f ∘ y) φ).symm }
+
+/-- The underlying map of `comapEquiv` is `e.symm ∘ f ∘ e`. -/
+@[simp]
+theorem comapEquiv_apply (e : M ≃[L] N) {A B : Set N} (f : A ↪ₚₑ[L] B) (a : e ⁻¹' A) :
+    (comapEquiv e f a : M) = e.symm (f ⟨e a.1, a.2⟩ : N) :=
+  rfl
 
 end PartialElementaryEmbedding
 
